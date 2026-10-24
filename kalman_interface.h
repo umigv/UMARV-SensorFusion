@@ -1,6 +1,10 @@
 #ifndef SRUKF_IF
 #define SRUKF_IF
 
+#define SRUKF_N           5
+#define SRUKF_SIGMA_COUNT 11
+#define SRUKF_MAX_MEAS    3
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
@@ -8,10 +12,6 @@
 #include "kalman_internal.h"
 #include "kalman_math.h"
 #include "kalman_workspace.h"
-
-#define SRUKF_N           5
-#define SRUKF_SIGMA_COUNT 11
-#define SRUKF_MAX_MEAS    3
 
 typedef enum {
     SRUKF_X = 0,

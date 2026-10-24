@@ -1,13 +1,13 @@
 #ifndef SRUKF_WORKSPACE_H
 #define SRUKF_WORKSPACE_H
 
-#include "kalman_interface.h"
-
 /*
  * QR input columns:
  * up to 11 sigma-point deviations + 5 noise-factor columns.
  */
 #define SRUKF_QR_MAX_COLUMNS (SRUKF_SIGMA_COUNT + SRUKF_N)
+
+#include "kalman_interface.h"
 
 struct SrukfWorkspace {
     /* Sigma points before and after motion prediction. */

@@ -1,7 +1,8 @@
-#include "kalman_interface.h"
-
 #ifndef SRUKF_IH
 #define SRUKF_IH
+
+#include "kalman_interface.h"
+
 /*
  * Calculate the 11 mean/covariance weights and sigma-point scale
  * from alpha, beta, kappa, and state dimension.
