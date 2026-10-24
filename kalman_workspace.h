@@ -1,7 +1,7 @@
 #ifndef SRUKF_WORKSPACE_H
 #define SRUKF_WORKSPACE_H
 
-#include "kalman.h"
+#include "kalman_interface.h"
 
 /*
  * QR input columns:
