@@ -22,48 +22,39 @@ reg [10:0] byte_counter;
 reg [7:0] distance_low;
 reg [7:0] azimuth_low;
 
+// Intermediate wires
+wire [3:0] block_number; // Which block we're on: 0-11
+wire [6:0] block_offset; // What byte are we on in that block: 0-99
 
-// State parameters 
-localparam init = 3'b000;
-localparam header = 3'b001;
-localparam data = 3'b010;
-
-
-// State transitions ???
-// always @* begin
-    
-// end
+assign block_number = (byte_counter - 42) / 100;
+assign block_offset = (byte_counter - 42) % 100;
 
 // Synchronous update of state register
 always @(posedge clk) begin
-
     if (!resetn)
         byte_counter <= 11'd0;
 
     else if (s_AXIstream_tvalid && s_AXIstream_tready) begin
 
-        case(byte_counter)
+        if (byte_counter < 42) begin
+            // Ethernet/IP/UDP header
+        end
+        else if (byte_counter < 1242) begin
+            // Velodyne data blocks
+        end
+        else if (byte_counter < 1246) begin
+            // Timestamp
+        end
+        else begin
+            // Factory bytes
+        end
 
-            // Replace these byte numbers with the correct
-            // offsets from the Velodyne manual. ***********************************
-
-            11'd0:
-
-            
-            begin
-                out_reflectivity <= s_AXIstream_tdata;
-                out_data_valid <= 1'b1;
-            end
-
-        endcase
-
-        if (s_AXIstream_tlast)
+        if (s_AXIstream_tlast) // Reset our byte counter if we get flag that we're on last byte
             byte_counter <= 11'd0;
         else
-            byte_counter <= byte_counter + 11'd1;
+            byte_counter <= byte_counter + 11'd1; // Otherwise, increment
 
     end
-
 end
 
 // Output logic
