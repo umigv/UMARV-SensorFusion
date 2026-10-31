@@ -1,7 +1,7 @@
-#include "kalman_interface.h"
-#include "kalman_internal.h"
-#include "kalman_math.h"
-#include "kalman_workspace.h"
+#include "../kalman_interface.h"
+#include "../kalman_internal.h"
+#include "../kalman_math.h"
+#include "../kalman_workspace.h"
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
