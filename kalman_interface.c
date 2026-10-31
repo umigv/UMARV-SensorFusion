@@ -252,7 +252,85 @@ SrukfStatus srukf_predict_to(
     Srukf *filter,
     double timestamp,
     SrukfWorkspace *workspace
-);
+) {
+    if (filter == NULL || workspace == NULL) {
+        return SRUKF_INVALID_ARGUMENT;
+    }
+
+    if (!filter->initialized) {
+        return SRUKF_NOT_INITIALIZED;
+    }
+
+    if (!isfinite(filter->timestamp)) {
+        return SRUKF_NUMERICAL_FAILURE;
+    }
+
+    if (!isfinite(timestamp) || timestamp < filter->timestamp) {
+        return SRUKF_INVALID_TIME;
+    }
+
+    SrukfStatus status = srukf_config_validate(&filter->config);
+
+    if (status != SRUKF_OK) {
+        return status;
+    }
+
+    /* Already at the requested time: nothing to predict. */
+    if (timestamp == filter->timestamp) {
+        return SRUKF_OK;
+    }
+
+    Srukf candidate = *filter;
+    const double max_dt = candidate.config.max_prediction_dt;
+
+    while (candidate.timestamp < timestamp) {
+        const double remaining = timestamp - candidate.timestamp;
+
+        if (!isfinite(remaining)) {
+            return SRUKF_INVALID_TIME;
+        }
+
+        double next_timestamp;
+
+        if (remaining <= max_dt) {
+            /* Finish exactly at the requested timestamp. */
+            next_timestamp = timestamp;
+        } else {
+            next_timestamp = candidate.timestamp + max_dt;
+
+            /* Guard against rounding past the target. */
+            if (next_timestamp > timestamp) {
+                next_timestamp = timestamp;
+            }
+        }
+
+        /*
+         * Compute the actual representable time increment.
+         * A very small step relative to a large timestamp may
+         * round to zero; reject it instead of looping forever.
+         */
+        const double dt = next_timestamp - candidate.timestamp;
+
+        if (!isfinite(next_timestamp) ||
+            !isfinite(dt) ||
+            dt <= 0.0) {
+            return SRUKF_NUMERICAL_FAILURE;
+        }
+
+        status = srukf_predict_step(&candidate, dt, workspace);
+
+        if (status != SRUKF_OK) {
+            return status;
+        }
+
+        candidate.timestamp = next_timestamp;
+    }
+
+    /* Commit only after all prediction steps succeed. */
+    *filter = candidate;
+
+    return SRUKF_OK;
+}
 
 
 /*
@@ -263,7 +341,104 @@ SrukfStatus srukf_process_gps(
     Srukf *filter,
     const SrukfGpsMeasurement *measurement,
     SrukfWorkspace *workspace
-);
+) {
+    if (filter == NULL ||
+        measurement == NULL ||
+        workspace == NULL) {
+        return SRUKF_INVALID_ARGUMENT;
+    }
+
+    if (!filter->initialized) {
+        return SRUKF_NOT_INITIALIZED;
+    }
+
+    if (!isfinite(measurement->timestamp) ||
+        measurement->timestamp < filter->timestamp) {
+        return SRUKF_INVALID_TIME;
+    }
+
+    if (!isfinite(measurement->x) ||
+        !isfinite(measurement->y)) {
+        return SRUKF_INVALID_ARGUMENT;
+    }
+
+    /*
+     * Validate GPS covariance before advancing the filter.
+     * Cholesky checks finite values, symmetry, and positive
+     * definiteness. Use flat buffers for the matrix API.
+     */
+    double gps_covariance[4] = {
+        measurement->covariance[0][0],
+        measurement->covariance[0][1],
+        measurement->covariance[1][0],
+        measurement->covariance[1][1]
+    };
+
+    double gps_factor[4];
+
+    SrukfStatus status = srmat_cholesky_lower(
+        gps_covariance,
+        2,
+        2,
+        gps_factor,
+        2);
+
+    if (status != SRUKF_OK) {
+        return status;
+    }
+
+    /*
+     * The shared update accepts buffers sized for up to three
+     * measurements. GPS uses only the first two components.
+     */
+    double z[SRUKF_MAX_MEAS] = {
+        measurement->x,
+        measurement->y,
+        0.0
+    };
+
+    double R[SRUKF_MAX_MEAS][SRUKF_MAX_MEAS] = {{0}};
+
+    for (size_t i = 0; i < 2; ++i) {
+        for (size_t j = 0; j < 2; ++j) {
+            R[i][j] = measurement->covariance[i][j];
+        }
+    }
+
+    /* Work on a candidate until processing succeeds. */
+    Srukf candidate = *filter;
+
+    status = srukf_predict_to(
+        &candidate,
+        measurement->timestamp,
+        workspace);
+
+    if (status != SRUKF_OK) {
+        return status;
+    }
+
+    /*
+     * Save the successful prediction separately. If the GPS
+     * measurement is rejected, retain this predicted state.
+     */
+    Srukf predicted = candidate;
+
+    status = srukf_measurement_update(
+        &candidate,
+        SRUKF_SENSOR_GPS,
+        z,
+        R,
+        candidate.config.gps_gate_threshold,
+        workspace);
+
+    if (status == SRUKF_OK) {
+        *filter = candidate;
+    } else if (status == SRUKF_MEASUREMENT_REJECTED) {
+        *filter = predicted;
+    }
+
+    return status;
+}
 
 
 /*

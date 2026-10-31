@@ -1,4 +1,5 @@
 #include "kalman_internal.h"
+#include "float.h"
 
 
 #ifndef SRUKF_MH
