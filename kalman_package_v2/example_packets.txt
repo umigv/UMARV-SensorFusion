@@ -1,0 +1,7 @@
+# Synchronized initialization followed by straight motion.
+G 0.00 0.00 0.00
+O 0.00 1.00 0.00 0.00
+O 0.02 1.02 0.00 0.00
+O 0.04 0.99 0.00 0.00
+G 0.10 0.10 0.00
+O 0.10 1.00 0.00 0.00
