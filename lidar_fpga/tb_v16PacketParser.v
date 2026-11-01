@@ -21,7 +21,7 @@ module tb_v16PacketParser;
 
     task push;
         input [7:0] value;
-        input finish;
+        input finish;   
         input expected_pulse;
         begin
             @(negedge clk); data=value; valid=1; last=finish;

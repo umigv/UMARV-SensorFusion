@@ -1,3 +1,4 @@
+`timescale 1ns/1ps
 module v16PacketParser #(
     parameter integer HEADER_BYTES = 42  // 42: full Ethernet frame; 0: UDP payload only
 )(
