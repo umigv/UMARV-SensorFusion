@@ -11,14 +11,11 @@
 #include <stdio.h>
 #include <string.h>
 
-/*
- * Example uncertainties only: replace with sensor calibration
- * or receiver-provided values.
- */
-#define GPS_POSITION_STD       1.5     /* meters */
-#define ODOM_VELOCITY_STD       0.05    /* meters/second */
-#define ODOM_HEADING_STD        0.035   /* radians, about 2 degrees */
-#define ODOM_ANGULAR_RATE_STD   0.02    /* radians/second */
+/* Provisional engineering assumptions; not calibrated guarantees. */
+#define GPS_POSITION_STD       1.0     /* m; external GPS mode unknown */
+#define ODOM_VELOCITY_STD       0.05    /* m/s */
+#define ODOM_HEADING_STD        0.00873 /* rad; approximately 0.5 degrees */
+#define ODOM_ANGULAR_RATE_STD   0.002   /* rad/s; approximately 0.115 deg/s */
 
 /*
  * Startup approximation: require GPS and odometry timestamps
