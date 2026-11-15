@@ -24,18 +24,20 @@ module division #(
     localparam integer CW = $clog2(STEPS + 1);
     localparam logic [WIDTH-1:0] MIN_MAG = {1'b1, {(WIDTH-1){1'b0}}};
     localparam logic [WIDTH-1:0] MAX_POS = {1'b0, {(WIDTH-1){1'b1}}};
-    logic [STEPS-1:0] quotient;
+    logic [STEPS-1:0] quot_shift;
     logic [WIDTH-1:0] remainder, divisor;
     logic [CW-1:0] count;
     logic negative;
     wire [WIDTH-1:0] a_mag = a[WIDTH-1] ? (~a + 1'b1) : a;
     wire [WIDTH-1:0] b_mag = b[WIDTH-1] ? (~b + 1'b1) : b;
-    wire [WIDTH:0] trial = {remainder, quotient[STEPS-1]};
+    wire [WIDTH:0] trial = {remainder, quot_shift[STEPS-1]};
     wire [WIDTH:0] difference = trial - {1'b0, divisor};
     wire take_bit = !difference[WIDTH];
-    wire [STEPS-1:0] next_q = (quotient << 1) | {{(STEPS-1){1'b0}}, take_bit};
+    wire [STEPS-1:0] next_q = (quot_shift << 1) | {{(STEPS-1){1'b0}}, take_bit};
     wire [WIDTH-1:0] next_r = take_bit ? difference[WIDTH-1:0] : trial[WIDTH-1:0];
     wire [STEPS-1:0] limit = negative ? MIN_MAG : MAX_POS;
+
+    assign quotient = c;
 
     initial begin
         if (WIDTH < 2 || FRAC < 0 || FRAC >= WIDTH)
@@ -46,7 +48,7 @@ module division #(
         if (!resetn) begin
             c <= '0; busy <= 0; done <= 0;
             div_by_zero <= 0; overflow <= 0;
-            quotient <= '0; remainder <= '0; divisor <= '0;
+            quot_shift <= '0; remainder <= '0; divisor <= '0;
             count <= '0; negative <= 0;
         end else begin
             done <= 0;
@@ -56,14 +58,14 @@ module division #(
                         c <= a[WIDTH-1] ? MIN_MAG : MAX_POS;
                         div_by_zero <= 1; overflow <= 0; done <= 1;
                     end else begin
-                        quotient <= {a_mag, {FRAC{1'b0}}};
+                        quot_shift <= {a_mag, {FRAC{1'b0}}};
                         remainder <= '0; divisor <= b_mag;
                         negative <= a[WIDTH-1] ^ b[WIDTH-1];
                         count <= STEPS; busy <= 1;
                     end
                 end
             end else begin
-                quotient <= next_q; 
+                quot_shift <= next_q; 
                 remainder <= next_r;
                 count <= count - 1'b1;
                 if (count == 1) begin
