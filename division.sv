@@ -14,7 +14,7 @@ module division #(
     input  logic start,
     input  logic signed [WIDTH-1:0] a,
     input  logic signed [WIDTH-1:0] b,
-    output logic signed [WIDTH-1:0] quotient,
+    output logic signed [WIDTH-1:0] c,
     output logic busy,
     output logic done,
     output logic div_by_zero,
