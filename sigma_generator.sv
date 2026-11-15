@@ -12,9 +12,12 @@
 // sigma publishes atomically on completion and holds until the next completion.
 // done pulses one cycle. Synchronous active-low reset aborts and clears outputs.
 // Reset the shared array too when aborting, or drain it before granting again.
+// Missing batch completion after MAC_TIMEOUT_CYCLES sets sticky error. On error,
+// busy/request stay high and done stays low until generator and array reset.
 module sigma_generator #(
     parameter integer WIDTH = 32,
-    parameter integer FRAC = 16
+    parameter integer FRAC = 16,
+    parameter integer MAC_TIMEOUT_CYCLES = 16
 )(
     input logic clk, resetn, start,
     input logic signed [WIDTH-1:0] state [0:4],
@@ -28,11 +31,12 @@ module sigma_generator #(
     output logic signed [WIDTH-1:0] mac_a [0:10],
     output logic signed [WIDTH-1:0] mac_b [0:10],
     input logic [10:0] mac_busy, mac_result_valid, mac_overflow, mac_acc_overflow,
-    input logic signed [WIDTH-1:0] mac_result [0:10]
+    input logic signed [WIDTH-1:0] mac_result [0:10],
+    output logic error
 );
     typedef enum logic [3:0] {IDLE, GENERATE_CENTER, WAIT_GRANT,
         CALCULATE_OFFSETS, WAIT_MAC_DONE, GENERATE_POS_NEG,
-        STORE_SIGMA_POINTS} phase_t;
+        STORE_SIGMA_POINTS, MAC_ERROR} phase_t;
     phase_t phase;
     logic signed [WIDTH-1:0] state_reg [0:4];
     logic signed [WIDTH-1:0] s_reg [0:4][0:4];
@@ -41,6 +45,9 @@ module sigma_generator #(
     logic signed [WIDTH-1:0] work_sigma [0:10][0:4];
     logic batch;
     logic [10:0] pending;
+    localparam integer WATCHDOG_WIDTH = (MAC_TIMEOUT_CYCLES > 1) ?
+                                        $clog2(MAC_TIMEOUT_CYCLES) : 1;
+    logic [WATCHDOG_WIDTH-1:0] mac_wait_cycles;
     wire [10:0] active_mask = batch ? 11'h00f : 11'h7ff;
     wire [10:0] received = pending & mac_result_valid;
     localparam logic signed [WIDTH-1:0] MAX_POS = {1'b0, {(WIDTH-1){1'b1}}};
@@ -107,10 +114,13 @@ module sigma_generator #(
     initial begin
         if(WIDTH<2 || FRAC<0 || FRAC>=WIDTH)
             $fatal(1,"Require WIDTH >= 2 and 0 <= FRAC < WIDTH");
+        if(MAC_TIMEOUT_CYCLES<1)
+            $fatal(1,"Require MAC_TIMEOUT_CYCLES >= 1");
     end
     always_ff @(posedge clk) begin
         if(!resetn) begin
             phase<=IDLE; busy<=0; done<=0; overflow<=0;
+            error<=0; mac_wait_cycles<='0;
             batch<=0; pending<='0; gamma_reg<='0;
             for(integer j=0;j<5;j=j+1) begin
                 state_reg[j]<='0;
@@ -140,7 +150,7 @@ module sigma_generator #(
                 end
                 WAIT_GRANT: if(mac_grant && !(|mac_busy)) phase<=CALCULATE_OFFSETS;
                 CALCULATE_OFFSETS: if(mac_grant && !( |(mac_busy & active_mask))) begin
-                    pending<=active_mask; phase<=WAIT_MAC_DONE;
+                    pending<=active_mask; mac_wait_cycles<='0; phase<=WAIT_MAC_DONE;
                 end
                 WAIT_MAC_DONE: begin
                     pending<=pending & ~received;
@@ -151,6 +161,10 @@ module sigma_generator #(
                     if((pending & ~received)==0) begin
                         if(!batch) begin batch<=1; phase<=CALCULATE_OFFSETS; end
                         else phase<=GENERATE_POS_NEG;
+                    end else if(mac_wait_cycles == MAC_TIMEOUT_CYCLES-1) begin
+                        error<=1; phase<=MAC_ERROR;
+                    end else begin
+                        mac_wait_cycles<=mac_wait_cycles+1'b1;
                     end
                 end
                 GENERATE_POS_NEG: begin
@@ -166,6 +180,11 @@ module sigma_generator #(
                     for(integer i=0;i<11;i=i+1)
                         for(integer j=0;j<5;j=j+1) sigma[i][j]<=work_sigma[i][j];
                     busy<=0; done<=1; phase<=IDLE;
+                end
+                // Keep ownership on a fault: a missing/late lane must not leak
+                // into another client's transaction. Reset generator and array.
+                MAC_ERROR: begin
+                    error<=1;
                 end
                 default: begin phase<=IDLE; busy<=0; end
             endcase
