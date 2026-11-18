@@ -1,0 +1,3 @@
+[submodule "lidar_pointcloud_fpga/lib/taxi"]
+	path = lidar_pointcloud_fpga/lib/taxi
+	url = https://github.com/fpganinja/taxi.git
