@@ -300,33 +300,96 @@ Error exits: `error_indefinite` if S_kk² − u_k² ≤ 0, `sqrt_by_neg`, and
 
 ---
 
-## 10. Suggested direction
+## 10. Revised direction (2026-11-21)
 
-These are proposals, not decisions.
+Sections 1 to 9 describe the design as it exists on the branches. This section
+records decisions made since, and what they change. The chip-level picture is
+in [`fusion_chip_architecture.md`](fusion_chip_architecture.md) and the input
+side in [`timestamper_architecture.md`](timestamper_architecture.md).
 
-1. **Agree the conventions first**: state order, triangle, motion model, number
-   format. One page.
-2. **Make a fixed-point C model** that performs operations in hardware order,
-   so each block can be checked bit for bit. This also tests whether 16
-   fractional bits are enough.
-3. **Finish the datapath as a micro-op ROM**: for each {state, step}, the
-   operand addresses, the destination and the unit. The scheduler already
-   produces the index.
-4. **If tapeout is a goal, decide now between two shapes.**
+### 10.1 Decisions
 
-| | Parallel (current) | Serial |
+| Decision | Effect on the filter |
+|---|---|
+| Position, heading and turn rate come from the VN-300, using its fused output | The "GPS" and most of the "odometry" measurement have the same source |
+| Forward speed comes from one dead-wheel encoder | The only wheel input is a single scalar |
+| All inputs are sampled on one fixed beat (default 100 Hz) | Every pass is predict-by-one-period, then correct with one combined measurement |
+| Target is a Tiny Tapeout slot | One time-shared multiplier, small memory, no parallel lanes |
+
+### 10.2 What changes in the scheduler
+
+```mermaid
+stateDiagram-v2
+    [*] --> WAIT_FIX
+    WAIT_FIX --> IDLE: init_done
+    IDLE --> PREDICT: beat
+    PREDICT --> CORRECT: measurement valid
+    PREDICT --> OUT: no VN-300 data this beat
+    CORRECT --> OUT
+    OUT --> IDLE
+```
+
+| Removed | Why |
+|---|---|
+| Measurement FIFO, `fifo_type`, `meas_select` | One combined measurement per beat |
+| `fifo_ts` subtraction and the stale-timestamp case | dt is the beat period, a constant |
+| The 1 kHz predict-only tick | The beat is the only trigger |
+
+The existing {state, step} micro-op indexing carries over.
+
+### 10.3 Serial datapath
+
+| | Parallel (on the branches) | Serial (proposed) |
 |---|---|---|
-| Multipliers | 11-lane array | one, time-shared |
-| Storage | registers inside each block | one small addressed memory |
-| Micro-op | "run this sub-block" | one multiply-accumulate |
-| Measured size of existing blocks | about 134,000 NAND2 equivalents | estimated 25,000 to 35,000 |
-| Tiny Tapeout | does not fit | borderline in the largest block |
+| Multipliers | 11-lane array, plus private ones in `cholDownDate` | one, time-shared; divider and square root share its adder |
+| Storage | registers inside each block | one small addressed memory, about 40 words |
+| Sigma points | all 55 values stored | generated one at a time and regenerated for the deviation pass |
+| Micro-op | "run this sub-block" | one multiply-accumulate with operand and destination addresses |
+| Size | about 134,000 NAND2 equivalents (synthesized) | 15,000 to 18,000 (estimate) |
+| Tiny Tapeout | does not fit | about 7 tiles |
 
-   The size of the parallel shape comes from a Design Compiler run of the
-   existing modules against a 0.25 µm teaching library. The serial figure is an
-   estimate.
-5. **Consider scalar measurement updates.** Both sensors read state variables
-   directly, so each component can be applied alone with a dot product, one
-   divide and one downdate. That removes S_z, the triangular solves and most of
-   S7 and S8. It assumes each sensor's noise is uncorrelated between its
-   components.
+Time check: about 2,000 multiplies per pass at 32 clocks each, plus the
+divisions, is under 100,000 clocks. At 10 MHz that allows 100 Hz with little
+slack, or 50 Hz comfortably.
+
+### 10.4 Scalar measurement updates
+
+All five measured values are state variables read directly. Each can be
+applied on its own:
+
+```
+for each measured component i:
+    innovation = z_i − x_i
+    s          = (row i of S) · (row i of S) + r_i        dot product
+    K          = S · (row i of S)ᵀ / s                     one divide
+    x          = x + K · innovation
+    S          = downdate(S, K · sqrt(s))                  existing cholDownDate
+```
+
+This replaces S7 and S8: no measurement sigma points, no S_z factorisation, no
+triangular solves. It assumes the noise on each component is independent of
+the others. Heading innovation must be wrapped to ±180°.
+
+### 10.5 Using the VN-300's fused output
+
+The VN-300 runs its own filter, so its position errors are correlated from one
+reading to the next. A Kalman filter assumes they are not, and will trust the
+position more than it should. Two measures:
+
+- Take the position noise `r` from the VN-300's reported uncertainty, not a
+  fixed number.
+- Check on a recorded drive: run the C model with raw GNSS position and with
+  fused position, and compare return-to-start error, behaviour through a
+  GNSS-poor stretch, and the innovation consistency score the C model already
+  computes for its outlier gate.
+
+### 10.6 Still to settle
+
+1. State order, triangle convention and motion model (section 9).
+2. Fixed-point C model in hardware operation order, to test blocks bit for bit
+   and to find out whether 16 fractional bits are enough.
+3. Rebuilding S after prediction without QR: accumulate the covariance and
+   take a 5×5 Cholesky factor, or apply repeated rank-1 updates with a variant
+   of `cholDownDate`.
+4. Whether `cholDownDate` is rewritten to use the shared multiplier, divider
+   and square root.
