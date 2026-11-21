@@ -8,11 +8,13 @@ FPGA_ARCH = kintex7
 RTL_DIR = ../rtl
 ISP_DIR = ../../verilog
 TAXI_SRC_DIR = ../../lib/taxi/src
+PARSER_DIR = ../../../lidar_fpga
 
 SYN_FILES  = $(RTL_DIR)/fpga.sv
 SYN_FILES += $(RTL_DIR)/fpga_core.sv
 SYN_FILES += $(RTL_DIR)/lidar_pc_core.sv
 SYN_FILES += $(RTL_DIR)/vlp16_udp_rx.sv
+SYN_FILES += $(PARSER_DIR)/v16PacketParser.v
 SYN_FILES += $(RTL_DIR)/pc_fix2float.sv
 SYN_FILES += $(RTL_DIR)/pc_point_fifo.sv
 SYN_FILES += $(RTL_DIR)/pc_udp_tx.sv

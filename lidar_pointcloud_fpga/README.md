@@ -71,3 +71,9 @@ it has to be distributed under compatible terms.
 
 `verilog/` (the `stage_t` transform, its trig ROM and `lut_generator.py`) is
 copied from the DE10-Nano lidar accelerator in RISC-M/FPGA-Based-LIDAR-ISP.
+
+The VLP-16 payload parser is William Kletzka's `v16PacketParser`
+(`lidar_fpga/v16PacketParser.v` at the repo root, taken unmodified from the
+`William-Kletzka` branch). `genesys2/rtl/vlp16_udp_rx.sv` wraps it and adds the
+Ethernet/IPv4/UDP header check, back-pressure and the laser id, which that
+parser does not provide.

@@ -34,6 +34,7 @@ cp "$ROOT/verilog/azimuth_sincos.mem" .
 vcs -full64 -sverilog -ignore initializer_driver_checks +warn=noPCWM-W -timescale=1ns/1ps +incdir+"$ROOT/verilog" \
     -f taxi_sorted.f \
     "$ROOT/verilog/stage_t.sv" "$ROOT/verilog/trig_lut.sv" \
+    "$ROOT/../lidar_fpga/v16PacketParser.v" \
     "$ROOT"/genesys2/rtl/{vlp16_udp_rx,pc_fix2float,pc_point_fifo,pc_udp_tx,lidar_pc_core,fpga_core}.sv \
     ../tb_fpga_core.sv ${EXTRA_SRC:-} \
     -top tb_fpga_core ${EXTRA_TOP:-} -o simv -q

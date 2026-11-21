@@ -1,15 +1,23 @@
 // VLP-16 receive front end.
 //
 // Takes whole Ethernet frames from the MAC (preamble and FCS already removed,
-// bad-FCS frames already dropped by the MAC frame FIFO), checks the
-// Ethernet / IPv4 / UDP headers, and walks the 1206-byte Velodyne payload:
+// bad-FCS frames already dropped by the MAC frame FIFO) and turns them into
+// points.  The work is split in two:
 //
-//   12 x { 0xFFEE, azimuth[15:0] (LE, 0.01 deg),
-//          32 x { distance[15:0] (LE, 2 mm), reflectivity[7:0] } }
-//   timestamp[31:0], factory[15:0]          (ignored)
+//   * v16PacketParser (William Kletzka, lidar_fpga/v16PacketParser.v, used
+//     unmodified) walks the 1206-byte Velodyne payload and produces
+//     azimuth / distance / reflectivity for every return:
 //
-// One point is emitted per (distance, reflectivity) triple.  The 32 returns of
-// a block are two firings of the 16 lasers, so laser_id = channel index mod 16.
+//       12 x { 0xFFEE, azimuth[15:0] (LE, 0.01 deg),
+//              32 x { distance[15:0] (LE, 2 mm), reflectivity[7:0] } }
+//       timestamp[31:0], factory[15:0]          (ignored)
+//
+//   * this wrapper adds what that parser leaves to its surroundings: the
+//     Ethernet / IPv4 / UDP header check (so only real lidar data packets
+//     produce points), back-pressure, the laser id, and packet status.
+//
+// The 32 returns of a block are two firings of the 16 lasers, so
+// laser_id = channel index mod 16.
 //
 // Not handled: VLAN tags, IP options, IP fragments, dual-return mode.
 module vlp16_udp_rx #(
@@ -44,21 +52,13 @@ module vlp16_udp_rx #(
 );
 
     localparam int HDR_BYTES   = 14 + 20 + 8;      // Ethernet + IPv4 + UDP
-    localparam int BLOCK_BYTES = 100;
-    localparam int DATA_END    = HDR_BYTES + 12*BLOCK_BYTES;
+    localparam int DATA_END    = HDR_BYTES + 1200; // end of the 12 data blocks
     // UDP length field of a VLP-16 data packet: 8 + 1206
     localparam logic [15:0] UDP_LEN = 16'd1214;
 
     logic [10:0] cnt;        // byte index in frame, saturating
     logic        hdr_ok;
-    logic [6:0]  boff;       // byte index in block, 0..99
-    logic [1:0]  phase;
-    logic [4:0]  ch;
-    logic        flag_ok;
-    logic        blk_ok;
-    logic [7:0]  az_lo;
-    logic [7:0]  dist_lo;
-    logic [7:0]  dist_hi;
+    logic [3:0]  laser;
 
     assign s_tready = !pause;
     wire xfer = s_tvalid && s_tready;
@@ -84,43 +84,53 @@ module vlp16_udp_rx #(
         endcase
     end
 
+    // ---------------------------------------------------------------- parser
+    // The parser is always ready and has no stall input; it only advances on
+    // tvalid, so back-pressure is applied by withholding tvalid while paused.
+    logic [15:0] p_azimuth;
+    logic [15:0] p_distance;
+    logic [7:0]  p_reflectivity;
+    logic        p_valid;
+
+    v16PacketParser #(
+        .HEADER_BYTES(HDR_BYTES)
+    ) parser_inst (
+        .clk                (clk),
+        .resetn             (!rst),
+        .s_AXIstream_tdata  (s_tdata),
+        .s_AXIstream_tvalid (xfer),
+        .s_AXIstream_tlast  (s_tlast),
+        .s_AXIstream_tready (),
+        .out_azimuth        (p_azimuth),
+        .out_distance       (p_distance),
+        .out_reflectivity   (p_reflectivity),
+        .out_data_valid     (p_valid)
+    );
+
+    // The first point of a frame appears several bytes after the last header
+    // byte, so hdr_ok is final by the time it is used here.
+    assign pt_azimuth      = p_azimuth;
+    assign pt_distance     = p_distance;
+    assign pt_reflectivity = p_reflectivity;
+    assign pt_laser_id     = laser;
+    assign pt_valid        = p_valid && hdr_ok &&
+                             (!DROP_ZERO || (p_distance != 16'd0));
+
     always_ff @(posedge clk) begin
-        pt_valid     <= 1'b0;
         pkt_accepted <= 1'b0;
         pkt_ignored  <= 1'b0;
 
+        // The parser emits either all 32 returns of a block or none (bad
+        // flag), so counting its strobes modulo 16 gives the laser id.
+        if (p_valid)
+            laser <= laser + 4'd1;
+
         if (xfer) begin
-            if (cnt < HDR_BYTES) begin
+            if (cnt == 0)
+                laser <= '0;
+
+            if (cnt < HDR_BYTES)
                 hdr_ok <= hdr_ok_cur && byte_ok;
-                boff   <= '0;
-            end else if (cnt < DATA_END && hdr_ok) begin
-                case (boff)
-                    7'd0: flag_ok <= (s_tdata == 8'hFF);
-                    7'd1: blk_ok  <= flag_ok && (s_tdata == 8'hEE);
-                    7'd2: az_lo   <= s_tdata;
-                    7'd3: begin
-                        pt_azimuth <= {s_tdata, az_lo};
-                        phase      <= 2'd0;
-                        ch         <= '0;
-                    end
-                    default: begin
-                        case (phase)
-                            2'd0: begin dist_lo <= s_tdata; phase <= 2'd1; end
-                            2'd1: begin dist_hi <= s_tdata; phase <= 2'd2; end
-                            default: begin
-                                pt_distance     <= {dist_hi, dist_lo};
-                                pt_reflectivity <= s_tdata;
-                                pt_laser_id     <= ch[3:0];
-                                pt_valid        <= blk_ok &&
-                                    (!DROP_ZERO || ({dist_hi, dist_lo} != 16'd0));
-                                ch              <= ch + 5'd1;
-                                phase           <= 2'd0;
-                            end
-                        endcase
-                    end
-                endcase
-                boff <= (boff == 7'(BLOCK_BYTES-1)) ? '0 : boff + 7'd1;
-            end
 
             if (s_tlast) begin
                 cnt <= '0;
@@ -136,12 +146,7 @@ module vlp16_udp_rx #(
         if (rst) begin
             cnt          <= '0;
             hdr_ok       <= 1'b0;
-            boff         <= '0;
-            phase        <= '0;
-            ch           <= '0;
-            flag_ok      <= 1'b0;
-            blk_ok       <= 1'b0;
-            pt_valid     <= 1'b0;
+            laser        <= '0;
             pkt_accepted <= 1'b0;
             pkt_ignored  <= 1'b0;
         end
