@@ -6,7 +6,7 @@
 // result_valid only on last. start[i] is accepted only when !busy[i].
 // Operand/result arrays are indexed [lane]; status vectors use the same index.
 module MAC_array #(
-    parameter integer LANES = 11,
+    parameter integer LANES = 1,
     parameter integer WIDTH = 32,
     parameter integer FRAC = 16,
     parameter integer ACC_WIDTH = 2*WIDTH + 8

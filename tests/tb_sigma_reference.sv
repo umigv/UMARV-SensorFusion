@@ -1,15 +1,15 @@
 `timescale 1ns/1ps
 module tb_sigma_reference;
-    parameter integer WIDTH=16, FRAC=4, CASES=127;
+    parameter integer WIDTH=16, FRAC=4, CASES=128;
     logic clk=0;
     always #5 clk=~clk;
     logic resetn=0, start=0, contender=0;
-    logic signed [WIDTH-1:0] state [0:4], S [0:4][0:4], gamma;
-    wire signed [WIDTH-1:0] sigma [0:10][0:4];
+    logic signed [WIDTH-1:0] state [0:3], S [0:3][0:3], gamma;
+    wire signed [WIDTH-1:0] sigma [0:8][0:3];
     wire busy, done, overflow, request, error;
-    wire [10:0] launch, clear, last, lane_busy, valid, lane_done, ov, acc_ov;
-    wire signed [WIDTH-1:0] a [0:10], b [0:10], result [0:10];
-    logic [WIDTH-1:0] data [0:CASES*87-1];
+    wire launch, clear, last, lane_busy, valid, lane_done, ov, acc_ov;
+    wire signed [WIDTH-1:0] a, b, result;
+    logic [WIDTH-1:0] data [0:CASES*58-1];
     string vector_path;
     integer owner=0, other_grants=0, launches=0;
     wire grant=owner==1;
@@ -29,14 +29,11 @@ module tb_sigma_reference;
         if(resetn && other_grant) other_grants<=other_grants+1;
     end
     wire other_start=other_grant && contender && !(|lane_busy);
-    wire [10:0] array_start=grant ? launch : (other_start ? 11'h001 : 11'h000);
-    wire [10:0] array_clear=grant ? clear : 11'h001;
-    wire [10:0] array_last=grant ? last : 11'h001;
-    wire signed [WIDTH-1:0] array_a [0:10], array_b [0:10];
-    for(genvar l=0;l<11;l++) begin
-        assign array_a[l]=grant ? a[l] : 1;
-        assign array_b[l]=grant ? b[l] : 1;
-    end
+    wire array_start=grant ? launch : (other_start ? 1'b1 : 1'b0);
+    wire array_clear=grant ? clear : 1'b1;
+    wire array_last=grant ? last : 1'b1;
+    wire signed [WIDTH-1:0] array_a=grant ? a : WIDTH'(1);
+    wire signed [WIDTH-1:0] array_b=grant ? b : WIDTH'(1);
     sigma_generator #(.WIDTH(WIDTH), .FRAC(FRAC)) dut (
         .clk(clk), .resetn(resetn), .start(start), .state(state), .S(S),
         .gamma(gamma), .sigma(sigma), .busy(busy), .done(done),
@@ -45,12 +42,12 @@ module tb_sigma_reference;
         .mac_a(a), .mac_b(b), .mac_busy(lane_busy), .mac_result_valid(valid),
         .mac_overflow(ov), .mac_acc_overflow(acc_ov), .mac_result(result), .error(error)
     );
-    MAC_array #(.WIDTH(WIDTH), .FRAC(FRAC)) array_dut (
+    MAC_accumulator #(.WIDTH(WIDTH), .FRAC(FRAC)) shared_mac (
         .clk(clk), .resetn(resetn), .start(array_start), .clear(array_clear), .last(array_last),
         .a(array_a), .b(array_b), .result(result), .busy(lane_busy), .done(lane_done),
         .result_valid(valid), .overflow(ov), .acc_overflow(acc_ov)
     );
-    logic [10:0] delay1=0, delay2=0;
+    logic delay1=0, delay2=0;
     logic ownership_held=0, overflow_seen=0;
     always @(posedge clk) begin
         if(!resetn) begin
@@ -71,8 +68,8 @@ module tb_sigma_reference;
             if(|launch) begin
                 if(!grant || launch!==clear || launch!==last)
                     $fatal(1,"Invalid simultaneous controls");
-                if(launch !== (dut.batch ? 11'h00f : 11'h7ff))
-                    $fatal(1,"Incorrect batch mask");
+                if(lane_busy || valid || delay1 || delay2)
+                    $fatal(1,"Overlapping products");
                 launches<=launches+1;
             end
         end
@@ -85,7 +82,7 @@ module tb_sigma_reference;
         tick();
         if(busy || done || overflow || error || request || |lane_busy || |valid)
             $fatal(1,"Reset did not clear status");
-        for(integer i=0;i<11;i++) for(integer j=0;j<5;j++)
+        for(integer i=0;i<9;i++) for(integer j=0;j<4;j++)
             if(sigma[i][j] !== 0) $fatal(1,"Reset did not clear sigma");
         @(negedge clk); resetn=1;
     endtask
@@ -101,10 +98,10 @@ module tb_sigma_reference;
         $readmemh(vector_path,data);
         reset_all();
         for(integer n=0;n<CASES;n++) begin
-            base=n*87;
-            for(integer j=0;j<5;j++) state[j]=data[base+j];
-            for(integer r=0;r<5;r++) for(integer c=0;c<5;c++) S[r][c]=data[base+5+r*5+c];
-            gamma=data[base+30]; before_launches=launches;
+            base=n*58;
+            for(integer j=0;j<4;j++) state[j]=data[base+j];
+            for(integer r=0;r<4;r++) for(integer c=0;c<4;c++) S[r][c]=data[base+4+r*4+c];
+            gamma=data[base+20]; before_launches=launches;
             begin_transaction();
             wait(grant); @(negedge clk); contender=1;
             // A competing datapath continuously requests the shared array.
@@ -112,14 +109,14 @@ module tb_sigma_reference;
                 tick();
                 if(error || (request && other_grant)) $fatal(1,"Contention failure");
             end
-            if(launches-before_launches!=2) $fatal(1,"Expected two batches");
-            if(overflow !== data[base+86][0]) $fatal(1,"Overflow mismatch case %0d",n);
-            for(integer i=0;i<11;i++) for(integer j=0;j<5;j++)
-                if(sigma[i][j] !== data[base+31+i*5+j])
+            if(launches-before_launches!=10) $fatal(1,"Expected ten products");
+            if(overflow !== data[base+57][0]) $fatal(1,"Overflow mismatch case %0d",n);
+            for(integer i=0;i<9;i++) for(integer j=0;j<4;j++)
+                if(sigma[i][j] !== data[base+21+i*4+j])
                     $fatal(1,"Reference mismatch case=%0d point=%0d component=%0d",n,i,j);
             repeat(3) begin
                 tick();
-                if(done || overflow !== data[base+86][0]) $fatal(1,"Sticky overflow/done failure");
+                if(done || overflow !== data[base+57][0]) $fatal(1,"Sticky overflow/done failure");
             end
             wait(other_grant); tick();
             @(negedge clk); contender=0;
@@ -128,7 +125,7 @@ module tb_sigma_reference;
         if(other_grants==0) $fatal(1,"Contender was never served");
         // Abort in every active FSM phase, including in-flight MAC work and
         // immediately before publication. The joint reset must clear old data.
-        for(integer p=1;p<=6;p++) begin
+        for(integer p=1;p<=7;p++) begin
             begin_transaction();
             wait(dut.phase==p);
             reset_all();

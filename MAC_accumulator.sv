@@ -21,7 +21,8 @@ module MAC_accumulator #(
     input logic clk, resetn, start, clear, last,
     input logic signed [WIDTH-1:0] a, b,
     output logic signed [WIDTH-1:0] result,
-    output logic busy, done, result_valid, overflow, acc_overflow
+    output logic busy, done, result_valid, overflow, acc_overflow,
+    output wire signed [ACC_WIDTH-1:0] full_result
 );
     localparam integer EXT = ACC_WIDTH + 1;
     localparam logic signed [WIDTH-1:0] MAX_POS = {1'b0, {(WIDTH-1){1'b1}}};
@@ -29,6 +30,8 @@ module MAC_accumulator #(
     localparam logic signed [EXT-1:0] MAX_EXT = {{(EXT-WIDTH){1'b0}}, MAX_POS};
     localparam logic signed [EXT-1:0] MIN_EXT = {{(EXT-WIDTH){1'b1}}, MIN_NEG};
     logic signed [ACC_WIDTH-1:0] accumulator;
+    // Unrounded sum, updated on each done and finalized with result_valid.
+    assign full_result = accumulator;
     logic signed [2*WIDTH-1:0] product;
     logic clear_pending, last_pending;
     wire signed [EXT-1:0] product_ext = {{(EXT-2*WIDTH){product[2*WIDTH-1]}}, product};

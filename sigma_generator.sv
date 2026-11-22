@@ -1,67 +1,56 @@
 `timescale 1ns/1ps
-// Five-state SR-UKF sigma points for P=S^T*S (rows of upper-triangular S).
-// Inputs are captured on start while idle; lower-triangular entries are ignored.
-// All data uses signed WIDTH/FRAC fixed point. gamma is supplied by the caller.
-// Shared-array protocol: request exclusive ownership with mac_request. Grant
-// only after previous clients have drained; retain ownership until request falls.
-// This client clears each used lane and finalizes a single product. The array
-// must have 11 lanes with matching WIDTH/FRAC. No multipliers instantiated here.
-// Products use the array's rounding/saturation; final +/- operations saturate.
-// overflow is sticky for this transaction (including any array fault). A flagged
-// transaction may have clipped offsets and must be handled by the caller.
-// sigma publishes atomically on completion and holds until the next completion.
-// done pulses one cycle. Synchronous active-low reset aborts and clears outputs.
-// Reset the shared array too when aborting, or drain it before granting again.
-// Missing batch completion after MAC_TIMEOUT_CYCLES sets sticky error. On error,
-// busy/request stay high and done stays low until generator and array reset.
+// Four-state SR-UKF sigma points for P=S^T*S, using rows of upper-triangular S.
+// The arbiter grants a drained MAC and holds grant until mac_request falls.
+// A result timeout retains the request until the generator and MAC are reset.
 module sigma_generator #(
     parameter integer WIDTH = 32,
     parameter integer FRAC = 16,
     parameter integer MAC_TIMEOUT_CYCLES = 16
 )(
     input logic clk, resetn, start,
-    input logic signed [WIDTH-1:0] state [0:4],
-    input logic signed [WIDTH-1:0] S [0:4][0:4],
+    input logic signed [WIDTH-1:0] state [0:3],
+    input logic signed [WIDTH-1:0] S [0:3][0:3],
     input logic signed [WIDTH-1:0] gamma,
-    output logic signed [WIDTH-1:0] sigma [0:10][0:4],
+    output logic signed [WIDTH-1:0] sigma [0:8][0:3],
     output logic busy, done, overflow,
     output wire mac_request,
     input logic mac_grant,
-    output logic [10:0] mac_start, mac_clear, mac_last,
-    output logic signed [WIDTH-1:0] mac_a [0:10],
-    output logic signed [WIDTH-1:0] mac_b [0:10],
-    input logic [10:0] mac_busy, mac_result_valid, mac_overflow, mac_acc_overflow,
-    input logic signed [WIDTH-1:0] mac_result [0:10],
+    output logic mac_start, mac_clear, mac_last,
+    output logic signed [WIDTH-1:0] mac_a,
+    output logic signed [WIDTH-1:0] mac_b,
+    input logic mac_busy, mac_result_valid, mac_overflow, mac_acc_overflow,
+    input logic signed [WIDTH-1:0] mac_result,
     output logic error
 );
-    typedef enum logic [3:0] {IDLE, GENERATE_CENTER, WAIT_GRANT,
-        CALCULATE_OFFSETS, WAIT_MAC_DONE, GENERATE_POS_NEG,
-        STORE_SIGMA_POINTS, MAC_ERROR} phase_t;
+    typedef enum logic [3:0] {IDLE, GENERATE_CENTER, WAIT_MAC_GRANT,
+        MAC_LAUNCH, WAIT_MAC_RESULT, STORE_OFFSET, GENERATE_POS_NEG,
+        PUBLISH_SIGMA, MAC_ERROR} phase_t;
     phase_t phase;
-    logic signed [WIDTH-1:0] state_reg [0:4];
-    logic signed [WIDTH-1:0] s_reg [0:4][0:4];
+    logic signed [WIDTH-1:0] state_reg [0:3];
+    logic signed [WIDTH-1:0] s_reg [0:9];
     logic signed [WIDTH-1:0] gamma_reg;
-    logic signed [WIDTH-1:0] offsets [0:14];
-    logic signed [WIDTH-1:0] work_sigma [0:10][0:4];
-    logic batch;
-    logic [10:0] pending;
+    logic signed [WIDTH-1:0] offsets [0:9];
+    logic signed [WIDTH-1:0] work_sigma [0:8][0:3];
+    logic [3:0] entry_index;
+    logic saw_mac_busy;
+    logic signed [WIDTH-1:0] completed_result;
     localparam integer WATCHDOG_WIDTH = (MAC_TIMEOUT_CYCLES > 1) ?
                                         $clog2(MAC_TIMEOUT_CYCLES) : 1;
+    localparam logic [WATCHDOG_WIDTH-1:0] WATCHDOG_LIMIT =
+        WATCHDOG_WIDTH'(MAC_TIMEOUT_CYCLES-1);
     logic [WATCHDOG_WIDTH-1:0] mac_wait_cycles;
-    wire [10:0] active_mask = batch ? 11'h00f : 11'h7ff;
-    wire [10:0] received = pending & mac_result_valid;
     localparam logic signed [WIDTH-1:0] MAX_POS = {1'b0, {(WIDTH-1){1'b1}}};
     localparam logic signed [WIDTH-1:0] MIN_NEG = {1'b1, {(WIDTH-1){1'b0}}};
     localparam logic signed [WIDTH:0] MAX_EXT = {1'b0, MAX_POS};
     localparam logic signed [WIDTH:0] MIN_EXT = {1'b1, MIN_NEG};
 
-    // Row-major packed upper triangle: (0,0)..(0,4),(1,1)..(4,4).
+    // Row-major packed upper triangle: (0,0)..(0,3),(1,1)..(3,3).
     function automatic integer row_of(input integer index);
         integer r, c, k;
         begin
             row_of=0; k=0;
-            for(r=0;r<5;r=r+1)
-                for(c=r;c<5;c=c+1) begin
+            for(r=0;r<4;r=r+1)
+                for(c=r;c<4;c=c+1) begin
                     if(k==index) row_of=r;
                     k=k+1;
                 end
@@ -71,8 +60,8 @@ module sigma_generator #(
         integer r, c, k;
         begin
             col_of=0; k=0;
-            for(r=0;r<5;r=r+1)
-                for(c=r;c<5;c=c+1) begin
+            for(r=0;r<4;r=r+1)
+                for(c=r;c<4;c=c+1) begin
                     if(k==index) col_of=c;
                     k=k+1;
                 end
@@ -85,26 +74,21 @@ module sigma_generator #(
     endfunction
 
     assign mac_request = busy;
-    always_comb begin
-        mac_start='0; mac_clear='0; mac_last='0;
-        for(integer l=0;l<11;l=l+1) begin
-            mac_a[l]='0; mac_b[l]='0;
-            if(!batch || l<4) begin
-                mac_a[l]=gamma_reg;
-                mac_b[l]=s_reg[row_of((batch ? 11 : 0)+l)][col_of((batch ? 11 : 0)+l)];
-            end
-        end
-        if(phase==CALCULATE_OFFSETS && mac_grant && !(|(mac_busy & active_mask))) begin
-            mac_start=active_mask; mac_clear=active_mask; mac_last=active_mask;
-        end
-    end
+    // clear and last are qualifiers sampled with start by MAC_accumulator.
+    // Drain any previous valid before issuing a new one-term sum.
+    assign mac_start = resetn && phase == MAC_LAUNCH && mac_grant &&
+                       !mac_busy && !mac_result_valid;
+    assign mac_clear = mac_start;
+    assign mac_last = mac_start;
+    assign mac_a = gamma_reg;
+    assign mac_b = s_reg[entry_index];
 
     // Constant-index adders avoid dynamic indexing across sigma-point rows.
-    wire signed [WIDTH:0] positive [0:14];
-    wire signed [WIDTH:0] negative [0:14];
+    wire signed [WIDTH:0] positive [0:9];
+    wire signed [WIDTH:0] negative [0:9];
     genvar entry;
-    generate for(entry=0;entry<15;entry=entry+1) begin : gen_signs
-        localparam integer R=row_of(entry), C=col_of(entry);
+    generate for(entry=0;entry<10;entry=entry+1) begin : gen_signs
+        localparam integer C=col_of(entry);
         assign positive[entry]=$signed({state_reg[C][WIDTH-1],state_reg[C]}) +
                                $signed({offsets[entry][WIDTH-1],offsets[entry]});
         assign negative[entry]=$signed({state_reg[C][WIDTH-1],state_reg[C]}) -
@@ -121,67 +105,76 @@ module sigma_generator #(
         if(!resetn) begin
             phase<=IDLE; busy<=0; done<=0; overflow<=0;
             error<=0; mac_wait_cycles<='0;
-            batch<=0; pending<='0; gamma_reg<='0;
-            for(integer j=0;j<5;j=j+1) begin
-                state_reg[j]<='0;
-                for(integer k=0;k<5;k=k+1) s_reg[j][k]<='0;
+            entry_index<=0; saw_mac_busy<=0;
+            completed_result<='0; gamma_reg<='0;
+            for(integer j=0;j<4;j=j+1) state_reg[j]<='0;
+            for(integer e=0;e<10;e=e+1) begin
+                s_reg[e]<='0;
+                offsets[e]<='0;
             end
-            for(integer i=0;i<15;i=i+1) offsets[i]<='0;
-            for(integer i=0;i<11;i=i+1)
-                for(integer j=0;j<5;j=j+1) begin
+            for(integer i=0;i<9;i=i+1)
+                for(integer j=0;j<4;j=j+1) begin
                     sigma[i][j]<='0; work_sigma[i][j]<='0;
                 end
         end else begin
             done<=0;
             case(phase)
                 IDLE: if(start) begin
-                    busy<=1; overflow<=0; batch<=0;
+                    busy<=1; overflow<=0; entry_index<=0;
                     gamma_reg<=gamma;
-                    for(integer j=0;j<5;j=j+1) begin
-                        state_reg[j]<=state[j];
-                        for(integer k=0;k<5;k=k+1) s_reg[j][k]<=S[j][k];
-                    end
+                    for(integer j=0;j<4;j=j+1) state_reg[j]<=state[j];
+                    for(integer e=0;e<10;e=e+1)
+                        s_reg[e]<=S[row_of(e)][col_of(e)];
                     phase<=GENERATE_CENTER;
                 end
                 GENERATE_CENTER: begin
-                    for(integer i=0;i<11;i=i+1)
-                        for(integer j=0;j<5;j=j+1) work_sigma[i][j]<=state_reg[j];
-                    phase<=WAIT_GRANT;
+                    for(integer i=0;i<9;i=i+1)
+                        for(integer j=0;j<4;j=j+1) work_sigma[i][j]<=state_reg[j];
+                    phase<=WAIT_MAC_GRANT;
                 end
-                WAIT_GRANT: if(mac_grant && !(|mac_busy)) phase<=CALCULATE_OFFSETS;
-                CALCULATE_OFFSETS: if(mac_grant && !( |(mac_busy & active_mask))) begin
-                    pending<=active_mask; mac_wait_cycles<='0; phase<=WAIT_MAC_DONE;
+                WAIT_MAC_GRANT: if(mac_grant && !mac_busy && !mac_result_valid)
+                    phase<=MAC_LAUNCH;
+                MAC_LAUNCH: if(mac_start) begin
+                    saw_mac_busy<=0;
+                    mac_wait_cycles<=0;
+                    phase<=WAIT_MAC_RESULT;
                 end
-                WAIT_MAC_DONE: begin
-                    pending<=pending & ~received;
-                    for(integer l=0;l<11;l=l+1)
-                        if(received[l] && (!batch || l<4))
-                            offsets[(batch ? 11 : 0)+l]<=mac_result[l];
-                    if(|(received & (mac_overflow | mac_acc_overflow))) overflow<=1;
-                    if((pending & ~received)==0) begin
-                        if(!batch) begin batch<=1; phase<=CALCULATE_OFFSETS; end
-                        else phase<=GENERATE_POS_NEG;
-                    end else if(mac_wait_cycles == MAC_TIMEOUT_CYCLES-1) begin
-                        error<=1; phase<=MAC_ERROR;
+                WAIT_MAC_RESULT: begin
+                    if(mac_busy) saw_mac_busy<=1;
+                    if(mac_grant && saw_mac_busy && !mac_busy && mac_result_valid) begin
+                        completed_result<=mac_result;
+                        if(mac_overflow || mac_acc_overflow) overflow<=1;
+                        phase<=STORE_OFFSET;
+                    end else if(mac_wait_cycles == WATCHDOG_LIMIT) begin
+                        error<=1;
+                        phase<=MAC_ERROR;
                     end else begin
                         mac_wait_cycles<=mac_wait_cycles+1'b1;
                     end
                 end
+                STORE_OFFSET: begin
+                    offsets[entry_index]<=completed_result;
+                    if(entry_index==9) phase<=GENERATE_POS_NEG;
+                    else begin
+                        entry_index<=entry_index+1'b1;
+                        phase<=MAC_LAUNCH;
+                    end
+                end
                 GENERATE_POS_NEG: begin
-                    for(integer e=0;e<15;e=e+1) begin
+                    for(integer e=0;e<10;e=e+1) begin
                         work_sigma[row_of(e)+1][col_of(e)]<=saturate(positive[e]);
-                        work_sigma[row_of(e)+6][col_of(e)]<=saturate(negative[e]);
+                        work_sigma[row_of(e)+5][col_of(e)]<=saturate(negative[e]);
                         if(positive[e]>MAX_EXT || positive[e]<MIN_EXT ||
                            negative[e]>MAX_EXT || negative[e]<MIN_EXT) overflow<=1;
                     end
-                    phase<=STORE_SIGMA_POINTS;
+                    phase<=PUBLISH_SIGMA;
                 end
-                STORE_SIGMA_POINTS: begin
-                    for(integer i=0;i<11;i=i+1)
-                        for(integer j=0;j<5;j=j+1) sigma[i][j]<=work_sigma[i][j];
+                PUBLISH_SIGMA: begin
+                    for(integer i=0;i<9;i=i+1)
+                        for(integer j=0;j<4;j=j+1) sigma[i][j]<=work_sigma[i][j];
                     busy<=0; done<=1; phase<=IDLE;
                 end
-                // Keep ownership on a fault: a missing/late lane must not leak
+                // Keep ownership on a fault: a late result must not leak
                 // into another client's transaction. Reset generator and array.
                 MAC_ERROR: begin
                     error<=1;
