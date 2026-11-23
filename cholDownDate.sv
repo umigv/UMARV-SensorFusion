@@ -11,10 +11,10 @@
 //        u_j_new  = c * u_j_old - h * S_jk_new
 //
 // Hardware primitives used:
-//   - MAC (Multiply-Accumulate)
-//   - LUT (Adder / Subtractor)
-//   - External Division (with div_by_zero and overflow detection)
-//   - Multi-cycle Fixed-Point Square Root (SQRT module)
+//   - MAC (Multiply-Accumulate via MAC.sv)
+//   - Carry Lookahead Adder / Subtractor (via cla.sv)
+//   - External Division (with div_by_zero and overflow detection via division.sv)
+//   - Multi-cycle Fixed-Point Square Root (SQRT module via SQRT.sv)
 
 `timescale 1ns/1ps
 
@@ -109,32 +109,73 @@ module cholDownDate #(
     logic signed [DATA_WIDTH-1:0] u_j_old;
     logic signed [DATA_WIDTH-1:0] u_j_new;
     logic signed [DATA_WIDTH-1:0] h_u_prod;
-    logic signed [DATA_WIDTH-1:0] s_sub_res;
+    logic signed [DATA_WIDTH-1:0] prod1_reg;
+    logic [1:0]                   mac_u_step;
 
-    // Intermediate DOUBLE_WIDTH storage for MAC products
+    // Intermediate DOUBLE_WIDTH storage for products and differences
     logic signed [DOUBLE_WIDTH-1:0] diag_diff;
+    logic signed [DOUBLE_WIDTH-1:0] diag_s_sq;
+    logic signed [DOUBLE_WIDTH-1:0] diag_u_sq;
+    logic signed [DOUBLE_WIDTH-1:0] diag_diff_cla;
 
     // =========================================================================
-    // Math Primitive: MAC / Multiplier
+    // Math Primitive: Multiply-Accumulate (MAC.sv)
     // =========================================================================
-    logic signed [DATA_WIDTH-1:0]   mac_a, mac_b, mac_c;
-    logic signed [DOUBLE_WIDTH-1:0] mac_mult_full;
-    logic signed [DATA_WIDTH-1:0]   mac_mult_scaled;
-    logic signed [DATA_WIDTH-1:0]   mac_out;
+    logic                         mac_start;
+    logic signed [DATA_WIDTH-1:0] mac_a, mac_b, mac_c;
+    logic signed [DATA_WIDTH-1:0] mac_out;
+    logic                         mac_busy;
+    logic                         mac_done;
+    logic                         mac_overflow;
+    logic                         mac_started;
 
-    assign mac_mult_full   = DOUBLE_WIDTH'(mac_a) * DOUBLE_WIDTH'(mac_b);
-    assign mac_mult_scaled = DATA_WIDTH'((mac_mult_full) >>> FRAC_WIDTH);
-    // LUT-based accumulator/adder
-    assign mac_out         = mac_mult_scaled + mac_c;
+    MAC #(
+        .WIDTH (DATA_WIDTH),
+        .FRAC  (FRAC_WIDTH)
+    ) u_mac (
+        .clk      (clk),
+        .resetn   (rst_n),
+        .start    (mac_start),
+        .a        (mac_a),
+        .b        (mac_b),
+        .c        (mac_c),
+        .result   (mac_out),
+        .busy     (mac_busy),
+        .done     (mac_done),
+        .overflow (mac_overflow)
+    );
 
     // =========================================================================
-    // Math Primitive: LUT Adder / Subtractor
+    // Math Primitive: Carry Lookahead Adder / Subtractor (cla.sv)
     // =========================================================================
     logic signed [DATA_WIDTH-1:0] lut_add_a, lut_add_b;
     logic                         lut_sub_mode; // 0: add, 1: sub
     logic signed [DATA_WIDTH-1:0] lut_add_out;
+    wire  [DATA_WIDTH-1:0]        cla_b_in = lut_sub_mode ? ~lut_add_b : lut_add_b;
+    wire                          cla_cin  = lut_sub_mode;
 
-    assign lut_add_out = lut_sub_mode ? (lut_add_a - lut_add_b) : (lut_add_a + lut_add_b);
+    cla #(
+        .WIDTH (DATA_WIDTH)
+    ) u_cla (
+        .a        (lut_add_a),
+        .b        (cla_b_in),
+        .cin      (cla_cin),
+        .sum      (lut_add_out),
+        .cout     (),
+        .overflow ()
+    );
+
+    // 64-bit CLA for diagonal difference (S_kk^2 - u_k^2)
+    cla #(
+        .WIDTH (DOUBLE_WIDTH)
+    ) u_cla_diag (
+        .a        (diag_s_sq),
+        .b        (~diag_u_sq),
+        .cin      (1'b1),
+        .sum      (diag_diff_cla),
+        .cout     (),
+        .overflow ()
+    );
 
     // =========================================================================
     // Math Primitive: External Division Module
@@ -202,6 +243,13 @@ module cholDownDate #(
             j                <= '0;
             div_start        <= 1'b0;
             sqrt_start       <= 1'b0;
+            mac_start        <= 1'b0;
+            mac_started      <= 1'b0;
+            mac_u_step       <= 2'd0;
+            prod1_reg        <= '0;
+            diag_s_sq        <= '0;
+            diag_u_sq        <= '0;
+            diag_diff        <= '0;
             error_indefinite <= 1'b0;
             sqrt_by_neg      <= 1'b0;
             error_divide     <= 1'b0;
@@ -220,6 +268,7 @@ module cholDownDate #(
             // Default pulse signals
             div_start  <= 1'b0;
             sqrt_start <= 1'b0;
+            mac_start  <= 1'b0;
 
             // Allow external loading when IDLE
             if (state == ST_IDLE) begin
@@ -240,6 +289,8 @@ module cholDownDate #(
                         sqrt_by_neg      <= 1'b0;
                         error_divide     <= 1'b0;
                         div_started      <= 1'b0;
+                        mac_started      <= 1'b0;
+                        mac_u_step       <= 2'd0;
                         k                <= '0;
                         state            <= ST_DIAG_MAC;
                     end
@@ -247,17 +298,18 @@ module cholDownDate #(
 
                 // --- Column Diagonal Step ---
                 ST_DIAG_MAC: begin
-                    s_kk_old <= S_reg[k][k];
-                    u_k_val  <= u_reg[k];
-                    // Compute S_kk^2 - u_k^2 using DOUBLE_WIDTH precision (2*FRAC_WIDTH fractional bits)
-                    diag_diff <= (DOUBLE_WIDTH'(S_reg[k][k]) * DOUBLE_WIDTH'(S_reg[k][k])) -
-                                 (DOUBLE_WIDTH'(u_reg[k])    * DOUBLE_WIDTH'(u_reg[k]));
-                    state <= ST_DIAG_SUB;
+                    s_kk_old  <= S_reg[k][k];
+                    u_k_val   <= u_reg[k];
+                    // Compute S_kk^2 and u_k^2 with DOUBLE_WIDTH precision (2*FRAC_WIDTH fractional bits)
+                    diag_s_sq <= DOUBLE_WIDTH'(S_reg[k][k]) * DOUBLE_WIDTH'(S_reg[k][k]);
+                    diag_u_sq <= DOUBLE_WIDTH'(u_reg[k])    * DOUBLE_WIDTH'(u_reg[k]);
+                    state     <= ST_DIAG_SUB;
                 end
 
                 ST_DIAG_SUB: begin
-                    // Feed full-precision product difference to SQRT (no loss of accuracy before sqrt)
-                    sqrt_in    <= diag_diff;
+                    // Feed full-precision product difference to SQRT (computed via 64-bit CLA)
+                    diag_diff  <= diag_diff_cla;
+                    sqrt_in    <= diag_diff_cla;
                     sqrt_start <= 1'b1;
                     state      <= ST_DIAG_SQRT;
                 end
@@ -326,17 +378,25 @@ module cholDownDate #(
 
                 // Step A: h * u_j using MAC
                 ST_ROW_MAC_HU: begin
-                    mac_a    <= h_val;
-                    mac_b    <= u_j_old;
-                    mac_c    <= '0;
-                    state    <= ST_ROW_SUB;
+                    if (!mac_started) begin
+                        if (!mac_busy) begin
+                            mac_a       <= h_val;
+                            mac_b       <= u_j_old;
+                            mac_c       <= '0;
+                            mac_start   <= 1'b1;
+                            mac_started <= 1'b1;
+                        end
+                    end else if (mac_done) begin
+                        mac_started  <= 1'b0;
+                        h_u_prod     <= mac_out;
+                        state        <= ST_ROW_SUB;
+                    end
                 end
 
-                // Step B: S_jk_old - (h * u_j) using LUT subtractor
+                // Step B: S_jk_old - (h * u_j) using CLA subtractor
                 ST_ROW_SUB: begin
-                    h_u_prod     <= mac_out;
                     lut_add_a    <= s_jk_old;
-                    lut_add_b    <= mac_out;
+                    lut_add_b    <= h_u_prod;
                     lut_sub_mode <= 1'b1; // subtract
                     div_started  <= 1'b0;
                     state        <= ST_ROW_DIV_S;
@@ -345,7 +405,7 @@ module cholDownDate #(
                 // Step C: S_jk_new = (S_jk_old - h * u_j) / c
                 ST_ROW_DIV_S: begin
                     if (!div_started) begin
-                        if(!div_busy) begin
+                        if (!div_busy) begin
                             div_a       <= lut_add_out;
                             div_b       <= c_val;
                             div_start   <= 1'b1;
@@ -359,22 +419,63 @@ module cholDownDate #(
                         end else begin
                             s_jk_new    <= div_quot;
                             S_reg[j][k] <= div_quot; // Store updated S_jk
+                            mac_started <= 1'b0;
+                            mac_u_step  <= 2'd0;
                             state       <= ST_ROW_MAC_U;
                         end
                     end
                 end
 
-                // Step D: u_j_new = c * u_j_old - h * S_jk_new (using MAC)
+                // Step D: u_j_new = c * u_j_old - h * S_jk_new (using MAC & CLA)
                 ST_ROW_MAC_U: begin
-                    // Compute c * u_j_old - (h * S_jk_new)
-                    // Part 1: mac_a = h, mac_b = s_jk_new
-                    // Part 2: scaled product added to (c * u_j_old scaled)
-                    logic signed [DOUBLE_WIDTH-1:0] prod1, prod2;
-                    prod1 = (DOUBLE_WIDTH'(c_val) * DOUBLE_WIDTH'(u_j_old)) >>> FRAC_WIDTH;
-                    prod2 = (DOUBLE_WIDTH'(h_val) * DOUBLE_WIDTH'(s_jk_new)) >>> FRAC_WIDTH;
-                    u_j_new  <= DATA_WIDTH'(prod1 - prod2);
-                    u_reg[j] <= DATA_WIDTH'(prod1 - prod2); // Store updated u_j
-                    state    <= ST_ROW_NEXT;
+                    case (mac_u_step)
+                        2'd0: begin
+                            // Sub-step 1: compute c * u_j_old using MAC
+                            if (!mac_started) begin
+                                if (!mac_busy) begin
+                                    mac_a       <= c_val;
+                                    mac_b       <= u_j_old;
+                                    mac_c       <= '0;
+                                    mac_start   <= 1'b1;
+                                    mac_started <= 1'b1;
+                                end
+                            end else if (mac_done) begin
+                                mac_started <= 1'b0;
+                                prod1_reg   <= mac_out;
+                                mac_u_step  <= 2'd1;
+                            end
+                        end
+
+                        2'd1: begin
+                            // Sub-step 2: compute h * s_jk_new using MAC
+                            if (!mac_started) begin
+                                if (!mac_busy) begin
+                                    mac_a       <= h_val;
+                                    mac_b       <= s_jk_new;
+                                    mac_c       <= '0;
+                                    mac_start   <= 1'b1;
+                                    mac_started <= 1'b1;
+                                end
+                            end else if (mac_done) begin
+                                mac_started  <= 1'b0;
+                                // Sub-step 3: Setup CLA subtractor: prod1 - prod2
+                                lut_add_a    <= prod1_reg;
+                                lut_add_b    <= mac_out;
+                                lut_sub_mode <= 1'b1; // subtract
+                                mac_u_step   <= 2'd2;
+                            end
+                        end
+
+                        2'd2: begin
+                            // Sub-step 4: Store CLA difference: u_j_new = prod1 - prod2
+                            u_j_new    <= lut_add_out;
+                            u_reg[j]   <= lut_add_out; // Store updated u_j
+                            mac_u_step <= 2'd0;
+                            state      <= ST_ROW_NEXT;
+                        end
+
+                        default: mac_u_step <= 2'd0;
+                    endcase
                 end
 
                 ST_ROW_NEXT: begin
