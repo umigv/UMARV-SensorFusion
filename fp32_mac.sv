@@ -97,10 +97,53 @@ module fp32_mac (
             default: begin end
         endcase
     end
-    // One carry chain with carry-in for two's-complement subtraction.
-    wire [52:0] alu_extended = {alu_left, 1'b1}
-                             + {alu_right ^ {52{subtract}}, subtract};
-    assign alu_result = alu_extended[52:1];
+    // Sparse carry lookahead: 13 four-bit blocks, with a parallel prefix
+    // over block boundaries. The same tree handles add and subtract.
+    localparam integer CARRY_BLOCKS = 13;
+    localparam integer PREFIX_LEVELS = $clog2(CARRY_BLOCKS);
+    wire [51:0] alu_rhs = alu_right ^ {52{subtract}};
+    wire [51:0] bit_p = alu_left ^ alu_rhs;
+    wire [51:0] bit_g = alu_left & alu_rhs;
+    wire [CARRY_BLOCKS-1:0] prefix_p [0:PREFIX_LEVELS];
+    wire [CARRY_BLOCKS-1:0] prefix_g [0:PREFIX_LEVELS];
+
+    for (genvar group_index = 0; group_index < CARRY_BLOCKS; group_index++) begin : carry_block
+        localparam integer LOW_BIT = 4 * group_index;
+        wire [3:0] p = bit_p[LOW_BIT +: 4];
+        wire [3:0] g = bit_g[LOW_BIT +: 4];
+        wire [3:0] carry;
+
+        assign prefix_p[0][group_index] = &p;
+        assign prefix_g[0][group_index] = g[3] | (p[3] & g[2]) |
+            (p[3] & p[2] & g[1]) | (p[3] & p[2] & p[1] & g[0]);
+
+        if (group_index == 0) begin : first
+            assign carry[0] = subtract;
+        end else begin : later
+            assign carry[0] = prefix_g[PREFIX_LEVELS][group_index - 1] |
+                (prefix_p[PREFIX_LEVELS][group_index - 1] & subtract);
+        end
+        assign carry[1] = g[0] | (p[0] & carry[0]);
+        assign carry[2] = g[1] | (p[1] & g[0]) | (p[1] & p[0] & carry[0]);
+        assign carry[3] = g[2] | (p[2] & g[1]) |
+            (p[2] & p[1] & g[0]) | (p[2] & p[1] & p[0] & carry[0]);
+        assign alu_result[LOW_BIT +: 4] = p ^ carry;
+    end
+
+    for (genvar level = 0; level < PREFIX_LEVELS; level++) begin : prefix_level
+        localparam integer SPAN = 1 << level;
+        for (genvar group_index = 0; group_index < CARRY_BLOCKS; group_index++) begin : group_prefix
+            if (group_index >= SPAN) begin : combine
+                assign prefix_p[level + 1][group_index] =
+                    prefix_p[level][group_index] & prefix_p[level][group_index - SPAN];
+                assign prefix_g[level + 1][group_index] = prefix_g[level][group_index] |
+                    (prefix_p[level][group_index] & prefix_g[level][group_index - SPAN]);
+            end else begin : forward
+                assign prefix_p[level + 1][group_index] = prefix_p[level][group_index];
+                assign prefix_g[level + 1][group_index] = prefix_g[level][group_index];
+            end
+        end
+    end
 
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
