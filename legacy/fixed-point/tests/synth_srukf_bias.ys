@@ -1,0 +1,7 @@
+# Run from UMARV-SensorFusion. Generic synthesis, independent of a PDK.
+read_verilog -sv srukf_bias_filter.sv srukf_400hz_scheduler.sv srukf_arithmetic.sv cordic.sv
+hierarchy -check -top srukf_bias_filter
+synth -top srukf_bias_filter -flatten -noabc
+check -assert
+stat
+ltp -noff

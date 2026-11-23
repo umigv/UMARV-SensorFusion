@@ -51,7 +51,7 @@ generator and MAC to abort and recover.
 From the workspace root, run:
 
 ```bash
-python3 UMARV-SensorFusion/tests/test_sigma_generator.py
+python3 UMARV-SensorFusion/legacy/fixed-point/tests/test_sigma_generator.py
 python3 tests/test_sigma_generator.py
 ```
 
