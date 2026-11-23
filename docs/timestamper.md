@@ -70,32 +70,35 @@ Times are for the default settings (50 MHz clock, 2,500 us period, 2,000 us dead
 | `cs_n`, `sck`, `mosi` | out | 1 | SPI to the AMT22 |
 | `miso` | in | 1 | SPI from the AMT22 |
 | `ukf_pulse` | out | 1 | one clock: measurements for this beat are ready |
-| `ukf_regfile` | out | struct | the measurements, see below |
+| `ukf_*` | out | | the measurements, see below |
 | `time_us` | out | 40 | free-running microsecond clock |
 
-### `ukf_regfile`
+### Measurement outputs
 
-| Field | Width | Contents |
+These are plain ports, not a struct, because the open-source tools in the Tiny Tapeout flow are
+safest with a plain subset of SystemVerilog.
+
+| Port | Width | Contents |
 |---|---|---|
-| `beat_ts` | 32 | low 32 bits of `time_us` at the beat |
-| `vn_valid` | 1 | a message arrived this beat with the right header, a good CRC, and INS status "tracking, GNSS fix, no error" |
-| `vn_yaw_f32` | 32 | IEEE float, degrees, clockwise from north |
-| `vn_rate_f32` | 32 | IEEE float, rad/s, about the body Z axis (Z points down) |
-| `vn_lat_f64` | 64 | IEEE double, degrees |
-| `vn_lon_f64` | 64 | IEEE double, degrees |
-| `dw_valid` | 1 | this beat's encoder reading passed its check bits and there was an earlier good reading |
-| `dw_delta` | 28, signed | encoder counts moved since the last good reading |
+| `ukf_beat_ts` | 32 | low 32 bits of `time_us` at the beat |
+| `ukf_vn_valid` | 1 | a message arrived this beat with the right header, a good CRC, and INS status "tracking, GNSS fix, no error" |
+| `ukf_vn_yaw_f32` | 32 | IEEE float, degrees, clockwise from north |
+| `ukf_vn_rate_f32` | 32 | IEEE float, rad/s, about the body Z axis (Z points down) |
+| `ukf_vn_lat_f64` | 64 | IEEE double, degrees |
+| `ukf_vn_lon_f64` | 64 | IEEE double, degrees |
+| `ukf_dw_valid` | 1 | this beat's encoder reading passed its check bits and there was an earlier good reading |
+| `ukf_dw_delta` | 28, signed | encoder counts moved since the last good reading |
 
 ## Contract for the Kalman side
 
 1. **Start on `ukf_pulse`, not on the beat.** There is exactly one `ukf_pulse` per beat, between about 0.65 ms and `deadline_us` after it.
-2. **Read inside the window.** Every field of `ukf_regfile` is steady from `ukf_pulse` until the next beat. After the next beat the VN-300 fields are overwritten as the new message arrives. Convert or copy what is needed before then.
-3. **Honour the valid flags.** When `vn_valid` is 0 the four VN-300 fields may hold a corrupted or partial message and must not be used: predict only. When `dw_valid` is 0, ignore `dw_delta`.
+2. **Read inside the window.** Every `ukf_*` output is steady from `ukf_pulse` until the next beat. After the next beat the VN-300 fields are overwritten as the new message arrives. Convert or copy what is needed before then.
+3. **Honour the valid flags.** When `ukf_vn_valid` is 0 the four VN-300 values may hold a corrupted or partial message and must not be used: predict only. When `ukf_dw_valid` is 0, ignore `ukf_dw_delta`.
 4. **Convert the VN-300 values.** The timestamper passes raw IEEE bit patterns. The Kalman side has to turn the two floats into fixed point, and latitude and longitude into metres from an origin. Subtract the origin at full precision before rounding: one metre is about 0.000009 degrees.
 5. **Fix the heading convention.** VN-300 yaw is clockwise from north and its Z axis points down. A filter using counter-clockwise angles needs the sign of yaw and of the turn rate flipped, and an offset on yaw.
-6. **Treat `dw_delta` as a distance.** It is the movement since the last good reading, in counts (16,384 per wheel turn). After a rejected reading it covers more than one beat, so do not divide it by one beat period to get a speed without accounting for that.
-7. **Expect no wheel data on the first beat.** After reset the first reading has nothing to subtract from, so `dw_valid` is 0 once.
-8. **`beat_ts` wraps.** It is 32 bits of microseconds, about 71.6 minutes. Differences between nearby times are still correct with unsigned subtraction.
+6. **Treat `ukf_dw_delta` as a distance.** It is the movement since the last good reading, in counts (16,384 per wheel turn). After a rejected reading it covers more than one beat, so do not divide it by one beat period to get a speed without accounting for that.
+7. **Expect no wheel data on the first beat.** After reset the first reading has nothing to subtract from, so `ukf_dw_valid` is 0 once.
+8. **`ukf_beat_ts` wraps.** It is 32 bits of microseconds, about 71.6 minutes. Differences between nearby times are still correct with unsigned subtraction.
 
 ## Assumptions
 
@@ -114,7 +117,7 @@ These are built into the RTL. If one is wrong, the block needs changing.
 - The message is binary output group 1 with field word `0x1068`: yaw/pitch/roll, angular rate, position (LLA) and INS status, 56 bytes in total starting `FA 01 68 10`.
 - The CRC is CRC16-CCITT starting from zero over every byte after the `FA` sync byte, sent high byte first, so the running CRC over the whole message ends at zero.
 - All multi-byte values are little-endian.
-- Data is only accepted when INS status reports mode 2 (tracking), a GNSS fix, and error code 0. During alignment after power-up `vn_valid` stays 0.
+- Data is only accepted when INS status reports mode 2 (tracking), a GNSS fix, and error code 0. During alignment after power-up `ukf_vn_valid` stays 0.
 - The VN-300 sends nothing between sync pulses. A message that runs past the next beat is discarded and can cost the following beat as well.
 
 **AMT22 encoder**
@@ -136,4 +139,4 @@ These are built into the RTL. If one is wrong, the block needs changing.
 - Simulated with Synopsys VCS against behavioural models of the VN-300 and the AMT22: 13 beats covering good data, a corrupted message, a silent and a late VN-300, bad encoder check bits, reverse motion across a turn boundary, and disable/enable.
 - Synthesised with Design Compiler against the Sky130 high-density library: 502 flip-flops, 21,833 um2 of cells, timing met at 50 MHz.
 - Not yet tested against the real VN-300 or encoder. The sensor models come from the datasheets, so they cannot catch a misreading of them.
-- Not yet run through the Tiny Tapeout flow, and not yet listed in `info.yaml`. The file uses SystemVerilog (a packed struct as a port, `always_ff`, `enum`), which the flow's tools may not accept as written.
+- Written in a plain subset of SystemVerilog (`logic`, `always_ff`, `always_comb`; no structs, enums, casts or `return`) for the Tiny Tapeout flow's tools.

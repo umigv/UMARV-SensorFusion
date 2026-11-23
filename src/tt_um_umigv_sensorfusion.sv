@@ -36,8 +36,12 @@ module tt_um_umigv_sensorfusion (
     assign dw_check_turns = ui_in[3];
 
     logic vn_sync, dw_cs_n, dw_sck, dw_mosi, ukf_pulse;
-    ukf_regfile_t ukf_regfile;
-    logic [39:0] time_us;
+    logic        [31:0] beat_ts;
+    logic               vn_valid, dw_valid;
+    logic        [31:0] vn_yaw_f32, vn_rate_f32;
+    logic        [63:0] vn_lat_f64, vn_lon_f64;
+    logic signed [27:0] dw_delta;
+    logic        [39:0] time_us;
 
     timestamper u_timestamper (
         .clk            (clk),
@@ -55,16 +59,29 @@ module tt_um_umigv_sensorfusion (
         .mosi           (dw_mosi),
         .miso           (dw_miso),
         .ukf_pulse      (ukf_pulse),
-        .ukf_regfile    (ukf_regfile),
+        .ukf_beat_ts    (beat_ts),
+        .ukf_vn_valid   (vn_valid),
+        .ukf_vn_yaw_f32 (vn_yaw_f32),
+        .ukf_vn_rate_f32(vn_rate_f32),
+        .ukf_vn_lat_f64 (vn_lat_f64),
+        .ukf_vn_lon_f64 (vn_lon_f64),
+        .ukf_dw_valid   (dw_valid),
+        .ukf_dw_delta   (dw_delta),
         .time_us        (time_us)
     );
 
     // Debug stream (stand-in for the register block): after each ukf_pulse, send
-    // {time_us, ukf_regfile} most significant bit first, one bit every 8 clocks,
+    // the 294-bit word below most significant bit first, one bit every 8 clocks,
     // with dbg_frame high for the whole frame.
-    localparam int DBG_BITS = 40 + $bits(ukf_regfile_t);
+    localparam DBG_BITS = 294;
     logic [DBG_BITS-1:0] dbg_word;
-    assign dbg_word = {time_us, ukf_regfile};
+    assign dbg_word = {time_us,                                  // 40
+                       beat_ts,                                  // 32
+                       vn_valid,                                 //  1
+                       vn_yaw_f32, vn_rate_f32,                  // 32 + 32
+                       vn_lat_f64, vn_lon_f64,                   // 64 + 64
+                       dw_valid,                                 //  1
+                       dw_delta};                                // 28
 
     logic        dbg_frame;
     logic [8:0]  dbg_idx;   // bits still to send, minus 1
@@ -76,7 +93,7 @@ module tt_um_umigv_sensorfusion (
             dbg_div   <= '0;
         end else if(ukf_pulse) begin
             dbg_frame <= 1'b1;
-            dbg_idx   <= 9'(DBG_BITS - 1);
+            dbg_idx   <= 9'd293;          // DBG_BITS - 1
             dbg_div   <= '0;
         end else if(dbg_frame) begin
             dbg_div <= dbg_div + 1'b1;

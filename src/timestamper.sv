@@ -1,18 +1,8 @@
-// Measurements for one beat. Everything here is steady from ukf_pulse until the next beat,
-// so the UKF must read (and convert) what it needs inside that window.
-typedef struct packed {
-    logic        [31:0]  beat_ts;       // time of the beat this snapshot belongs to, us
-
-    logic                vn_valid;      // new, CRC-good, status-good message this beat
-    logic        [31:0]  vn_yaw_f32;    // raw IEEE float: yaw, degrees, clockwise from north
-    logic        [31:0]  vn_rate_f32;   // raw IEEE float: body Z turn rate, rad/s
-    logic        [63:0]  vn_lat_f64;    // raw IEEE double: latitude, degrees
-    logic        [63:0]  vn_lon_f64;    // raw IEEE double: longitude, degrees
-
-    logic                dw_valid;      // good wheel reading this beat, with a previous one to compare against
-    logic signed [27:0]  dw_delta;      // counts moved since the last good reading
-} ukf_regfile_t;
-
+// Sensor front end: microsecond time base, beat, VN-300 sync and message receiver,
+// AMT22 SPI reader. See docs/timestamper.md.
+//
+// Written in a plain subset of SystemVerilog (no structs, enums, casts or 'return') so that
+// yosys, Verilator and Icarus all accept it.
 
 module timestamper (
     input clk, rst_n, // 50 MHz clock
@@ -34,8 +24,17 @@ module timestamper (
     input miso,
 
     // UKF interface
-    output logic ukf_pulse,
-    output ukf_regfile_t ukf_regfile,
+    // Measurements for one beat. All of these are steady from ukf_pulse until the next beat,
+    // so the UKF must read (and convert) what it needs inside that window.
+    output logic               ukf_pulse,        // one clock: the measurements below are ready
+    output logic        [31:0] ukf_beat_ts,      // time of the beat this snapshot belongs to, us
+    output logic               ukf_vn_valid,     // new, CRC-good, status-good message this beat
+    output logic        [31:0] ukf_vn_yaw_f32,   // raw IEEE float: yaw, degrees, clockwise from north
+    output logic        [31:0] ukf_vn_rate_f32,  // raw IEEE float: body Z turn rate, rad/s
+    output logic        [63:0] ukf_vn_lat_f64,   // raw IEEE double: latitude, degrees
+    output logic        [63:0] ukf_vn_lon_f64,   // raw IEEE double: longitude, degrees
+    output logic               ukf_dw_valid,     // good wheel reading this beat, with a previous one to compare against
+    output logic signed [27:0] ukf_dw_delta,     // counts moved since the last good reading
 
     // LIDAR interface
     output logic [39:0] time_us // increments every us, never resets. 40 bits is 12.7 days
@@ -70,8 +69,8 @@ module timestamper (
     logic dw_delta_ok;      // there was an earlier good reading to subtract from (set in the SPI section)
 
     // high level state machine
-    typedef enum logic { S_IDLE, S_COLLECT } state_t;
-    state_t s;
+    localparam S_IDLE = 1'b0, S_COLLECT = 1'b1;
+    logic s;
 
     logic deadline_reached, collect_end;
     assign deadline_reached = (s == S_COLLECT) && us_tick && (beat_ctr == deadline_us);
@@ -127,8 +126,8 @@ module timestamper (
     assign rx = vn_rx_sync[1];
 
     // vn uart byte receiver: one pass through the states per byte
-    typedef enum logic [1:0] { RX_IDLE, RX_START, RX_DATA, RX_STOP } rx_state_t;
-    rx_state_t rx_s, rx_ns;
+    localparam [1:0] RX_IDLE = 2'd0, RX_START = 2'd1, RX_DATA = 2'd2, RX_STOP = 2'd3;
+    logic [1:0] rx_s, rx_ns;
 
     logic [5:0] baud_ctr;           // clocks within the current bit
     logic half_bit, full_bit;
@@ -175,14 +174,18 @@ module timestamper (
         end
     end
 
-    function automatic logic [15:0] crc_next(input logic [15:0] c, input logic [7:0] d);
-        logic [15:0] x;
-        x = {c[7:0], c[15:8]};                 // swap the two bytes
-        x = x ^ {8'h00, d};                    // mix in the new byte
-        x = x ^ {12'h000, x[7:4]};
-        x = x ^ {x[3:0], 12'h000};
-        x = x ^ {3'b000, x[7:0], 5'b00000};
-        return x;
+    function automatic [15:0] crc_next;
+        input [15:0] c;
+        input [7:0]  d;
+        reg   [15:0] x;
+        begin
+            x = {c[7:0], c[15:8]};                 // swap the two bytes
+            x = x ^ {8'h00, d};                    // mix in the new byte
+            x = x ^ {12'h000, x[7:4]};
+            x = x ^ {x[3:0], 12'h000};
+            x = x ^ {3'b000, x[7:0], 5'b00000};
+            crc_next = x;
+        end
     endfunction
 
     logic[5:0] uart_byte_ctr;
@@ -266,8 +269,8 @@ module timestamper (
     logic pause_ended;
     assign pause_ended = (spi_pause_ctr == 8'd149); // 150 clocks = 3us
 
-    typedef enum logic[1:0] { SPI_IDLE, SPI_PAUSE, SPI_LOW, SPI_HIGH } spi_state_t;
-    spi_state_t spi_s, spi_ns;
+    localparam [1:0] SPI_IDLE = 2'd0, SPI_PAUSE = 2'd1, SPI_LOW = 2'd2, SPI_HIGH = 2'd3;
+    logic [1:0] spi_s, spi_ns;
 
     always_comb begin
         spi_ns = spi_s;
@@ -353,11 +356,14 @@ module timestamper (
     end
 
     // AMT22 word = {K1, K0, 14 data bits}. K1 = !(xor of odd data bits), K0 = !(xor of even data bits)
-    function automatic logic amt_check_ok(input logic [15:0] w);
-        logic k1, k0;
-        k1 = !(w[13] ^ w[11] ^ w[9] ^ w[7] ^ w[5] ^ w[3] ^ w[1]);
-        k0 = !(w[12] ^ w[10] ^ w[8] ^ w[6] ^ w[4] ^ w[2] ^ w[0]);
-        return (w[15] == k1) && (w[14] == k0);
+    function automatic amt_check_ok;
+        input [15:0] w;
+        reg k1, k0;
+        begin
+            k1 = !(w[13] ^ w[11] ^ w[9] ^ w[7] ^ w[5] ^ w[3] ^ w[1]);
+            k0 = !(w[12] ^ w[10] ^ w[8] ^ w[6] ^ w[4] ^ w[2] ^ w[0]);
+            amt_check_ok = (w[15] == k1) && (w[14] == k0);
+        end
     endfunction
 
     // rx_shift after 32 bits = {position word, turn-count word}
@@ -397,13 +403,13 @@ module timestamper (
 
     // UKF interface. The valid flags are frozen when collection ends; the data fields come
     // straight from the registers above, which do not change again until after the next beat.
-    assign ukf_regfile.beat_ts     = beat_ts;
-    assign ukf_regfile.vn_valid    = vn_valid_r;
-    assign ukf_regfile.vn_yaw_f32  = yaw_raw;
-    assign ukf_regfile.vn_rate_f32 = rate_raw;
-    assign ukf_regfile.vn_lat_f64  = lat_raw;
-    assign ukf_regfile.vn_lon_f64  = lon_raw;
-    assign ukf_regfile.dw_valid    = dw_valid_r;
-    assign ukf_regfile.dw_delta    = dw_delta_r;
+    assign ukf_beat_ts      = beat_ts;
+    assign ukf_vn_valid     = vn_valid_r;
+    assign ukf_vn_yaw_f32   = yaw_raw;
+    assign ukf_vn_rate_f32  = rate_raw;
+    assign ukf_vn_lat_f64   = lat_raw;
+    assign ukf_vn_lon_f64   = lon_raw;
+    assign ukf_dw_valid     = dw_valid_r;
+    assign ukf_dw_delta     = dw_delta_r;
 
 endmodule
