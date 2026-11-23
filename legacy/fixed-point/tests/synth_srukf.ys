@@ -1,7 +1,0 @@
-# Run in UMARV-SensorFusion. Generic logic only, with no target cell library.
-read_verilog -sv srukf_filter.sv srukf_400hz_scheduler.sv srukf_arithmetic.sv cordic.sv
-hierarchy -check -top srukf_filter
-synth -top srukf_filter -flatten -noabc
-check -assert
-stat
-ltp -noff

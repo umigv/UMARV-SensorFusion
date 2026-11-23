@@ -50,16 +50,3 @@ make synth-sky130 SKY130_LIBERTY=/path/to/sky130.lib
 ```
 
 `make test` uses Python 3 and Icarus Verilog. The Python oracle computes the finite fused result as a signed arbitrary-precision integer in units of 2⁻²⁹⁸ and rounds that exact result to FP32. It checks result bits and all flag bits for directed and seeded random operands. The testbench also checks result holding, a long accumulation, idle clear, reset during execution, and requests attempted while busy. `make synth-check` runs Icarus synthesis elaboration. The Yosys targets check for latches and inferred multiply, divide, and variable-shift operators before generic synthesis and optional SKY130 mapping.
-
-## Fixed-point dependencies
-
-| Archived RTL | Existing users |
-| --- | --- |
-| `MAC.sv`, `MAC_array.sv` | Standalone arithmetic tests. The array instantiates `MAC_accumulator` per lane. |
-| `MAC_accumulator.sv` | MAC array and the shared MAC interfaces exercised by the sigma generator and process model testbenches. |
-| `cordic.sv` | Both SR-UKF filters, the process-model testbench, and the historical precision studies. |
-| `SQRT.sv`, `division.sv` | Standalone tests and earlier prototype interfaces. The old `SQUKF.sv` scaffold references `division`. |
-| `srukf_arithmetic.sv` | Both SR-UKF filters and their arithmetic testbench. Provides fixed-point MAC, full root and full division. |
-| `srukf_filter.sv`, `srukf_bias_filter.sv`, `srukf_400hz_scheduler.sv`, `process_model.sv`, `sigma_generator.sv` | Legacy UKF integration or verification. |
-
-The active Makefile and synthesis sources select only `fp32_mac`. Historical scripts under `legacy/fixed-point/tests` use the archived sources. The sensor FIFO scheduler in `ukf_fpga.sv` exposes datapath handshakes and remains at its original path.
