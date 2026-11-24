@@ -15,14 +15,14 @@ function automatic logic [31:0] prom_math_read(input logic [6:0] addr);
 endfunction
 
 typedef struct packed {
-    logic ukf_pulse;        // one clock: the measurements below are ready
+    logic ukf_pulse;        // measurement snapshot strobe
     logic [31:0] ukf_beat_ts;      // time of the beat this snapshot belongs to, us
-    logic ukf_vn_valid;     // new, CRC-good, status-good message this beat
+    logic ukf_vn_valid;     // one-clock correction strobe for a good VN message
     logic [31:0] ukf_vn_yaw_f32;   // raw IEEE float: yaw, degrees, clockwise from north
     logic [31:0] ukf_vn_rate_f32;  // raw IEEE float: body Z turn rate, rad/s
     logic        [63:0] ukf_vn_lat_f64;   // raw IEEE double: latitude, degrees
     logic        [63:0] ukf_vn_lon_f64;   // raw IEEE double: longitude, degrees
-    logic ukf_dw_valid;    // good wheel reading this beat, with a previous one to compare against
+    logic ukf_dw_valid;    // one-clock prediction strobe for a good wheel delta
     logic signed [27:0] ukf_dw_delta;     // counts moved since the last good reading
 } meas_regfile_t;
 
@@ -94,3 +94,13 @@ typedef struct packed {
     logic sig_pt_idx; //offset address by sigma_idx
     logic instr_done; //wait until uop finishes
 } pred_ukf_uop;
+
+typedef struct packed {
+    logic start, clear, last;
+    logic [31:0] a, b;
+} ukf_mac_request_t;
+
+typedef struct packed {
+    logic busy, valid;
+    logic [31:0] result;
+} ukf_mac_response_t;

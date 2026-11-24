@@ -14,6 +14,10 @@ module corr_x_tb #(
     UKF_OUT_PACKET ukf_output;
     logic convert_start, convert_done = 0, busy, done, x_update_valid, failed;
     logic xy_update_valid, xyz_update_valid;
+    logic sensor_mac_owner = 0, prediction_failed = 0;
+    ukf_mac_request_t sensor_mac_request = '0;
+    ukf_mac_response_t sensor_mac_response;
+
     UKF_corr_engine #(
         .ENABLE_SECOND_UPDATE(TEST_SECOND),
         .ENABLE_THIRD_UPDATE(TEST_THIRD),

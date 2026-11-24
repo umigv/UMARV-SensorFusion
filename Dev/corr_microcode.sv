@@ -1,7 +1,8 @@
 module corr_microcode #(
     parameter bit ENABLE_SECOND_UPDATE = 1'b1,
     parameter bit ENABLE_THIRD_UPDATE = 1'b1,
-    parameter bit ENABLE_FOURTH_UPDATE = 1'b1
+    parameter bit ENABLE_FOURTH_UPDATE = 1'b1,
+    parameter bit SHARE_MAC = 1'b0
 ) (
     input  logic clock, reset,
     input  logic start,
@@ -12,7 +13,10 @@ module corr_microcode #(
     output logic done, x_update_valid, failed,
     output UKF_OUT_PACKET result,
     output pred_s_factor_t corrected_s,
-    output logic xy_update_valid, xyz_update_valid
+    output logic xy_update_valid, xyz_update_valid,
+    input logic sensor_mac_owner,
+    input ukf_mac_request_t sensor_mac_request,
+    output ukf_mac_response_t sensor_mac_response
 );
 
     localparam logic [6:0] REG_X          = 7'd0;
@@ -311,11 +315,19 @@ module corr_microcode #(
                  : {operand_a[31] ^ (uop.dp == UOP_MAC && uop.neg_b), operand_a[30:0]};
     assign mac_b = uop.dp == UOP_ADD ? prom_math_read(PROM_MATH_ONE) : operand_b;
 
+    ukf_mac_request_t correction_mac_request, active_mac_request;
+    assign correction_mac_request = {mac_start, state == ISSUE_A && uop.clr_acc,
+                                     state == ISSUE_B || (uop.dp == UOP_MAC && uop.wb_en),
+                                     mac_a, mac_b};
+    assign active_mac_request = SHARE_MAC && sensor_mac_owner
+                              ? sensor_mac_request : correction_mac_request;
+    assign sensor_mac_response = {mac_busy, mac_result_valid, mac_result};
+
+    // The merged MAC reset input is active low.
     fp32_mac residual_mac (
-        .clock(clock), .reset(reset), .start(mac_start),
-        .clear(state == ISSUE_A && uop.clr_acc),
-        .last(state == ISSUE_B || (uop.dp == UOP_MAC && uop.wb_en)),
-        .a(mac_a), .b(mac_b), .busy(mac_busy), .done(mac_done),
+        .clock(clock), .reset(!reset), .start(active_mac_request.start),
+        .clear(active_mac_request.clear), .last(active_mac_request.last),
+        .a(active_mac_request.a), .b(active_mac_request.b), .busy(mac_busy), .done(mac_done),
         .result_valid(mac_result_valid), .result(mac_result), .exception_flags()
     );
 
