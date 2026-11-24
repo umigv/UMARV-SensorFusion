@@ -3,10 +3,11 @@
 For whoever writes the program on the computer that receives the chip's lidar output and
 publishes it to ROS.
 
-**Status: version 3 of the format.** This is what the chip's lidar block produces today in
-simulation. It has not run on hardware yet, and the Kalman filter is not connected yet (see
-`state_valid` under Flags). The version byte in every frame tells you which layout you have.
-Items still open are listed at the end.
+**Status: version 3 of the format, updated 23 November 2026.** This is what the chip produces
+today in simulation, tested from its input pins to its output pins. It has not run on hardware
+yet. The Kalman filter is not built yet; until it is, the state in each packet is supplied by
+the board's microcontroller (see "Where the state comes from"). The version byte in every frame
+tells you which layout you have. Items still open are listed at the end.
 
 Version 3 replaces version 2, which described points in the world frame. That was a
 misunderstanding of what was wanted.
@@ -15,7 +16,7 @@ misunderstanding of what was wanted.
 
 The lidar (a VLP-16 today) plugs into the board instead of the computer. The chip converts each lidar return to
 x, y, z and corrects it for the robot's motion during the sweep, then sends the result to the
-computer as ordinary UDP packets over 100 Mbit Ethernet. The Kalman filter's state rides along
+computer as ordinary UDP packets over 100 Mbit Ethernet. The robot's estimated state rides along
 in every packet.
 
 ```
@@ -25,12 +26,21 @@ VLP-16 --Ethernet--> board (chip) --Ethernet--> computer --> your program --> RO
 You do not need a raw socket or a special driver. Open a normal UDP socket on the destination
 port and read datagrams.
 
-| Setting | Default (proposed) | Notes |
+| Setting | Value at power-up | Notes |
 |---|---|---|
-| Destination IP | 255.255.255.255 (broadcast) | settable on the chip |
-| Destination UDP port | 2370 | settable |
-| Source IP, port | 192.168.1.50, 2370 | settable |
+| Destination IP | 255.255.255.255 (broadcast) | |
+| Destination MAC | FF:FF:FF:FF:FF:FF (broadcast) | |
+| Destination UDP port | 2370 | |
+| Source IP, port | 192.168.1.50, 2370 | |
+| Source MAC | 02:00:00:00:00:01 | |
 | UDP checksum | 0 (not used) | allowed for IPv4; do not reject on it |
+
+All of these except the checksum can be changed by the board's microcontroller. With nothing
+changed, the chip starts sending as soon as the lidar does, so a receiver listening on port 2370
+needs no setup on the chip.
+
+Only the lidar-to-computer direction passes through the chip. Nothing the computer sends
+reaches the lidar, so the lidar cannot be configured through this link.
 
 ## What the correction does
 
@@ -39,7 +49,7 @@ points of one sweep are taken from different places facing different ways.
 
 The chip puts **each sweep into one coordinate frame: the robot's own frame at the moment that
 sweep started.** Every point is turned back and moved back by however much the robot has turned
-and travelled since then, using the turn rate and speed from the Kalman filter.
+and travelled since then, using the turn rate and speed from the state (see below).
 
 - The points are **not** rotated or moved into the world or map frame. A sweep looks the way
   it would if the robot had stood still at the sweep's start.
@@ -47,7 +57,25 @@ and travelled since then, using the turn rate and speed from the Kalman filter.
 - The start of the sweep is the reference, not the end, because the chip sends points as they
   arrive and cannot know how the robot will move after a point is sent.
 
-To place a sweep on the map, use the filter state in the header (below). That part is yours.
+To place a sweep on the map, use the state in the header (below). That part is yours.
+
+**The correction is off at power-up.** The microcontroller switches on the turning correction
+and the moving correction separately. With both off, or before any state has arrived, the points
+are the lidar's own x, y, z with no motion correction. The header does not say whether the
+correction is switched on (see "Still open").
+
+### Where the state comes from
+
+The state is five numbers: position `x`, `y`, heading `theta`, turn rate `omega` and forward
+speed `v`. The chip uses `omega` and `v` for the correction and copies all five into every
+packet. There are two possible sources, chosen by the microcontroller:
+
+- **The Kalman filter on the chip.** Not built yet. When it is, it updates 400 times a second.
+- **The microcontroller.** It writes the five numbers and a timestamp into the chip. This is
+  what is available now. How often they change, and how good they are, depends entirely on the
+  microcontroller's program.
+
+The packet looks the same either way, and it does not say which source was used.
 
 ## Datagram layout
 
@@ -71,16 +99,17 @@ one azimuth reading.
 | 18 | 1 | uint8 | `num_blocks` | 6 |
 | 19 | 1 | uint8 | `points_per_block` | 32 |
 | 20 | 4 | uint32 | `sweep_time_us` | chip time when sweep `sweep_id` started. **This is the time that sweep's frame belongs to** |
-| 24 | 4 | uint32 | `state_time_us` | chip time of the filter state below |
-| 28 | 4 | float32 | `x` | filter state: position, metres |
-| 32 | 4 | float32 | `y` | filter state: position, metres |
-| 36 | 4 | float32 | `theta` | filter state: heading, radians |
-| 40 | 4 | float32 | `omega` | filter state: turn rate, radians per second |
+| 24 | 4 | uint32 | `state_time_us` | time of the state below |
+| 28 | 4 | float32 | `x` | state: position, metres |
+| 32 | 4 | float32 | `y` | state: position, metres |
+| 36 | 4 | float32 | `theta` | state: heading, radians |
+| 40 | 4 | float32 | `omega` | state: turn rate, radians per second |
 | 44 | 4 | float32 | `v` | forward speed, metres per second |
 
-The five state values are the filter's own numbers, copied without change. They are the latest
-state when the datagram was started, so `state_time_us` is usually a few milliseconds after
-`sweep_time_us` and moves on through the sweep. The filter updates 400 times a second.
+The five state values are copied from their source without change. They are the latest state
+when the datagram was started, so `state_time_us` is usually a little after `sweep_time_us` and
+moves on through the sweep. With the filter as the source they update 400 times a second; with
+the microcontroller, `state_time_us` is whatever number it wrote.
 
 `sweep_time_us` is taken when the sweep's first block reaches the chip, which is up to 1.4 ms
 after the lidar fired it.
@@ -89,14 +118,14 @@ after the lidar fired it.
 
 | Bit | Name | Meaning when 1 |
 |---|---|---|
-| 0 | `state_valid` | the filter has produced a state. **When 0, the points are not corrected and the five state fields and `state_time_us` mean nothing: ignore them** |
+| 0 | `state_valid` | a state has been received since the chip started. **When 0, the points are not corrected and the five state fields and `state_time_us` mean nothing: ignore them** |
 | 1 | `scale_4mm` | one count is 4 mm. When 0, one count is 2 mm |
 | 2 | `rx_bad` | a lidar packet arrived corrupted since the previous datagram. Its points were still sent; some points in this datagram or the one before may be wrong |
 | 3 | `overflow` | the chip had to discard lidar data since the previous datagram |
 | 4-7 | | reserved, ignore |
 
-Until the filter is connected, `state_valid` is always 0 and the points are the lidar's own
-x, y, z with no motion correction.
+`state_valid` goes to 1 at the first state and stays there. It does not tell you the state is
+recent.
 
 ### Blocks (6 x 196 bytes, starting at offset 48)
 
@@ -151,8 +180,9 @@ y_s     = y - v * sin(theta_s) * dt
 or interpolate between the samples either side of it. Publish that as odometry or a transform
 with the same stamp as the cloud.
 
-**Odometry at full rate.** The state in the headers arrives about 1,500 times a second and
-changes 400 times a second, so the same stream can drive an odometry topic.
+**Odometry at full rate.** The state in the headers arrives about 1,500 times a second. With the
+filter as its source it changes 400 times a second, so the same stream can drive an odometry
+topic.
 
 ## Timing
 
@@ -248,10 +278,12 @@ version 1 of this format (the FPGA prototype) and is a good starting point.
 | Which way the world axes point and which way heading is positive | decides how you use `x`, `y`, `theta`. Proposed: x east, y north, heading counter-clockwise from x |
 | Which other filter values you need | for example the estimated wheel radius, or the filter's uncertainty in each value |
 | Whether intensity is sent | it is not sent now. If added, `point_step` becomes 7 or 8 and each point gains an intensity byte |
-| The default addresses and port | may change to suit the robot's network |
+| The addresses and port | the power-up values above can be changed by the microcontroller to suit the robot's network |
 | Whether zero position on z should be the lidar or the ground | currently the lidar |
 | Dual-return mode | not supported; the lidar must be set to single return |
-| When the filter is connected | until then `state_valid` is 0 and points are uncorrected |
+| When the filter is connected | until then the state comes from the microcontroller, if its program supplies one |
+| A flag for "correction is on" | the header does not say whether the points were corrected. Two spare flag bits could carry it; say if you want them |
+| State when the lidar is not running | the state only travels inside lidar packets. No lidar data, or bypass mode, means no state reaches the computer |
 
 Tell the chip team if any of these would make your side harder. They are cheap to change now and
 impossible after the chip is made.
