@@ -186,3 +186,25 @@ The 20 ns pre-placement STA flow uses `tests/synth_srukf.py --timing-map`
 with the SKY130 HD Liberty, `tests/buffer_srukf_netlist.py` on the mapped
 JSON, and `tests/srukf_timing.tcl` in OpenSTA after exporting the buffered
 JSON as Verilog with Yosys `write_verilog -noattr -noexpr -simple-lhs`.
+
+### Lowest-area integrated UKF map
+
+The lowest-area tested SKY130 HD map uses flattened synthesis, default ABC
+Liberty mapping, and post-map buffer trees with a fanout limit of 32. Run
+these commands from the repository root with `liberty` set to the absolute
+path of `sky130_fd_sc_hd__tt_025C_1v80.lib` and OpenSTA available as `sta`.
+
+```sh
+out=$(mktemp -d)
+python3 -B tests/synth_srukf.py "$liberty" "$out" --flatten
+python3 -B tests/buffer_srukf_netlist.py "$liberty" "$out/mapped.json" "$out/buffered.json" --fanout 32
+yosys -Q -T -p "read_json $out/buffered.json; write_verilog -noattr -noexpr -simple-lhs $out/buffered.v"
+python3 -B tests/report_srukf_area.py "$liberty" "$out/buffered.json" --flattened
+LIBERTY="$liberty" MAPPED_VERILOG="$out/buffered.v" sta -exit tests/srukf_timing.tcl
+```
+
+The buffered `UKF` netlist measured 190,441.40 µm² and 3,461 DFFs, with
++5.1449 ns pre-placement setup slack at 20 ns. Gate-level simulation matched
+the RTL corrected state, covariance factor, and status timing for one
+staggered wheel/VN transaction. These measurements cover the integrated
+`UKF` top before physical placement and routing.
