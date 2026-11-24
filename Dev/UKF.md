@@ -82,6 +82,28 @@ work on reset.
 
 ## Shared storage and handoff
 
+`Dev/ukf_regfile.sv` defines the synchronous memory interface for a future
+shared bank. It accepts a two-address read or a one-word write on each
+rising edge. The controller samples a valid read response on the next
+rising edge. Reset clears the response qualifier and suppresses commands.
+Memory contents are unspecified at power-up. The controller must write
+initial values before issuing reads that depend on them.
+
+The proposed physical allocation is 0–4 for state, 5 for wheel velocity,
+6–20 for S, 21–36 for shared scratch, 37–51 for S_Q/S_R, 52 for origin
+longitude, and 53 for origin latitude. Initialize the origin words from
+the FP32 degree parameters. Allocate later words for the live packets,
+noise snapshots, and converter work after accounting for overlapping
+lifetimes. Microcode and PROM constants remain in the existing RTL decode.
+
+The current UKF still uses the arrays and parallel transfers below.
+Connecting the shared bank requires scheduling operand reads, serialized
+initialization and packet transfers, and result assembly before asserting
+completion. For `USE_SKY130=1`, the candidate wrapper instantiates
+`sky130_sram_1kbyte_1rw1r_32x256_8`. Use matching Verilog, Liberty, LEF,
+and GDS views from the chosen macro release and connect its power pins in
+the physical flow.
+
 The built-in path uses one 16-word scratchpad in the prediction sequencer
 for both engines. Prediction offsets 0–4 hold the current point and then
 its covariance-update vector, offsets 7–11 hold the mean through both
