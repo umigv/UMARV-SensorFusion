@@ -79,11 +79,13 @@ module UKF_pred_sequencer #(
     function automatic logic [31:0] operand(
         input logic [6:0] addr, input logic [31:0] prior_word, scratch_word, sq_word, wrap_word
     );
-        if (addr < SPAD_FIRST) return prior_word;
-        if (addr >= SPAD_FIRST && addr <= SPAD_LAST) return scratch_word;
-        if (addr >= 68 && addr < 83) return sq_word;
-        if (addr == PROM_WRAP_STEP) return angle_wrap_step(wrap_word);
-        return read_word(addr);
+        // The bank ranges and the ROM/dynamic-constant addresses are
+        // disjoint. Unallocated ROM addresses contribute zero.
+        operand = (prior_word & {32{addr < SPAD_FIRST}}) |
+                  (scratch_word & {32{addr >= SPAD_FIRST && addr <= SPAD_LAST}}) |
+                  (sq_word & {32{addr >= 68 && addr < 83}}) |
+                  (angle_wrap_step(wrap_word) & {32{addr == PROM_WRAP_STEP}}) |
+                  read_word(addr);
     endfunction
 
     assign spad_addr_a = correction_spad_request.active ? correction_spad_request.read_a :

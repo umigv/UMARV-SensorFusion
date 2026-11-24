@@ -52,6 +52,8 @@ module vn_to_correction #(
     logic write_enable, xy_valid;
     logic [31:0] read_data, write_data, x, y;
     logic [31:0] scratch [21:24];
+    logic sample_longitude;
+    logic [31:0] sample_coordinate;
 
     assign busy = state != IDLE;
     assign done = state == WAIT_HEADING && mac_response.valid;
@@ -75,9 +77,13 @@ module vn_to_correction #(
         endcase
     end
 
+    // The correction engine holds the accepted packet throughout conversion.
+    assign sample_coordinate = narrow(sample_longitude ? packet.ukf_vn_lon_f64
+                                                        : packet.ukf_vn_lat_f64);
+
     lat_to_xy coordinates (
         .clk(clock), .rst_n(!reset), .start(start && !busy),
-        .latitude(narrow(packet.ukf_vn_lat_f64)), .longitude(narrow(packet.ukf_vn_lon_f64)),
+        .sample_coordinate(sample_coordinate), .sample_longitude(sample_longitude),
         .mem_rdata(read_data), .mem_addr(address), .mem_we(write_enable), .mem_wdata(write_data),
         .mac_start(xy_mac_request.start), .mac_clear(xy_mac_request.clear),
         .mac_last(xy_mac_request.last), .mac_a(xy_mac_request.a), .mac_b(xy_mac_request.b),

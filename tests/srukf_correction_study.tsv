@@ -1,0 +1,10 @@
+Variant	Explicit instruction addresses	Integrated area um2	Correction program local area um2	DFFs	Setup slack ns (20 ns TT)	Max paired correction cycles	Max staggered cycles	Max corrected state absolute error	Max corrected covariance absolute error
+Baseline	92	223824.67	50836.26	3717	5.0561	20897	109774	4.75299e-7	1.44988e-8
+Stage counter loop with shared gain	86	224751.80	51684.57	3715	5.1073	20897	109774	4.75299e-7	1.44988e-8
+Shared whitening and innovation terms	84	224006.09	51117.78	3717	5.0525	20897	109774	4.75299e-7	1.44988e-8
+Explicit per-word writeback	92	225542.56	51684.57	3717	5.0522	20897	109774	4.75299e-7	1.44988e-8
+Stage loop plus shared whitening	78	224909.46	51690.83	3715	5.0590	20897	109774	4.75299e-7	1.44988e-8
+Shared main-bank load/writeback (retained)	92	220117.36	46689.78	3685	5.0537	20897	109774	4.75299e-7	1.44988e-8
+All three changes	78	222260.67	47877.17	3683	5.0647	20897	109774	4.75299e-7	1.44988e-8
+Baseline (time-shared coordinate conversion)	92	218323.14	50751.17	3717	5.1701	20897	109774	4.75299e-7	1.44988e-8
+Shared main-bank load/writeback (time-shared coordinate conversion)	92	214568.29	46716.05	3685	5.0969	20897	109774	4.75299e-7	1.44988e-8

@@ -1,0 +1,12 @@
+Variant	Area um2	DFFs	Setup slack ns at 20 ns (TT pre-placement)	TIELO	TIEHI	Standard and clock buffers	Inserted fanout-tree buffers	Max paired cycles	Max staggered cycles	Numerical and schedule verification	Disposition
+52-word reference	224825.63	3717	5.0555	0	0	2195	134	101423	109774	Baseline regressions	Reference
+Parallel prediction operand-bank selection	223824.67	3717	5.0561	0	0	2139	134	101423	109774	End-to-end including injected failures; nominal and -401 rad stagger; retained full suite and +401/+398.5 rad checks	Retained
+Banked prediction instruction ROM	224677.98	3717	5.1023	0	0	2082	134	101423	109774	End-to-end including injected failures; nominal and -401 rad stagger	Trial only
+Correction per-port constant/noise decode	224733.04	3717	5.1701	0	0	2144	134	101423	109774	End-to-end including injected failures; nominal and -401 rad stagger	Trial only
+Banked prediction ROM plus parallel selection	224660.47	3717	5.4454	0	0	2120	134	101423	109774	End-to-end including injected failures; nominal and -401 rad stagger	Trial only
+Parallel prediction plus per-port correction decode	224360.18	3717	5.1089	0	0	2132	134	101423	109774	End-to-end including injected failures; nominal and -401 rad stagger	Trial only
+Correction 1.0-only constant decoder	225447.47	3717	5.0604	0	0	2272	134	101423	109774	End-to-end including injected failures; nominal and -401 rad stagger	Area regression
+Explicit one-hot correction register read	225286.07	3717	5.1702	0	0	2102	134	101423	109774	End-to-end including injected failures; nominal and -401 rad stagger	Area regression
+Shared SQ/SR factor read mux ports	225058.35	3717	5.0450	0	0	2073	134	101423	109774	End-to-end including injected failures; nominal and -401 rad stagger	Area regression
+Tie per literal connection	224964.51	3717	5.0555	30	7	2195	134	101423	109774	Literal-to-constant cell substitution in same mapped reference; reference numerical/schedule results	Physical-flow experiment
+Local tie clusters of up to eight connections	224855.65	3717	5.0555	6	2	2195	134	101423	109774	Literal-to-constant cell substitution in same mapped reference; reference numerical/schedule results	Physical-flow experiment

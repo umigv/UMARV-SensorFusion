@@ -18,7 +18,7 @@ BANKS = {
 }
 
 
-def attributed_storage(module, mapped, modules, lib, registers, read_ports):
+def attributed_storage(module, mapped, modules, lib, registers, read_ports, *, split=False, read_bits=()):
     nets = module["netnames"]
     register_bits = {b for name in registers for b in nets[name]["bits"] if isinstance(b, int)}
     storage = {name for name, cell in mapped.items() if lib[cell["type"]][1] == "DFF"
@@ -54,7 +54,8 @@ def attributed_storage(module, mapped, modules, lib, registers, read_ports):
             pending.extend(driver.get(bit) for bit in inputs[name])
 
     ancestors, read = set(), set()
-    pending = [driver.get(bit) for port in read_ports for bit in nets[port]["bits"]]
+    pending = [driver.get(bit) for bit in read_bits]
+    pending.extend(driver.get(bit) for port in read_ports for bit in nets[port]["bits"])
     while pending:
         name = pending.pop()
         if name in logic and name not in ancestors:
@@ -66,6 +67,8 @@ def attributed_storage(module, mapped, modules, lib, registers, read_ports):
         if name in ancestors and name not in read:
             read.add(name)
             pending.extend(user for bit in outputs[name] for user in users[bit])
+    if split:
+        return storage, write, read - write
     return storage | write | read
 
 

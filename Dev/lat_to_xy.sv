@@ -5,8 +5,8 @@ module lat_to_xy #(
     input  logic        clk,
     input  logic        rst_n,
     input  logic        start,
-    input  logic [31:0] latitude,
-    input  logic [31:0] longitude,
+    input  logic [31:0] sample_coordinate,
+    output logic        sample_longitude,
     input  logic [31:0] mem_rdata,
     output logic [6:0]  mem_addr,
     output logic        mem_we,
@@ -56,6 +56,8 @@ module lat_to_xy #(
     logic [31:0] operand_a;
 
     assign busy = state != IDLE;
+    // Sample latitude on start and longitude on the following cycle.
+    assign sample_longitude = state == SAVE_LON;
     assign mac_b = state == SCALE_EAST && mem_rdata[31] ? 32'b0 : mem_rdata;
 
     assign mac_last = mac_start;
@@ -150,12 +152,12 @@ module lat_to_xy #(
             IDLE: begin
                 mem_addr = SAMPLE_LAT;
                 mem_we = rst_n && start;
-                mem_wdata = latitude;
+                mem_wdata = sample_coordinate;
             end
             SAVE_LON: begin
                 mem_addr = SAMPLE_LON;
                 mem_we = rst_n;
-                mem_wdata = operand_a;
+                mem_wdata = sample_coordinate;
             end
             READ_EAST: mem_addr = EAST_METRES;
             PUBLISH: mem_addr = NORTH_METRES;
@@ -190,7 +192,6 @@ module lat_to_xy #(
             xy_valid <= 1'b0;
             case (state)
                 IDLE: if (start) begin
-                    operand_a <= longitude;
                     cos_addr <= COS_LAST - 7'd1;
                     state <= SAVE_LON;
                 end

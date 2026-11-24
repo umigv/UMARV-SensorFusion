@@ -411,6 +411,13 @@ module corr_microcode #(
         assign corrected_words[i*32 +: 32] = regfile[REG_S_BASE + i];
     end
 
+    // Main-bank loads and correction writebacks are mutually exclusive.
+    // Share the arithmetic-data mask across the bank and decode only
+    // the per-word write enable. Address 5 is reserved for wheel velocity.
+    wire load_main = state == IDLE && prediction_load;
+    wire retire_main = arithmetic_complete && !arithmetic_failed && uop.wb_en;
+    wire [31:0] main_write_data = arithmetic_result & {32{!load_main}};
+
     always_ff @(posedge clock or posedge reset) begin
         if (reset) begin
             for (int addr = REG_X; addr <= RF_LAST; addr++)
@@ -442,11 +449,17 @@ module corr_microcode #(
             failed <= 1'b0;
             // Prediction owns the main bank until done. Load its completed
             // pair on that edge, even on a wheel-only beat.
-            if (SHARED_STORAGE && state == IDLE && prediction_load) begin
-                {regfile[REG_X], regfile[REG_Y], regfile[REG_THETA],
-                 regfile[REG_OMEGA], regfile[REG_WHEEL_BIAS]} <= prediction[160:1];
-                for (int i = 0; i < S_WORDS; i++)
-                    regfile[REG_S_BASE + i] <= prediction_words[i*32 +: 32];
+            if (SHARED_STORAGE) begin
+                for (int i = 0; i <= RF_LAST; i++) begin
+                    if (i != 5 && (load_main || (retire_main && uop.dest == 7'(i)))) begin
+                        if (i < 5)
+                            regfile[i] <= ({32{load_main}} & prediction[160-32*i -: 32]) |
+                                          main_write_data;
+                        else
+                            regfile[i] <= ({32{load_main}} & prediction_words[32*(i-6) +: 32]) |
+                                          main_write_data;
+                    end
+                end
             end
             if (!SHARED_STORAGE && state == IDLE && measurement_load) begin
                 regfile[REG_MEAS_X] <= measurement.x;
@@ -460,7 +473,7 @@ module corr_microcode #(
                 done <= 1'b1;
                 state <= IDLE;
             end else if (arithmetic_complete || (state == ISSUE_A && uop.dp == UOP_NOP)) begin
-                if (arithmetic_complete && uop.wb_en && uop.dest <= RF_LAST)
+                if (!SHARED_STORAGE && arithmetic_complete && uop.wb_en && uop.dest <= RF_LAST)
                     regfile[uop.dest] <= arithmetic_result;
                 state <= ISSUE_A;
                 pc <= pc + 7'd1;
