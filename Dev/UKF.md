@@ -22,6 +22,8 @@ The UKF reads the timestamper’s held payload directly and uses `ukf_pulse` to 
 
 The standalone coordinate converter accepts FP32 latitude and longitude in degrees and returns east and north offsets in metres. It reads the externally initialized origin and constants through a single memory port with combinational reads and rising-edge writes. Reserve addresses 21–29 for the converter while `busy` is high.
 
+The converter exposes MAC ports for an externally instantiated `fp32_mac`. Give it exclusive access from `start` through `xy_valid`, since several steps use the accumulator left by the preceding operation. Connect the MAC's active-high reset to the inverse of `rst_n`.
+
 | Address | FP32 value |
 |---:|---|
 | 70 | Origin longitude in degrees |

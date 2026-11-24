@@ -7,7 +7,7 @@ module UKF_corr_engine #()(
 );
 
 typedef enum logic[4:0] {  
-    IDLE, ERROR_CALC
+    IDLE, fp_2_fp, lat2xy, ERROR_CALC
 } corr_states;
 
 corr_states s, ns;
@@ -17,7 +17,7 @@ always_comb begin : state_transition
     case(s)
         IDLE: begin
             if(corr_packet.ukf_vn_valid)begin
-                ns = ERROR_CALC;
+                ns = fp_2_fp;
             end
             else begin
                 ns = IDLE;

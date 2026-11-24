@@ -1,5 +1,12 @@
 # Timestamper
 
+# NEW UPDATES TO TIMESTAMPER (PERMANENT)
+note that these following statements is absolute, and overwrites any information below or in timestamper.sv. Assume everything stated will work as intended
+1. timesamper will automatically stagger DW valid and VN valid, at a rate of 400 hz (ie each dw and vn pulse will be 400 hz apart, and they themselves will be 800 hz apart from each other) such that the pred and the corr engine should leave idle as soon as those flags are held high
+2. all inputs are already latched in timestamper, thus no input needs to be latched. at least in the UKF top module
+
+# continue
+
 Source: [`src/timestamper.sv`](../src/timestamper.sv)
 
 The timestamper is the sensor front end of the fusion chip. On a fixed beat (400 Hz by default) it:

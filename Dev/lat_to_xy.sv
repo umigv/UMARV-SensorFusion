@@ -11,6 +11,14 @@ module lat_to_xy #(
     output logic [6:0]  mem_addr,
     output logic        mem_we,
     output logic [31:0] mem_wdata,
+    output logic        mac_start,
+    output logic        mac_clear,
+    output logic        mac_last,
+    output logic [31:0] mac_a,
+    output logic [31:0] mac_b,
+    input  logic        mac_busy,
+    input  logic        mac_result_valid,
+    input  logic [31:0] mac_result,
     output logic        busy,
     output logic        xy_valid,
     output logic [31:0] x_f32,
@@ -43,18 +51,12 @@ module lat_to_xy #(
     phase_t phase;
 
     logic [6:0] src_a, src_b, dest, cos_addr;
-    logic [31:0] operand_a, mac_a, mac_b, mac_result;
-    logic mac_start, mac_clear, mac_valid;
+    logic [31:0] operand_a;
 
     assign busy = state != IDLE;
     assign mac_b = state == SCALE_EAST && mem_rdata[31] ? 32'b0 : mem_rdata;
 
-    fp32_mac projection_mac (
-        .clock(clk), .reset(rst_n),
-        .start(mac_start), .clear(mac_clear), .last(1'b1),
-        .a(mac_a), .b(mac_b), .result(mac_result),
-        .result_valid(mac_valid), .done(), .busy(), .exception_flags()
-    );
+    assign mac_last = mac_start;
 
     always_comb begin
         src_a = '0;
@@ -159,15 +161,15 @@ module lat_to_xy #(
                 READ_A: mem_addr = src_a;
                 START_MAC: begin
                     mem_addr = src_b;
-                    mac_start = rst_n;
-                    mac_clear = state != HORNER && state != SUB_LON && state != SUB_LAT;
+                    mac_start = rst_n && !mac_busy;
+                    mac_clear = mac_start && state != HORNER && state != SUB_LON && state != SUB_LAT;
                     if (state == SUB_LON || state == SUB_LAT)
                         mac_a[31] = ~operand_a[31];
                 end
                 WAIT_MAC: begin
                     mem_addr = dest;
                     // These steps only seed the MAC's accumulator.
-                    mem_we = rst_n && mac_valid && state != LOAD_COEFF &&
+                    mem_we = rst_n && mac_result_valid && state != LOAD_COEFF &&
                              state != LOAD_LON && state != LOAD_LAT;
                 end
                 default: begin end
@@ -206,8 +208,8 @@ module lat_to_xy #(
                         operand_a <= mem_rdata;
                         phase <= START_MAC;
                     end
-                    START_MAC: phase <= WAIT_MAC;
-                    WAIT_MAC: if (mac_valid) begin
+                    START_MAC: if (mac_start) phase <= WAIT_MAC;
+                    WAIT_MAC: if (mac_result_valid) begin
                         if (state == HORNER)
                             cos_addr <= cos_addr == COS_FIRST ? PROM_ONE : cos_addr - 7'd1;
                         state <= next_state;
