@@ -69,9 +69,9 @@ module UKF #(
     logic [6:0] wheel_address;
     logic [31:0] wheel_read_data;
     meas_regfile_t time_pack, incoming_packet, vn_pending_packet, correction_packet, convert_input;
-    meas_s_factor_t vn_pending_noise, active_measurement_s, selected_noise, noise_snapshot;
+    meas_s_factor_t active_measurement_s, noise_snapshot;
     logic load_shared_noise, load_shared_measurement, correction_update_failed;
-    ukf_spad_request_t correction_spad_request;
+    ukf_spad_request_t correction_spad_request, converter_scratch_request, shared_spad_request;
     ukf_spad_response_t correction_spad_response;
     logic vn_pending, vn_arrival, vn_dispatch, vn_store, late_dispatch, late_conversion;
     corr_measurement_t converted;
@@ -123,7 +123,7 @@ module UKF #(
                 .correction_noise(active_measurement_s),
                 .load_correction_measurement(load_shared_measurement),
                 .correction_measurement(converted),
-                .correction_spad_request(correction_spad_request),
+                .correction_spad_request(shared_spad_request),
                 .correction_spad_response(correction_spad_response),
                 .prior_s(prediction_prior_s), .wheel_velocity(prediction_wheel_velocity),
                 .mac_grant(prediction_mac_grant), .div_grant(prediction_div_grant),
@@ -176,16 +176,34 @@ module UKF #(
         end
     end
 
-    assign selected_noise = vn_pending ? vn_pending_noise : measurement_s;
+    // Both noise factors can be live during prediction. A queued dispatch
+    // swaps ownership instead of copying 320 bits. On a simultaneous refill
+    // the incoming noise goes into the old active bank.
+    meas_s_factor_t noise_bank_0, noise_bank_1;
+    logic active_noise_bank;
+    wire take_direct_noise = vn_dispatch && !vn_pending;
+    wire store_noise = vn_store || take_direct_noise;
+    wire store_noise_bank = vn_dispatch ? active_noise_bank : !active_noise_bank;
+    always_ff @(posedge clk or negedge rst_n)
+        if (!rst_n)
+            active_noise_bank <= 1'b0;
+        else if (vn_dispatch && vn_pending)
+            active_noise_bank <= !active_noise_bank;
 
-    // Payload registers are read only after their corresponding valid event.
+    always_ff @(posedge clk) begin
+        if (store_noise && !store_noise_bank)
+            noise_bank_0 <= measurement_s;
+        if (store_noise && store_noise_bank)
+            noise_bank_1 <= measurement_s;
+    end
+    assign noise_snapshot = active_noise_bank ? noise_bank_1 : noise_bank_0;
+    wire [319:0] selected_noise = vn_pending ? (active_noise_bank ? noise_bank_0 : noise_bank_1) : measurement_s;
+
+    // The queued packet is read only after its corresponding valid event.
     always_ff @(posedge clk) begin
         if (vn_store) begin
             vn_pending_packet <= incoming_packet;
-            vn_pending_noise <= measurement_s;
         end
-        if (vn_dispatch)
-            noise_snapshot <= selected_noise;
     end
 
     assign wheel_read_data = wheel_address == WHEEL_SCALE_ADDR ? WHEEL_VELOCITY_SCALE : '0;
@@ -232,13 +250,20 @@ module UKF #(
         .pred_pack(pred_packet), .pred_s(pred_s)
     );
 
+    // Conversion starts after prediction commits and finishes before
+    // correction starts. Its four scratch words become correction residuals.
+    assign shared_spad_request = converter_scratch_request.active ?
+                                 converter_scratch_request : correction_spad_request;
+
     vn_to_correction #(
+        .SHARED_SCRATCH(!EXTERNAL_PREDICTION),
         .ORIGIN_LATITUDE(ORIGIN_LATITUDE), .ORIGIN_LONGITUDE(ORIGIN_LONGITUDE),
         .EARTH_RADIUS(EARTH_RADIUS)
     ) converter (
         .clock(clk), .reset(reset), .start(convert_start), .packet(convert_input),
         .busy(converter_busy), .done(convert_done), .measurement(converted),
-        .mac_request(converter_mac_request), .mac_response(sensor_mac_response)
+        .mac_request(converter_mac_request), .mac_response(sensor_mac_response),
+        .scratch_request(converter_scratch_request), .scratch_read(correction_spad_response.a)
     );
 
     UKF_corr_engine #(

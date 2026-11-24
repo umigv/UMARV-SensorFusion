@@ -77,6 +77,8 @@ def main():
     parser.add_argument("liberty", type=Path)
     parser.add_argument("netlist", type=Path)
     parser.add_argument("--top", default="UKF")
+    parser.add_argument("--flattened", action="store_true",
+                        help="report cell totals when module boundaries have been removed")
     args = parser.parse_args()
     lib = library(args.liberty)
     modules = loads(args.netlist.read_text())["modules"]
@@ -143,8 +145,12 @@ def main():
         print(f"{name}: {area:.2f} um² ({100 * area / total[3]:.2f}%), {count} cells, {dff} DFF")
     print(f"TOTAL: {total[3]:.2f} um², {total[0]} cells, {total[1]} DFF, {total[2]} latches")
     print(f"Sequential area: {sequential_area:.2f} um²; combinational: {total[3]-sequential_area:.2f} um²")
-    assert instances["fp32_mac"] == instances["fp32_divsqrt"] == 1
-    assert instances["pred_angle_math"] == 0
+    if args.flattened:
+        assert sum(instances.values()) == 1, instances
+        print("Arithmetic instance counts require the corresponding hierarchical build.")
+    else:
+        assert instances["fp32_mac"] == instances["fp32_divsqrt"] == 1
+        assert instances["pred_angle_math"] == 0
 
 
 if __name__ == "__main__":

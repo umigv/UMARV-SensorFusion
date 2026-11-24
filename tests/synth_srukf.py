@@ -51,7 +51,9 @@ def main():
     parser.add_argument("output", type=Path)
     parser.add_argument("--correction-only", action="store_true")
     parser.add_argument("--timing-map", action="store_true",
-                        help="ABC buffer and size for a 20 ns target")
+                        help="enable constrained ABC buffering and sizing")
+    parser.add_argument("--abc-delay-ps", type=int, default=20000,
+                        help="ABC mapping target in ps with --timing-map (default 20000)")
     parser.add_argument("--flatten", action="store_true",
                         help="map across hierarchy boundaries")
     args = parser.parse_args()
@@ -76,17 +78,22 @@ def main():
     if args.timing_map:
         constraint = output / "abc.constr"
         constraint.write_text("set_driving_cell sky130_fd_sc_hd__buf_4\nset_load 5.0\n")
-        abc += f' -constr "{constraint}" -D 20000'
+        abc += f' -constr "{constraint}" -D {args.abc_delay_ps}'
     hierarchy_mode = " -flatten" if args.flatten else ""
     commands = "; ".join((
         f'read_verilog -sv "{unit}"', setup, f"hierarchy -check -top {top}",
-        f"synth -noabc{hierarchy_mode} -top {top}", "check -assert",
+        f"synth -noabc{hierarchy_mode} -top {top}", "check -assert", "delete t:$scopeinfo",
         f'dfflibmap -liberty "{liberty}"', abc,
         f'stat -liberty "{liberty}"', f'write_json "{output / "mapped.json"}"',
         f'write_verilog -noattr -noexpr -simple-lhs "{output / "mapped.v"}"',
     ))
-    with (output / "yosys.log").open("w") as log:
+    log_path = output / "yosys.log"
+    with log_path.open("w") as log:
         run(["yosys", "-Q", "-T", "-p", commands], stdout=log, stderr=log, check=True)
+    # An early undriven signal can disappear during constant propagation,
+    # before the final check has a chance to report it.
+    if findall(r"(?m)^Warning: Wire .* is used but has no driver\.$", log_path.read_text()):
+        raise SystemExit(f"Synthesis found undriven wires. See {log_path}")
 
 
 if __name__ == "__main__":

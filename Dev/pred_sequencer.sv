@@ -46,6 +46,13 @@ module UKF_pred_sequencer #(
     logic [31:0] prior_data [0:20];
     logic [3:0] spad_addr_a, spad_addr_b;
     logic [31:0] working_sq [0:14];
+    // Use explicit word slices across packed-array module ports.
+    wire [479:0] prior_words = prior_s;
+    wire [319:0] staged_noise_words = staged_correction_noise;
+    wire [479:0] prediction_words;
+    wire [319:0] correction_noise_words;
+    assign prediction_s = prediction_words;
+    assign correction_noise = correction_noise_words;
 
     logic [31:0] a, b, signed_b, result_word;
     logic complete, write_result, div_finished, bad_result, bad_control;
@@ -57,7 +64,7 @@ module UKF_pred_sequencer #(
     assign prior_data[4] = prior.ukf_wheelB;
     assign prior_data[5] = wheel_velocity;
     for (genvar i = 0; i < 15; i++)
-        assign prior_data[6+i] = prior_s[i];
+        assign prior_data[6+i] = prior_words[32*i +: 32];
     pred_microcode_prog rom (.pc(pc), .central_downdate(CENTRAL_DOWNDATE),
                             .wheel_valid(wheel_valid), .uop(uop));
 
@@ -79,9 +86,14 @@ module UKF_pred_sequencer #(
     function automatic logic [31:0] operand(
         input logic [6:0] addr, input logic [31:0] prior_word, scratch_word, sq_word, wrap_word
     );
-        // The bank ranges and the ROM/dynamic-constant addresses are
-        // disjoint. Unallocated ROM addresses contribute zero.
-        operand = (prior_word & {32{addr < SPAD_FIRST}}) |
+        // Correction uses the same read ports with its own noise address
+        // range. Prediction bank ranges and ROM addresses are disjoint.
+        if (correction_spad_request.active)
+            operand = addr < SPAD_FIRST ? prior_word :
+                      addr <= SPAD_LAST ? scratch_word :
+                      addr >= PROM_SR_BASE && addr < PROM_SR_BASE + 7'd10 ? sq_word : prom_math_read(addr);
+        else
+            operand = (prior_word & {32{addr < SPAD_FIRST}}) |
                   (scratch_word & {32{addr >= SPAD_FIRST && addr <= SPAD_LAST}}) |
                   (sq_word & {32{addr >= 68 && addr < 83}}) |
                   (angle_wrap_step(wrap_word) & {32{addr == PROM_WRAP_STEP}}) |
@@ -92,13 +104,20 @@ module UKF_pred_sequencer #(
                          uop.src_a[3:0] - SPAD_FIRST[3:0];
     assign spad_addr_b = correction_spad_request.active ? correction_spad_request.read_b :
                          uop.src_b[3:0] - SPAD_FIRST[3:0];
-    assign correction_spad_response = {spad[spad_addr_a], spad[spad_addr_b], spad[2][31]};
-    assign a = operand(uop.src_a, prior_data[uop.src_a[4:0]],
+    wire corr_active = correction_spad_request.active;
+    wire [6:0] corr_addr_a = correction_spad_request.operand_a;
+    wire [6:0] corr_addr_b = correction_spad_request.operand_b;
+    wire [6:0] addr_a = corr_active ? corr_addr_a : uop.src_a;
+    wire [6:0] addr_b = corr_active ? corr_addr_b : uop.src_b;
+    wire [3:0] noise_addr_a = corr_active ? corr_addr_a[3:0] - PROM_SR_BASE[3:0] : uop.src_a[3:0] - 4'd4;
+    wire [3:0] noise_addr_b = corr_active ? corr_addr_b[3:0] - PROM_SR_BASE[3:0] : uop.src_b[3:0] - 4'd4;
+    assign correction_spad_response = {a, b, spad[2][31]};
+    assign a = operand(addr_a, prior_data[addr_a[4:0]],
                        spad[spad_addr_a],
-                       working_sq[uop.src_a[3:0] - 4'd4], spad[ANGLE_INDEX]);
-    assign b = operand(uop.src_b, prior_data[uop.src_b[4:0]],
+                       working_sq[noise_addr_a], spad[ANGLE_INDEX]);
+    assign b = operand(addr_b, prior_data[addr_b[4:0]],
                        spad[spad_addr_b],
-                       working_sq[uop.src_b[3:0] - 4'd4], spad[ANGLE_INDEX]);
+                       working_sq[noise_addr_b], spad[ANGLE_INDEX]);
     assign signed_b = {b[31] ^ uop.neg_b, b[30:0]};
 
     always_comb begin
@@ -135,9 +154,28 @@ module UKF_pred_sequencer #(
     assign done = state == FINISH;
     assign prediction = {spad[7], spad[8], spad[9], spad[10], spad[11], done && success};
     for (genvar i = 0; i < 15; i++)
-        assign prediction_s[i] = working_sq[i];
+        assign prediction_words[32*i +: 32] = working_sq[i];
     for (genvar i = 0; i < 10; i++)
-        assign correction_noise[i] = working_sq[i];
+        assign correction_noise_words[32*i +: 32] = working_sq[i];
+
+    // Prediction and the external scratchpad client share a single
+    // addressed write port. Converted measurements retain bulk-load priority.
+    wire spad_write_pred = complete && !bad_control && !bad_result && uop.wb_en &&
+                           uop.dest >= SPAD_FIRST && uop.dest <= SPAD_LAST;
+    wire spad_write_corr = state == IDLE && !start && !load_correction_noise &&
+                           correction_spad_request.write_enable;
+    wire [3:0] spad_write_addr = spad_write_corr ? correction_spad_request.write_addr :
+                                 uop.dest[3:0] - SPAD_FIRST[3:0];
+    wire [31:0] spad_write_data = spad_write_corr ? correction_spad_request.write_data : result_word;
+    always_ff @(posedge clock) begin
+        if (!reset && state == IDLE && !start && !load_correction_noise && load_correction_measurement) begin
+            spad[0] <= correction_measurement.x;
+            spad[1] <= correction_measurement.y;
+            spad[2] <= correction_measurement.theta;
+            spad[3] <= correction_measurement.omega;
+        end else if (!reset && (spad_write_pred || spad_write_corr))
+            spad[spad_write_addr] <= spad_write_data;
+    end
 
     always_ff @(posedge clock or posedge reset) begin
         if (reset) begin
@@ -159,14 +197,7 @@ module UKF_pred_sequencer #(
             end else if (load_correction_noise) begin
                 // Prediction has already committed SQ into retained S.
                 for (int i = 0; i < 10; i++)
-                    working_sq[i] <= staged_correction_noise[i];
-            end else if (load_correction_measurement) begin
-                spad[0] <= correction_measurement.x;
-                spad[1] <= correction_measurement.y;
-                spad[2] <= correction_measurement.theta;
-                spad[3] <= correction_measurement.omega;
-            end else if (correction_spad_request.write_enable) begin
-                spad[correction_spad_request.write_addr] <= correction_spad_request.write_data;
+                    working_sq[i] <= staged_noise_words[32*i +: 32];
             end
         end else if (state == FINISH) begin
             state <= IDLE;
@@ -178,9 +209,7 @@ module UKF_pred_sequencer #(
                 state <= FINISH;
             end else begin
                 if (write_result) begin
-                    if (uop.dest >= SPAD_FIRST && uop.dest <= SPAD_LAST)
-                        spad[uop.dest[3:0] - SPAD_FIRST[3:0]] <= result_word;
-                    else if (uop.dest >= 68 && uop.dest < 83)
+                    if (uop.dest >= 68 && uop.dest < 83)
                         working_sq[uop.dest[3:0] - 4'd4] <= result_word;
                 end
                 state <= ISSUE;

@@ -1,5 +1,6 @@
 // Adapt the raw VN packet to the existing FP32 east/north converter.
 module vn_to_correction #(
+    parameter bit SHARED_SCRATCH = 1'b0,
     parameter logic [31:0] ORIGIN_LATITUDE = 32'b0,
     parameter logic [31:0] ORIGIN_LONGITUDE = 32'b0,
     parameter logic [31:0] EARTH_RADIUS = 32'h4ac26d70
@@ -9,6 +10,8 @@ module vn_to_correction #(
     output logic busy, done,
     output corr_measurement_t measurement,
     output ukf_mac_request_t mac_request,
+    output ukf_spad_request_t scratch_request,
+    input logic [31:0] scratch_read,
     input ukf_mac_response_t mac_response
 );
     localparam logic [31:0] ONE = 32'h3f800000;
@@ -73,7 +76,8 @@ module vn_to_correction #(
             7'd112: read_data = 32'h37d00d01;
             7'd113: read_data = 32'hb493f27e;
             7'd114: read_data = 32'h310f76c7;
-            default: read_data = address >= 7'd21 && address <= 7'd24 ? scratch[address] : '0;
+            default: read_data = address >= 7'd21 && address <= 7'd24 ?
+                                 (SHARED_SCRATCH ? scratch_read : scratch[address]) : '0;
         endcase
     end
 
@@ -102,9 +106,13 @@ module vn_to_correction #(
         endcase
     end
 
-    always_ff @(posedge clock) begin
-        if (write_enable)
-            scratch[address] <= write_data;
+    wire [3:0] scratch_index = address[3:0] - 4'd5;
+    assign scratch_request = {busy || start, write_enable, scratch_index, 4'b0,
+                              scratch_index, address, 7'd0, write_data};
+    if (!SHARED_SCRATCH) begin : local_scratch
+        always_ff @(posedge clock)
+            if (write_enable)
+                scratch[address] <= write_data;
     end
 
     always_ff @(posedge clock or posedge reset) begin

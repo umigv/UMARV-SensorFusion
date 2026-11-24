@@ -328,16 +328,14 @@ module corr_microcode #(
             uop.dest >= REG_MEAS_X && uop.dest <= REG_C,
         uop.src_a[3:0] - REG_MEAS_X[3:0],
         uop.src_b[3:0] - REG_MEAS_X[3:0],
-        uop.dest[3:0] - REG_MEAS_X[3:0], arithmetic_result
+        uop.dest[3:0] - REG_MEAS_X[3:0], uop.src_a, uop.src_b, arithmetic_result
     };
-    assign operand_a = read_operand(uop.src_a,
-                                    SHARED_STORAGE && uop.src_a >= REG_MEAS_X ? spad_response.a :
+    assign operand_a = SHARED_STORAGE ? spad_response.a : read_operand(uop.src_a,
                                     uop.src_a <= RF_LAST ? regfile[uop.src_a] : 32'b0,
                                     measurement_words);
-    assign operand_b = wrap_step ? angle_wrap_step(operand_a) : read_operand(uop.src_b,
-                                    SHARED_STORAGE && uop.src_b >= REG_MEAS_X ? spad_response.b :
+    assign operand_b = wrap_step ? angle_wrap_step(operand_a) : (SHARED_STORAGE ? spad_response.b : read_operand(uop.src_b,
                                     uop.src_b <= RF_LAST ? regfile[uop.src_b] : 32'b0,
-                                    measurement_words);
+                                    measurement_words));
 
     function automatic logic positive_finite(input logic [31:0] word);
         positive_finite = !word[31] && (|word[30:0]) && word[30:23] != 8'hff;

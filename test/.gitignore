@@ -1,0 +1,4 @@
+/sim_build/
+/results.xml
+/gate_level_netlist.v
+/__pycache__/
