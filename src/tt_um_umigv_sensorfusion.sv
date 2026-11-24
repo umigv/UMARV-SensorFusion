@@ -3,9 +3,7 @@
  *
  * Tiny Tapeout top level for the sensor fusion chip.
  *
- * For now this holds only the timestamper. The settings are tied to constants and the
- * measurements leave on a simple debug serial stream, because the host SPI register block
- * is not written yet. Both of those are stand-ins and will be replaced.
+ * The sensor front end supplies raw samples to the integrated SR-UKF.
  */
 
 module tt_um_umigv_sensorfusion (
@@ -32,7 +30,7 @@ module tt_um_umigv_sensorfusion (
     logic vn_rx, dw_miso, enable, dw_check_turns;
     assign vn_rx          = ui_in[0];
     assign dw_miso        = ui_in[1];
-    assign enable         = ui_in[2];
+    assign enable         = ena && ui_in[2] && noise_count == 0;
     assign dw_check_turns = ui_in[3];
 
     logic vn_sync, dw_cs_n, dw_sck, dw_mosi, ukf_pulse;
@@ -41,7 +39,25 @@ module tt_um_umigv_sensorfusion (
     logic        [31:0] vn_yaw_f32, vn_rate_f32;
     logic        [63:0] vn_lat_f64, vn_lon_f64;
     logic signed [27:0] dw_delta;
-    logic        [39:0] time_us;
+    logic [319:0] measurement_s;
+    logic [5:0] noise_count;
+    logic collecting, busy, corrected, failed, reinit_required, overflow;
+    logic [31:0] x, y, heading, rate, wheel_bias;
+    logic rejected_snapshot, active_had_vn, sticky_fault;
+    localparam [319:0] DEFAULT_NOISE =
+        320'h3e0f5c293c9ba5e33db851ecbc23d70a3c8b43963e3851ec3c449ba6bc23d70a3ccccccd3e4ccccd;
+
+    // Load a full runtime noise factor while collection is disabled.
+    // A partial factor blocks new beats until its remaining bytes arrive.
+    always_ff @(posedge clk or negedge rst_n_s) begin
+        if (!rst_n_s) begin
+            measurement_s <= DEFAULT_NOISE;
+            noise_count <= 0;
+        end else if (ena && !ui_in[2] && ui_in[4] && !busy && !collecting && !ukf_pulse) begin
+            measurement_s <= {measurement_s[311:0], uio_in};
+            noise_count <= noise_count == 39 ? 0 : noise_count + 1'b1;
+        end
+    end
 
     timestamper u_timestamper (
         .clk            (clk),
@@ -67,44 +83,66 @@ module tt_um_umigv_sensorfusion (
         .ukf_vn_lon_f64 (vn_lon_f64),
         .ukf_dw_valid   (dw_valid),
         .ukf_dw_delta   (dw_delta),
-        .time_us        (time_us)
+        .collecting     (collecting),
+        .time_us        ()
     );
 
-    // Debug stream (stand-in for the register block): after each ukf_pulse, send
-    // the 294-bit word below most significant bit first, one bit every 8 clocks,
-    // with dbg_frame high for the whole frame.
-    localparam DBG_BITS = 294;
-    logic [DBG_BITS-1:0] dbg_word;
-    assign dbg_word = {time_us,                                  // 40
-                       beat_ts,                                  // 32
-                       vn_valid,                                 //  1
-                       vn_yaw_f32, vn_rate_f32,                  // 32 + 32
-                       vn_lat_f64, vn_lon_f64,                   // 64 + 64
-                       dw_valid,                                 //  1
-                       dw_delta};                                // 28
+    UKF u_srukf (
+        .clk(clk), .rst_n(rst_n_s), .ukf_beat(1'b0),
+        .ukf_pulse(ukf_pulse && !rejected_snapshot), .ukf_beat_ts(beat_ts),
+        .ukf_vn_valid(vn_valid), .ukf_vn_yaw_f32(vn_yaw_f32), .ukf_vn_rate_f32(vn_rate_f32),
+        .ukf_vn_lat_f64(vn_lat_f64), .ukf_vn_lon_f64(vn_lon_f64),
+        .ukf_dw_valid(dw_valid), .ukf_dw_delta(dw_delta), .measurement_s(measurement_s),
+        .prediction_done(1'b0), .prediction_result(161'b0), .prediction_result_s(480'b0),
+        .prediction_mac_request(67'b0), .prediction_div_request(66'b0),
+        .ukf_busy(busy), .ukf_valid(corrected), .ukf_failed(failed),
+        .ukf_reinit_required(reinit_required), .ukf_vn_overflow(overflow),
+        .ukf_x(x), .ukf_y(y), .ukf_theta(heading), .ukf_omega(rate), .ukf_wheelB(wheel_bias)
+    );
 
-    logic        dbg_frame;
-    logic [8:0]  dbg_idx;   // bits still to send, minus 1
-    logic [2:0]  dbg_div;
+    // Each hardware snapshot represents a whole beat. A VN-only beat may
+    // queue behind correction, but must not attach to an older wheel-only
+    // prediction. Never split a newer wheel/VN pair across UKF beats.
+    assign rejected_snapshot = ukf_pulse && (dw_valid || vn_valid) &&
+                               (reinit_required || (busy && (dw_valid || !active_had_vn)));
     always_ff @(posedge clk or negedge rst_n_s) begin
-        if(!rst_n_s) begin
-            dbg_frame <= 1'b0;
-            dbg_idx   <= '0;
-            dbg_div   <= '0;
-        end else if(ukf_pulse) begin
-            dbg_frame <= 1'b1;
-            dbg_idx   <= 9'd293;          // DBG_BITS - 1
-            dbg_div   <= '0;
-        end else if(dbg_frame) begin
-            dbg_div <= dbg_div + 1'b1;
-            if(dbg_div == 3'd7) begin
-                if(dbg_idx == '0) dbg_frame <= 1'b0;
-                else              dbg_idx   <= dbg_idx - 1'b1;
+        if (!rst_n_s) active_had_vn <= 0;
+        else if (ukf_pulse && !busy && !rejected_snapshot && (dw_valid || vn_valid))
+            active_had_vn <= vn_valid;
+    end
+    logic dbg_frame;
+    logic [167:0] dbg_word;
+    logic [7:0] dbg_idx;
+    logic [2:0] dbg_div;
+    wire [7:0] event_status = {3'b0, rejected_snapshot, overflow, reinit_required, failed, corrected};
+    always_ff @(posedge clk or negedge rst_n_s) begin
+        if (!rst_n_s) begin
+            sticky_fault <= 0;
+            dbg_frame <= 0;
+            dbg_idx <= 0;
+            dbg_div <= 0;
+        end else begin
+            if (failed || overflow || rejected_snapshot) sticky_fault <= 1;
+            if (!dbg_frame) begin
+                if (corrected || failed || overflow || rejected_snapshot) begin
+                    dbg_frame <= 1;
+                    dbg_idx <= 167;
+                    dbg_div <= 0;
+                end
+            end else begin
+                dbg_div <= dbg_div + 1'b1;
+                if (dbg_div == 7) begin
+                    if (dbg_idx == 0) dbg_frame <= 0;
+                    else dbg_idx <= dbg_idx - 1'b1;
+                end
             end
         end
     end
-    logic dbg_data;
-    assign dbg_data = dbg_frame & dbg_word[dbg_idx];
+    always_ff @(posedge clk)
+        if (rst_n_s && !dbg_frame && (corrected || failed || overflow || rejected_snapshot))
+            dbg_word <= {event_status, corrected ? {x, y, heading, rate, wheel_bias} : 160'b0};
+
+    wire dbg_data = dbg_frame && dbg_word[dbg_idx];
 
     // Pins out
     assign uo_out[0] = vn_sync;
@@ -114,12 +152,12 @@ module tt_um_umigv_sensorfusion (
     assign uo_out[4] = ukf_pulse;
     assign uo_out[5] = dbg_data;
     assign uo_out[6] = dbg_frame;
-    assign uo_out[7] = 1'b0;
+    assign uo_out[7] = sticky_fault;
 
     assign uio_out = 8'h00;
     assign uio_oe  = 8'h00;
 
     // List all unused inputs to prevent warnings
-    wire _unused = &{ena, ui_in[7:4], uio_in, 1'b0};
+    wire _unused = &{ui_in[7:5], 1'b0};
 
 endmodule

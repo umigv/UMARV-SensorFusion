@@ -37,6 +37,7 @@ module timestamper (
     output logic signed [27:0] ukf_dw_delta,     // counts moved since the last good reading
 
     // LIDAR interface
+    output logic collecting,
     output logic [39:0] time_us // increments every us, never resets. 40 bits is 12.7 days
 );  
 
@@ -73,6 +74,7 @@ module timestamper (
     logic s;
 
     logic deadline_reached, collect_end;
+    assign collecting = s == S_COLLECT;
     assign deadline_reached = (s == S_COLLECT) && us_tick && (beat_ctr == deadline_us);
     // collection ends when both sensors have answered, at the deadline, or (bad settings) at the next beat
     assign collect_end = (s == S_COLLECT) && ((dw_done && vn_done) || deadline_reached || beat);
