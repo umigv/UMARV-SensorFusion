@@ -1,0 +1,3 @@
+/home/Nabhah/sqrtUKF/UMARV-SensorFusion/benchmarks/mac/results/latch_benchmark/fp32_mac_round_latch.sv:198: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/home/Nabhah/sqrtUKF/UMARV-SensorFusion/benchmarks/mac/results/latch_benchmark/fp32_mac_round_latch.sv:198: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/home/Nabhah/sqrtUKF/UMARV-SensorFusion/benchmarks/mac/results/latch_benchmark/fp32_mac_round_latch.sv:198: sorry: constant selects in always_* processes are not currently supported (all bits will be included).

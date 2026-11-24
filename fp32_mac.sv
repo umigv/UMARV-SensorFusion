@@ -1,4 +1,6 @@
 `timescale 1ns/1ps
+// Production Architecture A, specialized from the verified benchmark core
+// (ARCH=0, TOPOLOGY=4, FAST_SHIFT=1). The experimental variants remain separate.
 module fp32_mac (
     input  logic        clk,
     input  logic        rst_n,
@@ -25,9 +27,24 @@ module fp32_mac (
     logic publish, product_sign, sum_sign;
     logic [23:0] multiplicand;
     logic [4:0] multiply_step;
-    // During multiply, product_mag[50:3] is the combined partial
-    // product and multiplier. After normalization, bit 50 is the leading
-    // bit and bit 51 is reserved for addition carry.
+    localparam integer MULTIPLY_CYCLES = 13;
+    logic [26:0] digits;
+    logic [27:0] booth_upper;
+    logic [23:0] booth_lower;
+    wire [27:0] booth_sum;
+
+    // Radix-4 Booth recoding selects 0, ±A, or ±2A. One narrow adder
+    // commits two low bits per step, with a final unsigned correction digit.
+    wire [2:0] digit = digits[2:0];
+    wire negative = digit[2];
+    wire [2:0] recode = negative ? ~digit : digit;
+    wire [2:0] magnitude = {2'b0,recode[0]} + {2'b0,recode[1]};
+    wire [27:0] term = magnitude == 1 ? {4'b0,multiplicand} :
+                       magnitude == 2 ? {3'b0,multiplicand,1'b0} : 28'b0;
+    wire [28:0] extended = {booth_upper,1'b1} + {term ^ {28{negative}},negative};
+    assign booth_sum = extended[28:1];
+
+    // Bit 50 is the normalized leading bit; bit 51 holds addition carry.
     logic [51:0] product_mag, acc_mag;
     logic signed [9:0] product_exp, acc_exp;
     logic [24:0] rounded;
@@ -71,16 +88,12 @@ module fp32_mac (
     assign invalid_product = (is_inf(a) && is_zero(b)) || (is_zero(a) && is_inf(b));
     assign signaling_nan = (is_nan(a) && !a[22]) || (is_nan(b) && !b[22]);
 
-    // Share one significand adder across serial multiply, add/subtract and round.
+    // Share the wide significand adder across add/subtract and round.
     always @* begin
         alu_left = '0;
         alu_right = '0;
         subtract = 1'b0;
         case (state)
-            MULTIPLY: begin
-                alu_left = {28'b0, product_mag[50:27]};
-                alu_right = product_mag[3] ? {28'b0, multiplicand} : 52'b0;
-            end
             ADD: begin
                 subtract = product_sign != sum_sign;
                 alu_left = product_mag;
@@ -97,53 +110,81 @@ module fp32_mac (
             default: begin end
         endcase
     end
-    // Sparse carry lookahead: 13 four-bit blocks, with a parallel prefix
-    // over block boundaries. The same tree handles add and subtract.
-    localparam integer CARRY_BLOCKS = 13;
-    localparam integer PREFIX_LEVELS = $clog2(CARRY_BLOCKS);
-    wire [51:0] alu_rhs = alu_right ^ {52{subtract}};
-    wire [51:0] bit_p = alu_left ^ alu_rhs;
-    wire [51:0] bit_g = alu_left & alu_rhs;
-    wire [CARRY_BLOCKS-1:0] prefix_p [0:PREFIX_LEVELS];
-    wire [CARRY_BLOCKS-1:0] prefix_g [0:PREFIX_LEVELS];
+    // Four-bit local ripple with a parallel prefix between the 13 groups.
+    wire [51:0] adder_right = alu_right ^ {52{subtract}};
+    wire [51:0] p = alu_left ^ adder_right, g = alu_left & adder_right;
+    wire [51:0] carry;
+    wire [12:0] block_p, block_g;
+    wire [12:0] prefix_p [0:4], prefix_g [0:4];
+    assign alu_result = p ^ carry;
+    assign carry[0] = subtract;
+    assign prefix_p[0] = block_p;
+    assign prefix_g[0] = block_g;
 
-    for (genvar group_index = 0; group_index < CARRY_BLOCKS; group_index++) begin : carry_block
-        localparam integer LOW_BIT = 4 * group_index;
-        wire [3:0] p = bit_p[LOW_BIT +: 4];
-        wire [3:0] g = bit_g[LOW_BIT +: 4];
-        wire [3:0] carry;
-
-        assign prefix_p[0][group_index] = &p;
-        assign prefix_g[0][group_index] = g[3] | (p[3] & g[2]) |
-            (p[3] & p[2] & g[1]) | (p[3] & p[2] & p[1] & g[0]);
-
-        if (group_index == 0) begin : first
-            assign carry[0] = subtract;
-        end else begin : later
-            assign carry[0] = prefix_g[PREFIX_LEVELS][group_index - 1] |
-                (prefix_p[PREFIX_LEVELS][group_index - 1] & subtract);
-        end
-        assign carry[1] = g[0] | (p[0] & carry[0]);
-        assign carry[2] = g[1] | (p[1] & g[0]) | (p[1] & p[0] & carry[0]);
-        assign carry[3] = g[2] | (p[2] & g[1]) |
-            (p[2] & p[1] & g[0]) | (p[2] & p[1] & p[0] & carry[0]);
-        assign alu_result[LOW_BIT +: 4] = p ^ carry;
+    for (genvar k = 0; k < 13; k++) begin : group
+        localparam integer I = 4*k;
+        wire [3:0] lp = p[I +: 4], lg = g[I +: 4];
+        assign block_p[k] = &lp;
+        assign block_g[k] = lg[3] | (lp[3] & lg[2]) |
+            (lp[3] & lp[2] & lg[1]) | (lp[3] & lp[2] & lp[1] & lg[0]);
+        if (k > 0)
+            assign carry[I] = prefix_g[4][k-1] | (prefix_p[4][k-1] & subtract);
+        for (genvar j = 1; j < 4; j++)
+            assign carry[I+j] = lg[j-1] | (lp[j-1] & carry[I+j-1]);
     end
 
-    for (genvar level = 0; level < PREFIX_LEVELS; level++) begin : prefix_level
+    for (genvar level = 0; level < 4; level++) begin : prefix_level
         localparam integer SPAN = 1 << level;
-        for (genvar group_index = 0; group_index < CARRY_BLOCKS; group_index++) begin : group_prefix
-            if (group_index >= SPAN) begin : combine
-                assign prefix_p[level + 1][group_index] =
-                    prefix_p[level][group_index] & prefix_p[level][group_index - SPAN];
-                assign prefix_g[level + 1][group_index] = prefix_g[level][group_index] |
-                    (prefix_p[level][group_index] & prefix_g[level][group_index - SPAN]);
-            end else begin : forward
-                assign prefix_p[level + 1][group_index] = prefix_p[level][group_index];
-                assign prefix_g[level + 1][group_index] = prefix_g[level][group_index];
+        for (genvar k = 0; k < 13; k++) begin : prefix_bit
+            if (k >= SPAN) begin : combine
+                assign prefix_p[level+1][k] = prefix_p[level][k] & prefix_p[level][k-SPAN];
+                assign prefix_g[level+1][k] = prefix_g[level][k] |
+                    (prefix_p[level][k] & prefix_g[level][k-SPAN]);
+            end else begin : pass
+                assign prefix_p[level+1][k] = prefix_p[level][k];
+                assign prefix_g[level+1][k] = prefix_g[level][k];
             end
         end
     end
+
+    // Binary group selection forms a balanced leading-zero detector.
+    function automatic [5:0] left_count(input logic [51:0] mag);
+        logic [63:0] x;
+        logic [5:0] zeros;
+        begin
+            x = {mag[50:0], 13'b0};
+            zeros = 0;
+            if (!(|x[63:32])) begin x = x << 32; zeros[5] = 1; end
+            if (!(|x[63:48])) begin x = x << 16; zeros[4] = 1; end
+            if (!(|x[63:56])) begin x = x << 8; zeros[3] = 1; end
+            if (!(|x[63:60])) begin x = x << 4; zeros[2] = 1; end
+            if (!(|x[63:62])) begin x = x << 2; zeros[1] = 1; end
+            if (!x[63]) zeros[0] = 1;
+            left_count = zeros;
+        end
+    endfunction
+
+    function automatic [51:0] align_jam(input logic [51:0] mag,
+                                          input logic [10:0] distance);
+        logic [51:0] x;
+        integer k;
+        begin
+            x = mag;
+            for (k = 0; k < 6; k = k + 1)
+                if (distance[k])
+                    x = (x >> (1 << k)) |
+                        {51'b0, |(x & (52'hfffffffffffff >> (52 - (1 << k))))};
+            align_jam = distance >= 52 ? {51'b0, |mag} : x;
+        end
+    endfunction
+
+    wire [5:0] product_left = left_count(product_mag);
+    wire [5:0] acc_left = left_count(acc_mag);
+    wire signed [10:0] product_wide = {product_exp[9],product_exp};
+    wire signed [10:0] acc_wide = {acc_exp[9],acc_exp};
+    wire signed [10:0] normal_room = product_wide + 11'sd126;
+    wire [5:0] sum_left = normal_room >= $signed({5'b0,product_left}) ?
+                          product_left : normal_room[5:0];
 
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -160,6 +201,9 @@ module fp32_mac (
             next_value <= '0;
             multiplicand <= '0;
             multiply_step <= '0;
+            digits <= '0;
+            booth_upper <= '0;
+            booth_lower <= '0;
             product_mag <= '0;
             acc_mag <= '0;
             product_exp <= '0;
@@ -199,7 +243,9 @@ module fp32_mac (
                             acc_exp <= exponent(addend);
                             acc_mag <= {1'b0, significand(addend), 27'b0};
                             multiplicand <= significand(a);
-                            product_mag <= {25'b0, significand(b), 3'b0};
+                            digits <= {2'b0,significand(b),1'b0};
+                            booth_upper <= '0;
+                            booth_lower <= '0;
                             multiply_step <= '0;
                             state <= MULTIPLY;
                         end
@@ -207,43 +253,43 @@ module fp32_mac (
                 end
 
                 MULTIPLY: begin
-                    product_mag <= {1'b0, alu_result[24:0], product_mag[26:4], 3'b0};
                     multiply_step <= multiply_step + 1'b1;
-                    if (multiply_step == 5'd23)
+                    digits <= digits >> 2;
+                    booth_upper <= {{2{booth_sum[27]}},booth_sum[27:2]};
+                    booth_lower <= {booth_sum[1:0],booth_lower[23:2]};
+                    if (multiply_step == MULTIPLY_CYCLES-1) begin
+                        // Once the low 24 bits are committed, the unsigned
+                        // correction digit contributes only to the upper half.
+                        product_mag <= {1'b0,booth_sum[23:0],booth_lower,3'b0};
                         state <= NORMALIZE_PRODUCT;
+                    end
                 end
 
                 NORMALIZE_PRODUCT: begin
-                    if (product_mag[50]) begin
-                        state <= NORMALIZE_ACC;
-                    end else begin
-                        product_mag <= product_mag << 1;
-                        product_exp <= product_exp - 10'sd1;
-                    end
+                    product_mag <= product_mag << product_left;
+                    product_exp <= product_exp - $signed({4'b0,product_left});
+                    state <= NORMALIZE_ACC;
                 end
 
                 NORMALIZE_ACC: begin
                     if (acc_mag == 0) begin
                         sum_sign <= product_sign;
                         state <= NORMALIZE_SUM;
-                    end else if (acc_mag[50]) begin
-                        state <= ALIGN;
                     end else begin
-                        acc_mag <= acc_mag << 1;
-                        acc_exp <= acc_exp - 10'sd1;
+                        acc_mag <= acc_mag << acc_left;
+                        acc_exp <= acc_exp - $signed({4'b0,acc_left});
+                        state <= ALIGN;
                     end
                 end
 
                 ALIGN: begin
                     if (product_exp < acc_exp) begin
-                        product_mag <= shift_right_jam(product_mag);
-                        product_exp <= product_mag[51:1] == 0 ? acc_exp : product_exp + 10'sd1;
+                        product_mag <= align_jam(product_mag, acc_wide - product_wide);
+                        product_exp <= acc_exp;
                     end else if (acc_exp < product_exp) begin
-                        acc_mag <= shift_right_jam(acc_mag);
-                        acc_exp <= acc_mag[51:1] == 0 ? product_exp : acc_exp + 10'sd1;
-                    end else begin
-                        state <= ADD;
+                        acc_mag <= align_jam(acc_mag, product_wide - acc_wide);
                     end
+                    state <= ADD;
                 end
 
                 ADD: begin
@@ -267,13 +313,17 @@ module fp32_mac (
                     if (product_mag == 0) begin
                         next_value <= '0;
                         state <= COMPLETE;
-                    end else if (product_mag[51] || product_exp < -10'sd126) begin
-                        product_mag <= shift_right_jam(product_mag);
-                        product_exp <= product_mag[51:1] == 0 ? -10'sd126 : product_exp + 10'sd1;
-                    end else if (!product_mag[50] && product_exp > -10'sd126) begin
-                        product_mag <= product_mag << 1;
-                        product_exp <= product_exp - 10'sd1;
                     end else begin
+                        if (product_exp < -10'sd126) begin
+                            product_mag <= align_jam(product_mag, -normal_room);
+                            product_exp <= -10'sd126;
+                        end else if (product_mag[51]) begin
+                            product_mag <= shift_right_jam(product_mag);
+                            product_exp <= product_exp + 10'sd1;
+                        end else if (!product_mag[50]) begin
+                            product_mag <= product_mag << sum_left;
+                            product_exp <= product_exp - $signed({4'b0,sum_left});
+                        end
                         state <= ROUND;
                     end
                 end

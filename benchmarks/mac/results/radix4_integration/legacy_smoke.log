@@ -1,0 +1,3 @@
+Benchmark: 15113 checked commands per architecture, 0 randomized targets
+baseline: PASS: 15113 reference MAC operations, max sampled latency 177 cycles
+baseline {'min': 1, 'mean': 42.391517236815986, 'median': 41, 'p95': 84, 'p99': 85, 'max': 177, 'bound': 177}

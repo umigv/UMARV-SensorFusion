@@ -1,0 +1,202 @@
+{
+  "original_fast": {
+    "original/+1": {
+      "samples": 8,
+      "replay_min_mean_max": [
+        48991,
+        49675,
+        50118
+      ],
+      "expected": 50031,
+      "bound": 63667,
+      "expected_margin": 12469,
+      "conservative_margin": -1167,
+      "expected_pct": 80.0496,
+      "conservative_pct": 101.8672
+    },
+    "correction": {
+      "samples": 8,
+      "replay_min_mean_max": [
+        21236,
+        21246.375,
+        21276
+      ],
+      "expected": 21256.375,
+      "bound": 31200,
+      "expected_margin": 41243.625,
+      "conservative_margin": 31300,
+      "expected_pct": 34.010200000000005,
+      "conservative_pct": 49.919999999999995
+    },
+    "hybrid/+1": {
+      "samples": 8,
+      "replay_min_mean_max": [
+        47073,
+        47756.5,
+        48199
+      ],
+      "expected": 48112.5,
+      "bound": 53822,
+      "expected_margin": 14387.5,
+      "conservative_margin": 8678,
+      "expected_pct": 76.98,
+      "conservative_pct": 86.1152
+    },
+    "rotation/+1": {
+      "samples": 8,
+      "replay_min_mean_max": [
+        47073,
+        47756.5,
+        48199
+      ],
+      "expected": 48112.5,
+      "bound": 53822,
+      "expected_margin": 14387.5,
+      "conservative_margin": 8678,
+      "expected_pct": 76.98,
+      "conservative_pct": 86.1152
+    },
+    "original/-1": {
+      "samples": 8,
+      "replay_min_mean_max": [
+        48994,
+        49680,
+        50124
+      ],
+      "expected": 50036,
+      "bound": 63667,
+      "expected_margin": 12464,
+      "conservative_margin": -1167,
+      "expected_pct": 80.0576,
+      "conservative_pct": 101.8672
+    },
+    "hybrid/-1": {
+      "samples": 8,
+      "replay_min_mean_max": [
+        47220,
+        47906.375,
+        48350
+      ],
+      "expected": 48262.375,
+      "bound": 54717,
+      "expected_margin": 14237.625,
+      "conservative_margin": 7783,
+      "expected_pct": 77.2198,
+      "conservative_pct": 87.5472
+    },
+    "rotation/-1": {
+      "samples": 8,
+      "replay_min_mean_max": [
+        47076,
+        47761.5,
+        48205
+      ],
+      "expected": 48117.5,
+      "bound": 53822,
+      "expected_margin": 14382.5,
+      "conservative_margin": 8678,
+      "expected_pct": 76.988,
+      "conservative_pct": 86.1152
+    }
+  },
+  "radix4_a": {
+    "original/+1": {
+      "samples": 8,
+      "replay_min_mean_max": [
+        36869,
+        37333,
+        37622
+      ],
+      "expected": 37689,
+      "bound": 50962,
+      "expected_margin": 24811,
+      "conservative_margin": 11538,
+      "expected_pct": 60.3024,
+      "conservative_pct": 81.5392
+    },
+    "correction": {
+      "samples": 8,
+      "replay_min_mean_max": [
+        16825,
+        16835.375,
+        16865
+      ],
+      "expected": 16845.375,
+      "bound": 26217,
+      "expected_margin": 45654.625,
+      "conservative_margin": 36283,
+      "expected_pct": 26.9526,
+      "conservative_pct": 41.9472
+    },
+    "hybrid/+1": {
+      "samples": 8,
+      "replay_min_mean_max": [
+        33862,
+        34315.875,
+        34603
+      ],
+      "expected": 34671.875,
+      "bound": 39907,
+      "expected_margin": 27828.125,
+      "conservative_margin": 22593,
+      "expected_pct": 55.474999999999994,
+      "conservative_pct": 63.8512
+    },
+    "rotation/+1": {
+      "samples": 8,
+      "replay_min_mean_max": [
+        33862,
+        34315.875,
+        34603
+      ],
+      "expected": 34671.875,
+      "bound": 39907,
+      "expected_margin": 27828.125,
+      "conservative_margin": 22593,
+      "expected_pct": 55.474999999999994,
+      "conservative_pct": 63.8512
+    },
+    "original/-1": {
+      "samples": 8,
+      "replay_min_mean_max": [
+        36872,
+        37338,
+        37628
+      ],
+      "expected": 37694,
+      "bound": 50962,
+      "expected_margin": 24806,
+      "conservative_margin": 11538,
+      "expected_pct": 60.310399999999994,
+      "conservative_pct": 81.5392
+    },
+    "hybrid/-1": {
+      "samples": 8,
+      "replay_min_mean_max": [
+        34108,
+        34574.375,
+        34864
+      ],
+      "expected": 34930.375,
+      "bound": 40912,
+      "expected_margin": 27569.625,
+      "conservative_margin": 21588,
+      "expected_pct": 55.8886,
+      "conservative_pct": 65.4592
+    },
+    "rotation/-1": {
+      "samples": 8,
+      "replay_min_mean_max": [
+        33865,
+        34320.875,
+        34609
+      ],
+      "expected": 34676.875,
+      "bound": 39907,
+      "expected_margin": 27823.125,
+      "conservative_margin": 22593,
+      "expected_pct": 55.483000000000004,
+      "conservative_pct": 63.8512
+    }
+  }
+}

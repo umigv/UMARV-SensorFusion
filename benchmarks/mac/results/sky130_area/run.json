@@ -1,0 +1,16 @@
+{
+  "tools": {
+    "yosys": null,
+    "sta": null,
+    "openroad": null,
+    "openlane": null,
+    "volare": null,
+    "tt_tool": null
+  },
+  "liberty": null,
+  "liberty_sha256": null,
+  "production_sha256": "8be6de68dec443c722ae0b594992f2b9499d2c0a39095a13d10aec4cd41fa0d1",
+  "clock_ns": 20,
+  "input_delay_ns": 2,
+  "output_delay_ns": 2
+}

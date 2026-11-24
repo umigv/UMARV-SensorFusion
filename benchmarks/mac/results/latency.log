@@ -1,0 +1,10 @@
+Benchmark: 135113 checked commands per architecture, 100000 randomized targets
+baseline {'min': 1, 'mean': 53.197456943447335, 'median': 57, 'p95': 86, 'p99': 88, 'max': 177, 'bound': 177}
+a {'min': 1, 'mean': 19.187716948036087, 'median': 21, 'p95': 22, 'p99': 22, 'max': 22, 'bound': 22}
+b {'min': 1, 'mean': 15.492765314958591, 'median': 17, 'p95': 18, 'p99': 18, 'max': 18, 'bound': 18}
+c {'min': 1, 'mean': 12.721551590150467, 'median': 14, 'p95': 15, 'p99': 15, 'max': 15, 'bound': 15}
+d {'min': 1, 'mean': 9.950337865342343, 'median': 11, 'p95': 12, 'p99': 12, 'max': 12, 'bound': 12}
+e {'min': 1, 'mean': 9.02659995707297, 'median': 10, 'p95': 11, 'p99': 11, 'max': 11, 'bound': 11}
+f {'min': 1, 'mean': 8.102862048803594, 'median': 9, 'p95': 10, 'p99': 10, 'max': 10, 'bound': 10}
+g {'min': 1, 'mean': 8.102862048803594, 'median': 9, 'p95': 10, 'p99': 10, 'max': 10, 'bound': 10}
+a_iterative_shift {'min': 1, 'mean': 43.03633995248422, 'median': 46, 'p95': 75, 'p99': 77, 'max': 166, 'bound': 166}

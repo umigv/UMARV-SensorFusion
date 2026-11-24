@@ -3,7 +3,9 @@ hierarchy -check -top fp32_mac
 proc
 opt
 check -assert
-select -assert-none t:$dlatch t:$adlatch t:$dlatchsr t:$mul t:$div t:$mod t:$shift t:$shiftx t:$shl t:$shr t:$sshl t:$sshr
+# Architecture A uses variable shifts for normalization and barrel alignment.
+select -assert-none t:$dlatch t:$adlatch t:$dlatchsr t:$mul t:$div t:$mod
 synth -top fp32_mac -noabc
 check -assert
+select -assert-none t:$shift t:$shiftx t:$shl t:$shr t:$sshl t:$sshr
 stat

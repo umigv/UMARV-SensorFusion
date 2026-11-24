@@ -1,7 +1,11 @@
 `timescale 1ns/1ps
 module tb_fp32_divsqrt;
     logic clk = 0;
-    always #5 clk = ~clk;
+    always #10 clk = ~clk;
+    integer edge_count = 0;
+    integer accepted_edge, previous_done_edge;
+    bit trace_latency;
+    always @(posedge clk) edge_count = edge_count + 1;
     logic rst_n = 1, start = 0, mode = 0;
     logic [31:0] a = 0, b = 0, result;
     logic busy, done, invalid, divide_by_zero, overflow, underflow, inexact;
@@ -37,6 +41,8 @@ module tb_fp32_divsqrt;
             finite_min[i] = 256;
             finite_max[i] = 0;
         end
+        trace_latency = $test$plusargs("latency");
+        previous_done_edge = -1;
         if (!$value$plusargs("vectors=%s", path)) $fatal(1, "Missing vector file");
         file_handle = $fopen(path, "r");
         if (!file_handle) $fatal(1, "Cannot open vectors");
@@ -46,13 +52,18 @@ module tb_fp32_divsqrt;
         fields = $fscanf(file_handle, "%d %h %h %h %h",
                          request_mode, operand_a, operand_b, expected, expected_flags);
         while (fields == 5) begin
+            if (busy !== 1'b0) $fatal(1, "Unit was not idle before acceptance");
+            accepted_edge = edge_count + 1;
+            if (previous_done_edge >= 0 && accepted_edge != previous_done_edge + 1)
+                $fatal(1, "Back-to-back acceptance gap");
             start = 1;
             mode = request_mode;
             a = operand_a;
             b = operand_b;
             @(negedge clk);
-            // Assert a competing request through every busy edge, including commit.
-            // Replace it at the next idle edge with the next reference request.
+            if ({busy, done} !== 2'b10) $fatal(1, "Operation was not accepted");
+            start = !trace_latency;
+            // The correctness run also holds an unrelated request while busy.
             mode = !request_mode;
             a = 32'h7f800001;
             b = 0;
@@ -61,14 +72,22 @@ module tb_fp32_divsqrt;
                 if (busy !== 1'b1 || result !== previous_result || flags !== previous_flags)
                     $fatal(1, "Pending handshake or output hold failure on operation %0d", operation);
                 @(negedge clk);
-                latency++;
+                latency = edge_count - accepted_edge;
             end
+            if (done !== 1'b1)
+                $fatal(1, "Div/sqrt timeout: op %0d mode=%b a=%h b=%h",
+                       operation, request_mode, operand_a, operand_b);
             if ({busy, done} !== 2'b01 || result !== expected)
                 $fatal(1, "Op %0d mode=%b a=%h b=%h got %h expected %h",
                        operation, request_mode, operand_a, operand_b, result, expected);
             if (flags !== expected_flags)
                 $fatal(1, "Op %0d mode=%b a=%h b=%h flags=%b expected=%b",
                        operation, request_mode, operand_a, operand_b, flags, expected_flags);
+            previous_done_edge = edge_count;
+            if (trace_latency)
+                $display("LAT %s %0d %h %h 00000000 %h %h %0d",
+                         request_mode ? "SQRT" : "DIV ", operation,
+                         operand_a, operand_b, result, flags, latency);
             previous_result = result;
             previous_flags = flags;
             count[request_mode]++;
@@ -128,7 +147,7 @@ module tb_fp32_divsqrt;
     end
 
     initial begin
-        #20000000;
+        #60000000;
         $fatal(1, "Simulation timeout");
     end
 endmodule

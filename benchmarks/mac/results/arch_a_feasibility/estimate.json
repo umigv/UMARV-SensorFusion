@@ -1,0 +1,306 @@
+{
+  "work": {
+    "central update/original": {
+      "clear": 605,
+      "continued": 550,
+      "div": 220,
+      "root": 55,
+      "overhead": 6340
+    },
+    "central update/rotation": {
+      "clear": 715,
+      "continued": 550,
+      "div": 55,
+      "root": 55,
+      "overhead": 6560
+    },
+    "central downdate/original": {
+      "clear": 605,
+      "continued": 550,
+      "div": 220,
+      "root": 55,
+      "overhead": 6340
+    },
+    "central downdate/rotation": {
+      "clear": 715,
+      "continued": 550,
+      "div": 55,
+      "root": 55,
+      "overhead": 6560
+    },
+    "central downdate/hybrid": {
+      "clear": 705,
+      "continued": 550,
+      "div": 70,
+      "root": 55,
+      "overhead": 6540
+    },
+    "posterior/original": {
+      "clear": 179,
+      "continued": 274,
+      "div": 140,
+      "root": 30,
+      "overhead": 3505
+    }
+  },
+  "architectures": {
+    "a": {
+      "central update/original": {
+        "all_shortcut_floor": 7770,
+        "recurrence_floor": 36810,
+        "all_primitive_proxy": 38718.60344331025,
+        "measured_kernel_min_mean_max": [
+          23219,
+          23223,
+          23228
+        ],
+        "hybrid_expected": 37908.944221655125,
+        "hybrid_expected_margin": 24591.055778344875,
+        "known_bound": 50725,
+        "known_bound_margin": 11775
+      },
+      "central update/rotation": {
+        "all_shortcut_floor": 7935,
+        "recurrence_floor": 34005,
+        "all_primitive_proxy": 35452.92344331024,
+        "measured_kernel_min_mean_max": [
+          20187,
+          20193.5,
+          20199
+        ],
+        "hybrid_expected": 34879.444221655125,
+        "hybrid_expected_margin": 27620.555778344875,
+        "known_bound": 39670,
+        "known_bound_margin": 22830
+      },
+      "central downdate/original": {
+        "all_shortcut_floor": 7770,
+        "recurrence_floor": 36810,
+        "all_primitive_proxy": 38718.60344331025,
+        "measured_kernel_min_mean_max": [
+          23222,
+          23227.625,
+          23232
+        ],
+        "hybrid_expected": 37913.569221655125,
+        "hybrid_expected_margin": 24586.430778344875,
+        "known_bound": 50725,
+        "known_bound_margin": 11775
+      },
+      "central downdate/rotation": {
+        "all_shortcut_floor": 7935,
+        "recurrence_floor": 34005,
+        "all_primitive_proxy": 35452.92344331024,
+        "measured_kernel_min_mean_max": [
+          20193,
+          20200.875,
+          20208
+        ],
+        "hybrid_expected": 34886.819221655125,
+        "hybrid_expected_margin": 27613.180778344875,
+        "known_bound": 39670,
+        "known_bound_margin": 22830
+      },
+      "central downdate/hybrid": {
+        "all_shortcut_floor": 7920,
+        "recurrence_floor": 34260,
+        "all_primitive_proxy": 35749.803443310244,
+        "measured_kernel_min_mean_max": [
+          20448,
+          20455.5,
+          20463
+        ],
+        "hybrid_expected": 35141.444221655125,
+        "hybrid_expected_margin": 27358.555778344875,
+        "known_bound": 40675,
+        "known_bound_margin": 21825
+      },
+      "posterior/original": {
+        "all_shortcut_floor": 4128,
+        "recurrence_floor": 17382,
+        "all_primitive_proxy": 18417.82533357638,
+        "measured_kernel_min_mean_max": [
+          8541,
+          8546.5,
+          8561
+        ],
+        "hybrid_expected": 18225.176525701787,
+        "hybrid_expected_margin": 44274.82347429822,
+        "known_bound": 25894,
+        "known_bound_margin": 36606
+      }
+    },
+    "d": {
+      "central update/original": {
+        "all_shortcut_floor": 7770,
+        "recurrence_floor": 25260,
+        "all_primitive_proxy": 27168.603443310243,
+        "measured_kernel_min_mean_max": [
+          17819,
+          17823,
+          17828
+        ],
+        "hybrid_expected": 26458.94422165512,
+        "hybrid_expected_margin": 36041.055778344875,
+        "known_bound": 39175,
+        "known_bound_margin": 23325
+      },
+      "central update/rotation": {
+        "all_shortcut_floor": 7935,
+        "recurrence_floor": 21355,
+        "all_primitive_proxy": 22802.923443310247,
+        "measured_kernel_min_mean_max": [
+          13787,
+          13793.5,
+          13799
+        ],
+        "hybrid_expected": 22429.44422165512,
+        "hybrid_expected_margin": 40070.555778344875,
+        "known_bound": 27020,
+        "known_bound_margin": 35480
+      },
+      "central downdate/original": {
+        "all_shortcut_floor": 7770,
+        "recurrence_floor": 25260,
+        "all_primitive_proxy": 27168.603443310243,
+        "measured_kernel_min_mean_max": [
+          17822,
+          17827.625,
+          17832
+        ],
+        "hybrid_expected": 26463.56922165512,
+        "hybrid_expected_margin": 36036.430778344875,
+        "known_bound": 39175,
+        "known_bound_margin": 23325
+      },
+      "central downdate/rotation": {
+        "all_shortcut_floor": 7935,
+        "recurrence_floor": 21355,
+        "all_primitive_proxy": 22802.923443310247,
+        "measured_kernel_min_mean_max": [
+          13793,
+          13800.875,
+          13808
+        ],
+        "hybrid_expected": 22436.81922165512,
+        "hybrid_expected_margin": 40063.180778344875,
+        "known_bound": 27020,
+        "known_bound_margin": 35480
+      },
+      "central downdate/hybrid": {
+        "all_shortcut_floor": 7920,
+        "recurrence_floor": 21710,
+        "all_primitive_proxy": 23199.803443310244,
+        "measured_kernel_min_mean_max": [
+          14148,
+          14155.5,
+          14163
+        ],
+        "hybrid_expected": 22791.44422165512,
+        "hybrid_expected_margin": 39708.555778344875,
+        "known_bound": 28125,
+        "known_bound_margin": 34375
+      },
+      "posterior/original": {
+        "all_shortcut_floor": 4128,
+        "recurrence_floor": 12852,
+        "all_primitive_proxy": 13887.825333576378,
+        "measured_kernel_min_mean_max": [
+          6541,
+          6546.5,
+          6561
+        ],
+        "hybrid_expected": 13695.176525701787,
+        "hybrid_expected_margin": 48804.82347429822,
+        "known_bound": 21364,
+        "known_bound_margin": 41136
+      }
+    },
+    "f": {
+      "central update/original": {
+        "all_shortcut_floor": 7770,
+        "recurrence_floor": 22950,
+        "all_primitive_proxy": 24858.603443310243,
+        "measured_kernel_min_mean_max": [
+          16739,
+          16743,
+          16748
+        ],
+        "hybrid_expected": 24168.94422165512,
+        "hybrid_expected_margin": 38331.055778344875,
+        "known_bound": 36865,
+        "known_bound_margin": 25635
+      },
+      "central update/rotation": {
+        "all_shortcut_floor": 7935,
+        "recurrence_floor": 18825,
+        "all_primitive_proxy": 20272.923443310247,
+        "measured_kernel_min_mean_max": [
+          12507,
+          12513.5,
+          12519
+        ],
+        "hybrid_expected": 19939.44422165512,
+        "hybrid_expected_margin": 42560.555778344875,
+        "known_bound": 24490,
+        "known_bound_margin": 38010
+      },
+      "central downdate/original": {
+        "all_shortcut_floor": 7770,
+        "recurrence_floor": 22950,
+        "all_primitive_proxy": 24858.603443310243,
+        "measured_kernel_min_mean_max": [
+          16742,
+          16747.625,
+          16752
+        ],
+        "hybrid_expected": 24173.56922165512,
+        "hybrid_expected_margin": 38326.430778344875,
+        "known_bound": 36865,
+        "known_bound_margin": 25635
+      },
+      "central downdate/rotation": {
+        "all_shortcut_floor": 7935,
+        "recurrence_floor": 18825,
+        "all_primitive_proxy": 20272.923443310247,
+        "measured_kernel_min_mean_max": [
+          12513,
+          12520.875,
+          12528
+        ],
+        "hybrid_expected": 19946.81922165512,
+        "hybrid_expected_margin": 42553.180778344875,
+        "known_bound": 24490,
+        "known_bound_margin": 38010
+      },
+      "central downdate/hybrid": {
+        "all_shortcut_floor": 7920,
+        "recurrence_floor": 19200,
+        "all_primitive_proxy": 20689.803443310244,
+        "measured_kernel_min_mean_max": [
+          12888,
+          12895.5,
+          12903
+        ],
+        "hybrid_expected": 20321.44422165512,
+        "hybrid_expected_margin": 42178.555778344875,
+        "known_bound": 25615,
+        "known_bound_margin": 36885
+      },
+      "posterior/original": {
+        "all_shortcut_floor": 4128,
+        "recurrence_floor": 11946,
+        "all_primitive_proxy": 12981.825333576377,
+        "measured_kernel_min_mean_max": [
+          6141,
+          6146.5,
+          6161
+        ],
+        "hybrid_expected": 12789.176525701787,
+        "hybrid_expected_margin": 49710.82347429822,
+        "known_bound": 20458,
+        "known_bound_margin": 42042
+      }
+    }
+  }
+}

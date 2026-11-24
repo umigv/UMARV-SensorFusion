@@ -1,0 +1,106 @@
+Group | N | Reference invalid | A/B valid rejected | A/B invalid accepted | A/B bad factor
+random update | 80 | 0 | [0, 0] | [0, 0] | [0, 0]
+valid downdate | 80 | 0 | [0, 0] | [0, 0] | [0, 0]
+diagonal process noise | 80 | 0 | [0, 0] | [0, 0] | [0, 0]
+very small vector | 80 | 0 | [0, 0] | [0, 0] | [0, 0]
+very large vector | 80 | 0 | [0, 0] | [0, 0] | [0, 0]
+ill-conditioned update | 80 | 0 | [0, 0] | [0, 0] | [0, 0]
+correlated update | 80 | 0 | [0, 0] | [0, 0] | [0, 0]
+near-boundary downdate | 80 | 13 | [6, 7] | [2, 4] | [0, 0]
+  rejection causes A/B: [{'nonpositive computed radicand': 17}, {'nonpositive computed radicand': 16}]
+invalid downdate | 80 | 80 | [0, 0] | [0, 0] | [0, 0]
+  rejection causes A/B: [{'nonpositive computed radicand': 80}, {'nonpositive computed radicand': 80}]
+11-row central update | 80 | 0 | [0, 0] | [0, 0] | [0, 0]
+11-row central downdate | 80 | 0 | [0, 0] | [0, 0] | [0, 0]
+32 sequential updates | 24 | 0 | [0, 0] | [0, 0] | [0, 0]
+exact zero pivot | 1 | 1 | [0, 0] | [0, 0] | [0, 0]
+  rejection causes A/B: [{'nonpositive computed radicand': 1}, {'nonpositive computed radicand': 1}]
+tiny positive pivot lost to rounding | 1 | 0 | [1, 0] | [0, 0] | [0, 0]
+  rejection causes A/B: [{'nonpositive computed radicand': 1}, {}]
+Group | N paired A/B/tie | A median/max relative; max abs | B same | C max relative/max abs
+random update | [37, 43, 0] | 4.972e-08/1.824e-07; 2.016e-05 | 4.842e-08/1.337e-07; 2.016e-05 | 6.980e-17/2.167e-16; 5.684e-14
+  A example 54: errors A=8.817e-09, B=2.167e-08, ratio=2.46
+  B example 12: errors A=1.285e-07, B=2.691e-08, ratio=4.77
+valid downdate | [52, 28, 0] | 4.382e-08/1.202e-07; 3.818e-06 | 4.401e-08/1.095e-07; 3.818e-06 | 9.982e-17/2.645e-16; 7.105e-15
+  A example 25: errors A=9.853e-09, B=3.001e-08, ratio=3.05
+  B example 41: errors A=6.096e-08, B=1.644e-08, ratio=3.71
+diagonal process noise | [32, 48, 0] | 5.312e-08/1.408e-07; 4.718e-07 | 5.088e-08/1.287e-07; 2.884e-07 | 8.574e-17/2.146e-16; 2.220e-16
+very small vector | [38, 0, 42] | 1.970e-11/1.955e-10; 4.981e-09 | 4.500e-11/5.671e-08; 1.715e-06 | 8.376e-17/3.021e-16; 7.105e-15
+very large vector | [35, 45, 0] | 5.659e-08/2.549e-07; 4.206e-03 | 5.581e-08/1.979e-07; 4.734e-03 | 8.402e-18/2.015e-16; 3.638e-12
+ill-conditioned update | [37, 37, 6] | 4.623e-08/1.443e-07; 1.030e-05 | 5.200e-08/1.402e-07; 1.030e-05 | 4.119e-17/1.494e-16; 1.421e-14
+correlated update | [43, 37, 0] | 5.524e-08/1.452e-07; 9.794e-06 | 5.616e-08/1.263e-07; 1.048e-05 | 6.709e-17/1.506e-16; 1.421e-14
+near-boundary downdate | [37, 20, 0] | 4.201e-08/1.370e-07; 6.909e-06 | 7.421e-08/3.166e-07; 9.111e-06 | 1.963e-17/1.703e-16; 1.421e-14
+  A example 44: errors A=7.290e-09, B=1.109e-07, ratio=15.21
+  B example 30: errors A=1.281e-07, B=2.280e-08, ratio=5.62
+invalid downdate | [0, 0, 0] | — | — | —
+11-row central update | [46, 34, 0] | 1.124e-07/3.280e-07; 1.738e-06 | 1.044e-07/3.572e-07; 2.311e-06 | 7.316e-17/2.016e-16; 8.882e-16
+11-row central downdate | [42, 38, 0] | 1.239e-07/3.831e-07; 1.713e-06 | 1.184e-07/3.839e-07; 1.648e-06 | 8.227e-17/2.140e-16; 8.882e-16
+32 sequential updates | [9, 15, 0] | 1.861e-07/3.952e-07; 4.894e-06 | 1.697e-07/3.956e-07; 4.894e-06 | 9.585e-17/1.766e-16; 1.776e-15
+exact zero pivot | [0, 0, 0] | — | — | —
+tiny positive pivot lost to rounding | [0, 0, 0] | — | 4.865e-08/4.865e-08; 7.338e-08 | 1.917e-20/1.917e-20; 2.711e-20
+tests/tb_cholesky_experiment.sv:123: $finish called at 23637460000 (1ps)
+RTL checked 43348 arithmetic requests across 96 schedules
+RTL random update #1: A=2130 cycles/1 rows B=1875 cycles/1 rows
+RTL valid downdate #1: A=2139 cycles/1 rows B=1884 cycles/1 rows
+RTL diagonal process noise #1: A=1930 cycles/1 rows B=1465 cycles/1 rows
+RTL very small vector #1: A=2129 cycles/1 rows B=1874 cycles/1 rows
+RTL very large vector #1: A=2130 cycles/1 rows B=1869 cycles/1 rows
+RTL ill-conditioned update #1: A=2129 cycles/1 rows B=1874 cycles/1 rows
+RTL correlated update #1: A=2127 cycles/1 rows B=1871 cycles/1 rows
+RTL near-boundary downdate #1: A=2133 cycles/1 rows B=1879 cycles/1 rows
+RTL invalid downdate #1: A=2021 cycles/0 rows B=1756 cycles/0 rows
+RTL 11-row central update #1: A=23225 cycles/11 rows B=20195 cycles/11 rows
+RTL 11-row central downdate #1: A=23232 cycles/11 rows B=20203 cycles/11 rows
+RTL random update #2: A=2129 cycles/1 rows B=1870 cycles/1 rows
+RTL valid downdate #2: A=2139 cycles/1 rows B=1884 cycles/1 rows
+RTL diagonal process noise #2: A=1930 cycles/1 rows B=1465 cycles/1 rows
+RTL very small vector #2: A=2128 cycles/1 rows B=1873 cycles/1 rows
+RTL very large vector #2: A=2128 cycles/1 rows B=1866 cycles/1 rows
+RTL ill-conditioned update #2: A=2130 cycles/1 rows B=1875 cycles/1 rows
+RTL correlated update #2: A=2126 cycles/1 rows B=1871 cycles/1 rows
+RTL near-boundary downdate #2: A=2135 cycles/1 rows B=1881 cycles/1 rows
+RTL invalid downdate #2: A=1726 cycles/0 rows B=1483 cycles/0 rows
+RTL 11-row central update #2: A=23221 cycles/11 rows B=20199 cycles/11 rows
+RTL 11-row central downdate #2: A=23231 cycles/11 rows B=20206 cycles/11 rows
+RTL random update #3: A=2129 cycles/1 rows B=1874 cycles/1 rows
+RTL valid downdate #3: A=2135 cycles/1 rows B=1880 cycles/1 rows
+RTL diagonal process noise #3: A=1930 cycles/1 rows B=1465 cycles/1 rows
+RTL very small vector #3: A=2128 cycles/1 rows B=1873 cycles/1 rows
+RTL very large vector #3: A=2129 cycles/1 rows B=1870 cycles/1 rows
+RTL ill-conditioned update #3: A=2130 cycles/1 rows B=1875 cycles/1 rows
+RTL correlated update #3: A=2130 cycles/1 rows B=1872 cycles/1 rows
+RTL near-boundary downdate #3: A=2136 cycles/1 rows B=1881 cycles/1 rows
+RTL invalid downdate #3: A=739 cycles/0 rows B=627 cycles/0 rows
+RTL 11-row central update #3: A=23228 cycles/11 rows B=20193 cycles/11 rows
+RTL 11-row central downdate #3: A=23225 cycles/11 rows B=20197 cycles/11 rows
+RTL 11-row central update #4: A=23223 cycles/11 rows B=20195 cycles/11 rows
+RTL 11-row central downdate #4: A=23228 cycles/11 rows B=20204 cycles/11 rows
+RTL 11-row central update #5: A=23225 cycles/11 rows B=20194 cycles/11 rows
+RTL 11-row central downdate #5: A=23228 cycles/11 rows B=20198 cycles/11 rows
+RTL 11-row central update #6: A=23219 cycles/11 rows B=20192 cycles/11 rows
+RTL 11-row central downdate #6: A=23229 cycles/11 rows B=20208 cycles/11 rows
+RTL 11-row central update #7: A=23221 cycles/11 rows B=20193 cycles/11 rows
+RTL 11-row central downdate #7: A=23226 cycles/11 rows B=20198 cycles/11 rows
+RTL 11-row central update #8: A=23222 cycles/11 rows B=20187 cycles/11 rows
+RTL 11-row central downdate #8: A=23222 cycles/11 rows B=20193 cycles/11 rows
+RTL 32 sequential updates #1: A=67931 cycles/32 rows B=59537 cycles/32 rows
+RTL 32 sequential updates #2: A=67928 cycles/32 rows B=59535 cycles/32 rows
+RTL 32 sequential updates #3: A=67935 cycles/32 rows B=59549 cycles/32 rows
+RTL exact zero pivot #1: A=45 cycles/0 rows B=45 cycles/0 rows
+RTL tiny positive pivot lost to rounding #1: A=810 cycles/0 rows B=1140 cycles/1 rows
+RTL group | Paired samples | Mean A | Mean B | Mean savings | Min/max savings
+random update | 3 | 2129.333 | 1873.000 | +256.333 | +255/+259
+valid downdate | 3 | 2137.667 | 1882.667 | +255.000 | +255/+255
+diagonal process noise | 3 | 1930.000 | 1465.000 | +465.000 | +465/+465
+very small vector | 3 | 2128.333 | 1873.333 | +255.000 | +255/+255
+very large vector | 3 | 2129.000 | 1868.333 | +260.667 | +259/+262
+ill-conditioned update | 3 | 2129.667 | 1874.667 | +255.000 | +255/+255
+correlated update | 3 | 2127.667 | 1871.333 | +256.333 | +255/+258
+near-boundary downdate | 3 | 2134.667 | 1880.333 | +254.333 | +254/+255
+11-row central update | 8 | 23223.000 | 20193.500 | +3029.500 | +3022/+3035
+11-row central update first ten | 8 | 21093.750 | 18320.375 | +2773.375 | +2767/+2778
+11-row central update central only | 8 | 2129.250 | 1873.125 | +256.125 | +255/+258
+11-row central downdate | 8 | 23227.625 | 20200.875 | +3026.750 | +3021/+3030
+11-row central downdate first ten | 8 | 21091.250 | 18319.125 | +2772.125 | +2766/+2776
+11-row central downdate central only | 8 | 2136.375 | 1881.750 | +254.625 | +254/+255
+32 sequential updates | 3 | 67931.333 | 59540.333 | +8391.000 | +8386/+8394

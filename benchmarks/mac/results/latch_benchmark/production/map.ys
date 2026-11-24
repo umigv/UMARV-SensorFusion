@@ -1,0 +1,12 @@
+read_liberty -lib -ignore_miss_func "/home/Nabhah/sky130_lib/sky130_fd_sc_hd__tt_025C_1v80.lib"
+read_verilog -sv "/home/Nabhah/sqrtUKF/UMARV-SensorFusion/fp32_mac.sv" "/home/Nabhah/sqrtUKF/UMARV-SensorFusion/benchmarks/mac/results/latch_benchmark/production/top.sv"
+hierarchy -check -top mac_physical_top
+synth -flatten -noabc -top mac_physical_top
+techmap -map "/home/Nabhah/sqrtUKF/UMARV-SensorFusion/benchmarks/mac/results/latch_benchmark/latch_map.v"
+dfflibmap -liberty "/home/Nabhah/sky130_lib/sky130_fd_sc_hd__tt_025C_1v80.lib"
+abc -D 20000 -liberty "/home/Nabhah/sky130_lib/sky130_fd_sc_hd__tt_025C_1v80.lib"
+clean -purge
+check -assert
+stat -liberty "/home/Nabhah/sky130_lib/sky130_fd_sc_hd__tt_025C_1v80.lib"
+write_json "/home/Nabhah/sqrtUKF/UMARV-SensorFusion/benchmarks/mac/results/latch_benchmark/production/mapped.json"
+write_verilog -noattr -noexpr "/home/Nabhah/sqrtUKF/UMARV-SensorFusion/benchmarks/mac/results/latch_benchmark/production/mapped.v"

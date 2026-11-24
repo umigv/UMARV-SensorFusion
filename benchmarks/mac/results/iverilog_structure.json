@@ -1,0 +1,148 @@
+{
+  "baseline": {
+    "register_groups": 20,
+    "unpruned_register_bits": 302,
+    "nodes": {
+      "reduction logic": 20,
+      "logic": 680,
+      "Multiplexer (NetMux)": 74,
+      "Adder (NetAddSub)": 11,
+      "LPM_FF": 20
+    }
+  },
+  "a": {
+    "register_groups": 26,
+    "unpruned_register_bits": 483,
+    "nodes": {
+      "logic": 579,
+      "Multiplexer (NetMux)": 90,
+      "Adder (NetAddSub)": 16,
+      "reduction logic": 20,
+      "LPM_FF": 26
+    }
+  },
+  "b": {
+    "register_groups": 26,
+    "unpruned_register_bits": 483,
+    "nodes": {
+      "logic": 579,
+      "Multiplexer (NetMux)": 90,
+      "Adder (NetAddSub)": 17,
+      "reduction logic": 20,
+      "LPM_FF": 26
+    }
+  },
+  "c": {
+    "register_groups": 26,
+    "unpruned_register_bits": 483,
+    "nodes": {
+      "LPM_MULT": 1,
+      "Multiplexer (NetMux)": 85,
+      "reduction logic": 20,
+      "logic": 577,
+      "Adder (NetAddSub)": 14,
+      "LPM_FF": 26
+    }
+  },
+  "d": {
+    "register_groups": 26,
+    "unpruned_register_bits": 483,
+    "nodes": {
+      "LPM_MULT": 1,
+      "Multiplexer (NetMux)": 85,
+      "reduction logic": 20,
+      "logic": 577,
+      "Adder (NetAddSub)": 14,
+      "LPM_FF": 26
+    }
+  },
+  "e": {
+    "register_groups": 26,
+    "unpruned_register_bits": 483,
+    "nodes": {
+      "LPM_MULT": 1,
+      "Multiplexer (NetMux)": 85,
+      "reduction logic": 20,
+      "logic": 577,
+      "Adder (NetAddSub)": 14,
+      "LPM_FF": 26
+    }
+  },
+  "f": {
+    "register_groups": 26,
+    "unpruned_register_bits": 483,
+    "nodes": {
+      "logic": 4143,
+      "Multiplexer (NetMux)": 85,
+      "reduction logic": 20,
+      "Adder (NetAddSub)": 14,
+      "LPM_FF": 26
+    }
+  },
+  "g": {
+    "register_groups": 26,
+    "unpruned_register_bits": 483,
+    "nodes": {
+      "logic": 2588,
+      "Multiplexer (NetMux)": 124,
+      "Adder (NetAddSub)": 27,
+      "reduction logic": 20,
+      "LPM_FF": 26
+    }
+  },
+  "a_iterative_shift": {
+    "register_groups": 26,
+    "unpruned_register_bits": 483,
+    "nodes": {
+      "logic": 602,
+      "Multiplexer (NetMux)": 91,
+      "Adder (NetAddSub)": 15,
+      "reduction logic": 20,
+      "LPM_FF": 26
+    }
+  },
+  "a_adder_0": {
+    "register_groups": 26,
+    "unpruned_register_bits": 483,
+    "nodes": {
+      "logic": 351,
+      "Multiplexer (NetMux)": 90,
+      "Adder (NetAddSub)": 16,
+      "reduction logic": 7,
+      "LPM_FF": 26
+    }
+  },
+  "a_adder_1": {
+    "register_groups": 26,
+    "unpruned_register_bits": 483,
+    "nodes": {
+      "logic": 636,
+      "Multiplexer (NetMux)": 90,
+      "Adder (NetAddSub)": 16,
+      "reduction logic": 7,
+      "LPM_FF": 26
+    }
+  },
+  "a_adder_2": {
+    "register_groups": 26,
+    "unpruned_register_bits": 483,
+    "nodes": {
+      "logic": 801,
+      "Multiplexer (NetMux)": 90,
+      "Adder (NetAddSub)": 16,
+      "reduction logic": 7,
+      "LPM_FF": 26
+    }
+  },
+  "a_adder_3": {
+    "register_groups": 26,
+    "unpruned_register_bits": 483,
+    "nodes": {
+      "logic": 1098,
+      "Multiplexer (NetMux)": 90,
+      "Adder (NetAddSub)": 16,
+      "reduction logic": 7,
+      "LPM_FF": 26
+    }
+  }
+}

@@ -61,6 +61,7 @@ def randomized():
 
 
 def main():
+    timing = os.environ.get("FP32_TIMING") == "1"
     with tempfile.TemporaryDirectory() as directory:
         temporary = Path(directory)
         reference, sim, vectors = (temporary / name for name in ("reference", "sim", "vectors"))
@@ -76,7 +77,8 @@ def main():
         subprocess.run([*shlex.split(os.environ.get("IVERILOG", "iverilog")),
                         "-g2012", "-Wall", "-s", "tb_fp32_divsqrt", "-o", sim,
                         "fp32_divsqrt.sv", "tests/tb_fp32_divsqrt.sv"], cwd=ROOT, check=True)
-        subprocess.run(["vvp", sim, f"+vectors={vectors}"], check=True, timeout=90)
+        subprocess.run(["vvp", sim, f"+vectors={vectors}", *(["+latency"] if timing else [])],
+                       check=True, timeout=180)
 
 
 if __name__ == "__main__":

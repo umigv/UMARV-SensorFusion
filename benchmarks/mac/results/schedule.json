@@ -1,0 +1,155 @@
+{
+  "baseline": {
+    "clear_mean": 31.59591267998142,
+    "continue_mean": 66.81346457649775,
+    "clear_bound": 128,
+    "prediction": {
+      "proxy_cycles": 71337.55268846251,
+      "bounded_subtotal": 201920,
+      "proxy_room": -8837.552688462514,
+      "bounded_room": -139420
+    },
+    "correction": {
+      "proxy_cycles": 33125.49766367706,
+      "bounded_subtotal": 87875,
+      "proxy_room": 29374.50233632294,
+      "bounded_room": -25375
+    }
+  },
+  "a": {
+    "clear_mean": 19,
+    "continue_mean": 21.348888078745897,
+    "clear_bound": 19,
+    "prediction": {
+      "proxy_cycles": 38711.508443310246,
+      "bounded_subtotal": 50725,
+      "proxy_room": 23788.491556689754,
+      "bounded_room": 11775
+    },
+    "correction": {
+      "proxy_cycles": 18413.53533357638,
+      "bounded_subtotal": 25894,
+      "proxy_room": 44086.46466642362,
+      "bounded_room": 36606
+    }
+  },
+  "b": {
+    "clear_mean": 15,
+    "continue_mean": 17.348888078745897,
+    "clear_bound": 15,
+    "prediction": {
+      "proxy_cycles": 34091.508443310246,
+      "bounded_subtotal": 46105,
+      "proxy_room": 28408.491556689754,
+      "bounded_room": 16395
+    },
+    "correction": {
+      "proxy_cycles": 16601.535333576376,
+      "bounded_subtotal": 24082,
+      "proxy_room": 45898.46466642362,
+      "bounded_room": 38418
+    }
+  },
+  "c": {
+    "clear_mean": 12,
+    "continue_mean": 14.3488880787459,
+    "clear_bound": 12,
+    "prediction": {
+      "proxy_cycles": 30626.508443310246,
+      "bounded_subtotal": 42640,
+      "proxy_room": 31873.491556689754,
+      "bounded_room": 19860
+    },
+    "correction": {
+      "proxy_cycles": 15242.535333576378,
+      "bounded_subtotal": 22723,
+      "proxy_room": 47257.46466642362,
+      "bounded_room": 39777
+    }
+  },
+  "d": {
+    "clear_mean": 9,
+    "continue_mean": 11.3488880787459,
+    "clear_bound": 9,
+    "prediction": {
+      "proxy_cycles": 27161.508443310246,
+      "bounded_subtotal": 39175,
+      "proxy_room": 35338.491556689754,
+      "bounded_room": 23325
+    },
+    "correction": {
+      "proxy_cycles": 13883.535333576378,
+      "bounded_subtotal": 21364,
+      "proxy_room": 48616.46466642362,
+      "bounded_room": 41136
+    }
+  },
+  "e": {
+    "clear_mean": 8,
+    "continue_mean": 10.3488880787459,
+    "clear_bound": 8,
+    "prediction": {
+      "proxy_cycles": 26006.508443310246,
+      "bounded_subtotal": 38020,
+      "proxy_room": 36493.491556689754,
+      "bounded_room": 24480
+    },
+    "correction": {
+      "proxy_cycles": 13430.535333576378,
+      "bounded_subtotal": 20911,
+      "proxy_room": 49069.46466642362,
+      "bounded_room": 41589
+    }
+  },
+  "f": {
+    "clear_mean": 7,
+    "continue_mean": 9.3488880787459,
+    "clear_bound": 7,
+    "prediction": {
+      "proxy_cycles": 24851.508443310246,
+      "bounded_subtotal": 36865,
+      "proxy_room": 37648.491556689754,
+      "bounded_room": 25635
+    },
+    "correction": {
+      "proxy_cycles": 12977.535333576378,
+      "bounded_subtotal": 20458,
+      "proxy_room": 49522.46466642362,
+      "bounded_room": 42042
+    }
+  },
+  "g": {
+    "clear_mean": 7,
+    "continue_mean": 9.3488880787459,
+    "clear_bound": 7,
+    "prediction": {
+      "proxy_cycles": 24851.508443310246,
+      "bounded_subtotal": 36865,
+      "proxy_room": 37648.491556689754,
+      "bounded_room": 25635
+    },
+    "correction": {
+      "proxy_cycles": 12977.535333576378,
+      "bounded_subtotal": 20458,
+      "proxy_room": 49522.46466642362,
+      "bounded_room": 42042
+    }
+  },
+  "a_iterative_shift": {
+    "clear_mean": 20.59591267998142,
+    "continue_mean": 55.81346457649775,
+    "clear_bound": 117,
+    "prediction": {
+      "proxy_cycles": 58632.55268846252,
+      "bounded_subtotal": 189215,
+      "proxy_room": 3867.4473115374785,
+      "bounded_room": -126715
+    },
+    "correction": {
+      "proxy_cycles": 28142.49766367706,
+      "bounded_subtotal": 82892,
+      "proxy_room": 34357.50233632294,
+      "bounded_room": -20392
+    }
+  }
+}

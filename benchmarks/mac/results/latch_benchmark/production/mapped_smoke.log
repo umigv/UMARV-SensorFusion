@@ -1,0 +1,3 @@
+PASS: 1088 reference MAC operations, max sampled latency 22 cycles
+tests/tb_fp32_mac.sv:135: $finish called at 472000000 (1ps)
+vvp exit 0

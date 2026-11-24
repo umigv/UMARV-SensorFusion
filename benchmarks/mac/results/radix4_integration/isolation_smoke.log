@@ -1,0 +1,3 @@
+booth_fast_shifts: 15113 bit-exact requests, maximum 22 cycles
+booth_original_shifts: 15113 bit-exact requests, maximum 166 cycles
+original_fast: 15113 bit-exact requests, maximum 33 cycles

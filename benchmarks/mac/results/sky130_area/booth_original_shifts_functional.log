@@ -1,0 +1,3 @@
+LAT MAC 35 00000001 00000001 80000001 80000001 03 166
+PASS: 15113 reference MAC operations, max sampled latency 166 cycles
+/home/Nabhah/sqrtUKF/UMARV-SensorFusion/tests/tb_fp32_mac.sv:135: $finish called at 10790340000 (1ps)

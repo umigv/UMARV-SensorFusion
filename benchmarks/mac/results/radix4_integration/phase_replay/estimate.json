@@ -1,0 +1,46 @@
+{
+  "production": {
+    "original/+1": {
+      "samples": 8,
+      "replay_min_mean_max": [
+        36869,
+        37333,
+        37622
+      ],
+      "expected": 37689,
+      "bound": 50962,
+      "expected_margin": 24811,
+      "conservative_margin": 11538,
+      "expected_pct": 60.3024,
+      "conservative_pct": 81.5392
+    },
+    "correction": {
+      "samples": 8,
+      "replay_min_mean_max": [
+        16825,
+        16835.375,
+        16865
+      ],
+      "expected": 16845.375,
+      "bound": 26217,
+      "expected_margin": 45654.625,
+      "conservative_margin": 36283,
+      "expected_pct": 26.9526,
+      "conservative_pct": 41.9472
+    },
+    "original/-1": {
+      "samples": 8,
+      "replay_min_mean_max": [
+        36872,
+        37338,
+        37628
+      ],
+      "expected": 37694,
+      "bound": 50962,
+      "expected_margin": 24806,
+      "conservative_margin": 11538,
+      "expected_pct": 60.310399999999994,
+      "conservative_pct": 81.5392
+    }
+  }
+}

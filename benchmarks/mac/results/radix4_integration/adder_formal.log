@@ -1,0 +1,401 @@
+
+ /----------------------------------------------------------------------------\
+ |  yosys -- Yosys Open SYnthesis Suite                                       |
+ |  Copyright (C) 2012 - 2025  Claire Xenia Wolf <claire@yosyshq.com>         |
+ |  Distributed under an ISC-like license, type "license" to see terms        |
+ \----------------------------------------------------------------------------/
+ Yosys 0.52 (git sha1 fee39a3284c90249e1d9684cf6944ffbbcbb8f90)
+
+-- Running command `read_verilog -sv benchmarks/mac/mac_adders.sv benchmarks/mac/results/radix4_integration/adder_miter.sv; prep -top adder_miter -flatten; sat -verify -prove ok 1' --
+
+1. Executing Verilog-2005 frontend: benchmarks/mac/mac_adders.sv
+Parsing SystemVerilog input from `benchmarks/mac/mac_adders.sv' to AST representation.
+Generating RTLIL representation for module `\experiment_adder'.
+Generating RTLIL representation for module `\experiment_prefix'.
+Successfully finished Verilog frontend.
+
+2. Executing Verilog-2005 frontend: benchmarks/mac/results/radix4_integration/adder_miter.sv
+Parsing SystemVerilog input from `benchmarks/mac/results/radix4_integration/adder_miter.sv' to AST representation.
+Generating RTLIL representation for module `\adder_miter'.
+Successfully finished Verilog frontend.
+
+3. Executing PREP pass.
+
+3.1. Executing HIERARCHY pass (managing design hierarchy).
+
+3.1.1. Analyzing design hierarchy..
+Top module:  \adder_miter
+Used module:     \experiment_adder
+Used module:         \experiment_prefix
+Parameter \WIDTH = 13
+Parameter \STYLE = 3
+
+3.1.2. Executing AST frontend in derive mode using pre-parsed AST for module `\experiment_prefix'.
+Parameter \WIDTH = 13
+Parameter \STYLE = 3
+Generating RTLIL representation for module `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix'.
+Parameter \TOPOLOGY = 4
+
+3.1.3. Executing AST frontend in derive mode using pre-parsed AST for module `\experiment_adder'.
+Parameter \TOPOLOGY = 4
+Generating RTLIL representation for module `$paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000100'.
+Parameter \TOPOLOGY = 3
+
+3.1.4. Executing AST frontend in derive mode using pre-parsed AST for module `\experiment_adder'.
+Parameter \TOPOLOGY = 3
+Generating RTLIL representation for module `$paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000011'.
+Parameter \TOPOLOGY = 2
+
+3.1.5. Executing AST frontend in derive mode using pre-parsed AST for module `\experiment_adder'.
+Parameter \TOPOLOGY = 2
+Generating RTLIL representation for module `$paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000010'.
+Parameter \TOPOLOGY = 1
+
+3.1.6. Executing AST frontend in derive mode using pre-parsed AST for module `\experiment_adder'.
+Parameter \TOPOLOGY = 1
+Generating RTLIL representation for module `$paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000001'.
+Parameter \TOPOLOGY = 0
+
+3.1.7. Executing AST frontend in derive mode using pre-parsed AST for module `\experiment_adder'.
+Parameter \TOPOLOGY = 0
+Generating RTLIL representation for module `$paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000000'.
+
+3.1.8. Analyzing design hierarchy..
+Top module:  \adder_miter
+Used module:     $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000100
+Used module:         \experiment_prefix
+Used module:     $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000011
+Used module:     $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000010
+Used module:     $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000001
+Used module:     $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000000
+Parameter \WIDTH = 13
+Parameter \STYLE = 3
+Found cached RTLIL representation for module `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix'.
+Parameter \WIDTH = 52
+Parameter \STYLE = 3
+
+3.1.9. Executing AST frontend in derive mode using pre-parsed AST for module `\experiment_prefix'.
+Parameter \WIDTH = 52
+Parameter \STYLE = 3
+Generating RTLIL representation for module `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix'.
+Parameter \WIDTH = 52
+Parameter \STYLE = 2
+
+3.1.10. Executing AST frontend in derive mode using pre-parsed AST for module `\experiment_prefix'.
+Parameter \WIDTH = 52
+Parameter \STYLE = 2
+Generating RTLIL representation for module `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix'.
+Parameter \WIDTH = 52
+Parameter \STYLE = 1
+
+3.1.11. Executing AST frontend in derive mode using pre-parsed AST for module `\experiment_prefix'.
+Parameter \WIDTH = 52
+Parameter \STYLE = 1
+Generating RTLIL representation for module `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix'.
+
+3.1.12. Analyzing design hierarchy..
+Top module:  \adder_miter
+Used module:     $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000100
+Used module:         $paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix
+Used module:     $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000011
+Used module:         $paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix
+Used module:     $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000010
+Used module:         $paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix
+Used module:     $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000001
+Used module:         $paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix
+Used module:     $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000000
+
+3.1.13. Analyzing design hierarchy..
+Top module:  \adder_miter
+Used module:     $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000100
+Used module:         $paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix
+Used module:     $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000011
+Used module:         $paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix
+Used module:     $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000010
+Used module:         $paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix
+Used module:     $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000001
+Used module:         $paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix
+Used module:     $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000000
+Removing unused module `\experiment_prefix'.
+Removing unused module `\experiment_adder'.
+Removed 2 unused modules.
+Mapping positional arguments of cell $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000001.genblk1.prefix.tree ($paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix).
+Mapping positional arguments of cell $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000010.genblk1.prefix.tree ($paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix).
+Mapping positional arguments of cell $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000011.genblk1.prefix.tree ($paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix).
+Mapping positional arguments of cell $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000100.genblk1.hybrid.tree ($paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix).
+Mapping positional arguments of cell adder_miter.topology[4].dut ($paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000100).
+Mapping positional arguments of cell adder_miter.topology[3].dut ($paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000011).
+Mapping positional arguments of cell adder_miter.topology[2].dut ($paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000010).
+Mapping positional arguments of cell adder_miter.topology[1].dut ($paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000001).
+Mapping positional arguments of cell adder_miter.topology[0].dut ($paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000000).
+
+3.2. Executing PROC pass (convert processes to netlists).
+
+3.2.1. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Cleaned up 0 empty switches.
+
+3.2.2. Executing PROC_RMDEAD pass (remove dead branches from decision trees).
+Removed a total of 0 dead cases.
+
+3.2.3. Executing PROC_PRUNE pass (remove redundant assignments in processes).
+Removed 0 redundant assignments.
+Promoted 2608 assignments to connections.
+
+3.2.4. Executing PROC_INIT pass (extract init attributes).
+
+3.2.5. Executing PROC_ARST pass (detect async resets in processes).
+
+3.2.6. Executing PROC_ROM pass (convert switches to ROMs).
+Converted 0 switches.
+
+3.2.7. Executing PROC_MUX pass (convert decision trees to multiplexers).
+Creating decoders for process `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$1766'.
+Creating decoders for process `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$999'.
+Creating decoders for process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+Creating decoders for process `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2514'.
+
+3.2.8. Executing PROC_DLATCH pass (convert process syncs to latches).
+No latch inferred for signal `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.\ps[0]' from process `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$1766'.
+No latch inferred for signal `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.\ps[1]' from process `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$1766'.
+No latch inferred for signal `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.\ps[2]' from process `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$1766'.
+No latch inferred for signal `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.\ps[3]' from process `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$1766'.
+No latch inferred for signal `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.\ps[4]' from process `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$1766'.
+No latch inferred for signal `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.\ps[5]' from process `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$1766'.
+No latch inferred for signal `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.\ps[6]' from process `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$1766'.
+No latch inferred for signal `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.\gs[0]' from process `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$1766'.
+No latch inferred for signal `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.\gs[1]' from process `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$1766'.
+No latch inferred for signal `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.\gs[2]' from process `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$1766'.
+No latch inferred for signal `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.\gs[3]' from process `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$1766'.
+No latch inferred for signal `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.\gs[4]' from process `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$1766'.
+No latch inferred for signal `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.\gs[5]' from process `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$1766'.
+No latch inferred for signal `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.\gs[6]' from process `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$1766'.
+No latch inferred for signal `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.\ps[0]' from process `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$999'.
+No latch inferred for signal `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.\ps[1]' from process `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$999'.
+No latch inferred for signal `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.\ps[2]' from process `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$999'.
+No latch inferred for signal `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.\ps[3]' from process `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$999'.
+No latch inferred for signal `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.\ps[4]' from process `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$999'.
+No latch inferred for signal `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.\gs[0]' from process `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$999'.
+No latch inferred for signal `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.\gs[1]' from process `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$999'.
+No latch inferred for signal `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.\gs[2]' from process `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$999'.
+No latch inferred for signal `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.\gs[3]' from process `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$999'.
+No latch inferred for signal `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.\gs[4]' from process `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$999'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\ps[0]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\ps[1]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\ps[2]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\ps[3]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\ps[4]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\ps[5]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\ps[6]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\gs[0]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\gs[1]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\gs[2]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\gs[3]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\gs[4]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\gs[5]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\gs[6]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\ps[7]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\gs[7]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\ps[8]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\ps[9]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\ps[10]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\ps[11]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\gs[8]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\gs[9]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\gs[10]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.\gs[11]' from process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+No latch inferred for signal `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.\ps[0]' from process `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2514'.
+No latch inferred for signal `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.\ps[1]' from process `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2514'.
+No latch inferred for signal `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.\ps[2]' from process `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2514'.
+No latch inferred for signal `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.\ps[3]' from process `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2514'.
+No latch inferred for signal `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.\ps[4]' from process `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2514'.
+No latch inferred for signal `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.\ps[5]' from process `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2514'.
+No latch inferred for signal `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.\ps[6]' from process `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2514'.
+No latch inferred for signal `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.\gs[0]' from process `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2514'.
+No latch inferred for signal `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.\gs[1]' from process `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2514'.
+No latch inferred for signal `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.\gs[2]' from process `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2514'.
+No latch inferred for signal `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.\gs[3]' from process `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2514'.
+No latch inferred for signal `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.\gs[4]' from process `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2514'.
+No latch inferred for signal `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.\gs[5]' from process `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2514'.
+No latch inferred for signal `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.\gs[6]' from process `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2514'.
+No latch inferred for signal `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.\ps[7]' from process `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2514'.
+No latch inferred for signal `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.\gs[7]' from process `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2514'.
+
+3.2.9. Executing PROC_DFF pass (convert process syncs to FFs).
+
+3.2.10. Executing PROC_MEMWR pass (convert process memory writes to cells).
+
+3.2.11. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Removing empty process `$paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$1766'.
+Removing empty process `$paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$999'.
+Removing empty process `$paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2965'.
+Removing empty process `$paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.$proc$benchmarks/mac/mac_adders.sv:0$2514'.
+Cleaned up 0 empty switches.
+
+3.2.12. Executing OPT_EXPR pass (perform const folding).
+Optimizing module $paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.
+Optimizing module $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000000.
+Optimizing module $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000001.
+Optimizing module $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000010.
+Optimizing module $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000011.
+Optimizing module $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000100.
+Optimizing module $paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.
+Optimizing module adder_miter.
+Optimizing module $paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.
+Optimizing module $paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.
+
+3.3. Executing FLATTEN pass (flatten design).
+Deleting now unused module $paramod$984177a93fab2af63ce1076312000d60324d24ba\experiment_prefix.
+Deleting now unused module $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000000.
+Deleting now unused module $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000001.
+Deleting now unused module $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000010.
+Deleting now unused module $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000011.
+Deleting now unused module $paramod\experiment_adder\TOPOLOGY=s32'00000000000000000000000000000100.
+Deleting now unused module $paramod$5f8e9667ffb8b7711616bc5ee8bd713f91166547\experiment_prefix.
+Deleting now unused module $paramod$7c84ebc1d53417dd081aa65aaef87d26d5cb85c1\experiment_prefix.
+Deleting now unused module $paramod$d47f337066765912d93f48744a78d9e6b330e76b\experiment_prefix.
+<suppressed ~9 debug messages>
+
+3.4. Executing FUTURE pass.
+
+3.5. Executing OPT_EXPR pass (perform const folding).
+Optimizing module adder_miter.
+
+3.6. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \adder_miter..
+Removed 67 unused cells and 1456 unused wires.
+<suppressed ~68 debug messages>
+
+3.7. Executing CHECK pass (checking for obvious problems).
+Checking module adder_miter...
+Found and reported 0 problems.
+
+3.8. Executing OPT pass (performing simple optimizations).
+
+3.8.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module adder_miter.
+
+3.8.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\adder_miter'.
+<suppressed ~1953 debug messages>
+Removed a total of 651 cells.
+
+3.8.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \adder_miter..
+  Creating internal representation of mux trees.
+  No muxes found in this module.
+Removed 0 multiplexer ports.
+
+3.8.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \adder_miter.
+Performed a total of 0 changes.
+
+3.8.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\adder_miter'.
+Removed a total of 0 cells.
+
+3.8.6. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \adder_miter..
+Removed 0 unused cells and 260 unused wires.
+<suppressed ~1 debug messages>
+
+3.8.7. Executing OPT_EXPR pass (perform const folding).
+Optimizing module adder_miter.
+
+3.8.8. Rerunning OPT passes. (Maybe there is more to do..)
+
+3.8.9. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \adder_miter..
+  Creating internal representation of mux trees.
+  No muxes found in this module.
+Removed 0 multiplexer ports.
+
+3.8.10. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \adder_miter.
+Performed a total of 0 changes.
+
+3.8.11. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\adder_miter'.
+Removed a total of 0 cells.
+
+3.8.12. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \adder_miter..
+
+3.8.13. Executing OPT_EXPR pass (perform const folding).
+Optimizing module adder_miter.
+
+3.8.14. Finished OPT passes. (There is nothing left to do.)
+
+3.9. Executing WREDUCE pass (reducing word size of cells).
+Removed top 1 bits (of 52) from port Y of cell adder_miter.$flatten\topology[0].dut.$and$benchmarks/mac/mac_adders.sv:7$1662 ($and).
+Removed top 1 bits (of 52) from port A of cell adder_miter.$flatten\topology[0].dut.$and$benchmarks/mac/mac_adders.sv:7$1662 ($and).
+Removed top 1 bits (of 52) from port B of cell adder_miter.$flatten\topology[0].dut.$and$benchmarks/mac/mac_adders.sv:7$1662 ($and).
+
+3.10. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \adder_miter..
+
+3.11. Executing MEMORY_COLLECT pass (generating $mem cells).
+
+3.12. Executing OPT pass (performing simple optimizations).
+
+3.12.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module adder_miter.
+
+3.12.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\adder_miter'.
+Removed a total of 0 cells.
+
+3.12.3. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \adder_miter..
+
+3.12.4. Finished fast OPT passes.
+
+3.13. Printing statistics.
+
+=== adder_miter ===
+
+   Number of wires:                766
+   Number of wire bits:           6725
+   Number of public wires:         162
+   Number of public wire bits:    6070
+   Number of ports:                  4
+   Number of port bits:            106
+   Number of memories:               0
+   Number of memory bits:            0
+   Number of processes:              0
+   Number of cells:               1547
+     $add                            2
+     $and                          933
+     $eq                             5
+     $or                           579
+     $reduce_and                    13
+     $scopeinfo                      9
+     $xor                            6
+
+3.14. Executing CHECK pass (checking for obvious problems).
+Checking module adder_miter...
+Found and reported 0 problems.
+
+4. Executing SAT pass (solving SAT problems in the circuit).
+
+Setting up SAT problem:
+Final constraint equation: { } = { }
+Imported 1547 cells to SAT database.
+Import proof-constraint: \ok = 1'1
+Final proof equation: \ok = 1'1
+
+Solving problem with 11818 variables and 31422 clauses..
+SAT proof finished - no model found: SUCCESS!
+
+                  /$$$$$$      /$$$$$$$$     /$$$$$$$    
+                 /$$__  $$    | $$_____/    | $$__  $$   
+                | $$  \ $$    | $$          | $$  \ $$   
+                | $$  | $$    | $$$$$       | $$  | $$   
+                | $$  | $$    | $$__/       | $$  | $$   
+                | $$/$$ $$    | $$          | $$  | $$   
+                |  $$$$$$/ /$$| $$$$$$$$ /$$| $$$$$$$//$$
+                 \____ $$$|__/|________/|__/|_______/|__/
+                       \__/                              
+
+End of script. Logfile hash: 786d023e79, CPU: user 0.76s system 0.00s, MEM: 38.67 MB peak
+Yosys 0.52 (git sha1 fee39a3284c90249e1d9684cf6944ffbbcbb8f90)
+Time spent: 45% 1x sat (0 sec), 29% 1x hierarchy (0 sec), ...

@@ -1,0 +1,1544 @@
+
+ /----------------------------------------------------------------------------\
+ |  yosys -- Yosys Open SYnthesis Suite                                       |
+ |  Copyright (C) 2012 - 2025  Claire Xenia Wolf <claire@yosyshq.com>         |
+ |  Distributed under an ISC-like license, type "license" to see terms        |
+ \----------------------------------------------------------------------------/
+ Yosys 0.52 (git sha1 fee39a3284c90249e1d9684cf6944ffbbcbb8f90)
+
+-- Running command `read_liberty -lib -ignore_miss_func /home/Nabhah/sky130_lib/sky130_fd_sc_hd__tt_025C_1v80.lib; read_verilog -sv fp32_divsqrt.sv; hierarchy -check -top fp32_divsqrt; synth -flatten -noabc -top fp32_divsqrt; dfflibmap -liberty /home/Nabhah/sky130_lib/sky130_fd_sc_hd__tt_025C_1v80.lib; abc -D 20000 -liberty /home/Nabhah/sky130_lib/sky130_fd_sc_hd__tt_025C_1v80.lib; clean -purge; check -assert; stat -liberty /home/Nabhah/sky130_lib/sky130_fd_sc_hd__tt_025C_1v80.lib' --
+
+1. Executing Liberty frontend: /home/Nabhah/sky130_lib/sky130_fd_sc_hd__tt_025C_1v80.lib
+Imported 428 cell types from liberty file.
+
+2. Executing Verilog-2005 frontend: fp32_divsqrt.sv
+Parsing SystemVerilog input from `fp32_divsqrt.sv' to AST representation.
+Generating RTLIL representation for module `\fp32_divsqrt'.
+Successfully finished Verilog frontend.
+
+3. Executing HIERARCHY pass (managing design hierarchy).
+
+3.1. Analyzing design hierarchy..
+Top module:  \fp32_divsqrt
+
+3.2. Analyzing design hierarchy..
+Top module:  \fp32_divsqrt
+Removed 0 unused modules.
+
+4. Executing SYNTH pass.
+
+4.1. Executing HIERARCHY pass (managing design hierarchy).
+
+4.1.1. Analyzing design hierarchy..
+Top module:  \fp32_divsqrt
+
+4.1.2. Analyzing design hierarchy..
+Top module:  \fp32_divsqrt
+Removed 0 unused modules.
+
+4.2. Executing PROC pass (convert processes to netlists).
+
+4.2.1. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Cleaned up 0 empty switches.
+
+4.2.2. Executing PROC_RMDEAD pass (remove dead branches from decision trees).
+Removed 1 dead cases from process $proc$fp32_divsqrt.sv:92$33 in module fp32_divsqrt.
+Marked 14 switch rules as full_case in process $proc$fp32_divsqrt.sv:92$33 in module fp32_divsqrt.
+Marked 1 switch rules as full_case in process $proc$fp32_divsqrt.sv:69$30 in module fp32_divsqrt.
+Removed a total of 1 dead cases.
+
+4.2.3. Executing PROC_PRUNE pass (remove redundant assignments in processes).
+Removed 1 redundant assignment.
+Promoted 41 assignments to connections.
+
+4.2.4. Executing PROC_INIT pass (extract init attributes).
+
+4.2.5. Executing PROC_ARST pass (detect async resets in processes).
+Found async reset \rst_n in `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+
+4.2.6. Executing PROC_ROM pass (convert switches to ROMs).
+Converted 0 switches.
+<suppressed ~19 debug messages>
+
+4.2.7. Executing PROC_MUX pass (convert decision trees to multiplexers).
+Creating decoders for process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+     1/218: $0\overflow[0:0]
+     2/218: $0\sig_b[23:0] [1:0]
+     3/218: $8\exponent$func$fp32_divsqrt.sv:135$19.$result[9:0]$353
+     4/218: $8\exponent$func$fp32_divsqrt.sv:134$18.word[31:0]$352
+     5/218: $8\exponent$func$fp32_divsqrt.sv:134$18.$result[9:0]$351
+     6/218: $7\is_inf$func$fp32_divsqrt.sv:130$15.$result[0:0]$327
+     7/218: $7\is_inf$func$fp32_divsqrt.sv:130$15.word[31:0]$328
+     8/218: $7\exponent$func$fp32_divsqrt.sv:135$19.word[31:0]$336
+     9/218: $7\exponent$func$fp32_divsqrt.sv:135$19.$result[9:0]$335
+    10/218: $7\exponent$func$fp32_divsqrt.sv:134$18.word[31:0]$334
+    11/218: $7\exponent$func$fp32_divsqrt.sv:134$18.$result[9:0]$333
+    12/218: $7\is_inf$func$fp32_divsqrt.sv:131$17.word[31:0]$332
+    13/218: $7\is_inf$func$fp32_divsqrt.sv:131$17.$result[0:0]$331
+    14/218: $7\is_zero$func$fp32_divsqrt.sv:131$16.word[31:0]$330
+    15/218: $7\is_zero$func$fp32_divsqrt.sv:131$16.$result[0:0]$329
+    16/218: $6\is_inf$func$fp32_divsqrt.sv:127$12.$result[0:0]$297
+    17/218: $6\is_inf$func$fp32_divsqrt.sv:127$12.word[31:0]$298
+    18/218: $6\exponent$func$fp32_divsqrt.sv:135$19.word[31:0]$312
+    19/218: $6\exponent$func$fp32_divsqrt.sv:135$19.$result[9:0]$311
+    20/218: $6\exponent$func$fp32_divsqrt.sv:134$18.word[31:0]$310
+    21/218: $6\exponent$func$fp32_divsqrt.sv:134$18.$result[9:0]$309
+    22/218: $6\is_inf$func$fp32_divsqrt.sv:131$17.word[31:0]$308
+    23/218: $6\is_inf$func$fp32_divsqrt.sv:131$17.$result[0:0]$307
+    24/218: $6\is_zero$func$fp32_divsqrt.sv:131$16.word[31:0]$306
+    25/218: $6\is_zero$func$fp32_divsqrt.sv:131$16.$result[0:0]$305
+    26/218: $6\is_inf$func$fp32_divsqrt.sv:130$15.word[31:0]$304
+    27/218: $6\is_inf$func$fp32_divsqrt.sv:130$15.$result[0:0]$303
+    28/218: $6\is_zero$func$fp32_divsqrt.sv:128$14.word[31:0]$302
+    29/218: $6\is_zero$func$fp32_divsqrt.sv:128$14.$result[0:0]$301
+    30/218: $6\is_inf$func$fp32_divsqrt.sv:128$13.word[31:0]$300
+    31/218: $6\is_inf$func$fp32_divsqrt.sv:128$13.$result[0:0]$299
+    32/218: $5\exponent$func$fp32_divsqrt.sv:135$19.word[31:0]$288
+    33/218: $5\exponent$func$fp32_divsqrt.sv:135$19.$result[9:0]$287
+    34/218: $5\exponent$func$fp32_divsqrt.sv:134$18.word[31:0]$286
+    35/218: $5\exponent$func$fp32_divsqrt.sv:134$18.$result[9:0]$285
+    36/218: $5\is_inf$func$fp32_divsqrt.sv:131$17.word[31:0]$284
+    37/218: $5\is_inf$func$fp32_divsqrt.sv:131$17.$result[0:0]$283
+    38/218: $5\is_zero$func$fp32_divsqrt.sv:131$16.word[31:0]$282
+    39/218: $5\is_zero$func$fp32_divsqrt.sv:131$16.$result[0:0]$281
+    40/218: $5\is_inf$func$fp32_divsqrt.sv:130$15.word[31:0]$280
+    41/218: $5\is_inf$func$fp32_divsqrt.sv:130$15.$result[0:0]$279
+    42/218: $5\is_zero$func$fp32_divsqrt.sv:128$14.word[31:0]$278
+    43/218: $5\is_zero$func$fp32_divsqrt.sv:128$14.$result[0:0]$277
+    44/218: $5\is_inf$func$fp32_divsqrt.sv:128$13.word[31:0]$276
+    45/218: $5\is_inf$func$fp32_divsqrt.sv:128$13.$result[0:0]$275
+    46/218: $5\is_inf$func$fp32_divsqrt.sv:127$12.word[31:0]$274
+    47/218: $5\is_inf$func$fp32_divsqrt.sv:127$12.$result[0:0]$273
+    48/218: $5\is_inf$func$fp32_divsqrt.sv:126$11.word[31:0]$272
+    49/218: $5\is_inf$func$fp32_divsqrt.sv:126$11.$result[0:0]$271
+    50/218: $5\is_zero$func$fp32_divsqrt.sv:126$10.word[31:0]$270
+    51/218: $5\is_zero$func$fp32_divsqrt.sv:126$10.$result[0:0]$269
+    52/218: $4\is_nan$func$fp32_divsqrt.sv:120$4.$result[0:0]$201
+    53/218: $4\is_nan$func$fp32_divsqrt.sv:120$4.word[31:0]$202
+    54/218: $4\is_nan$func$fp32_divsqrt.sv:119$3.$result[0:0]$199
+    55/218: $4\is_nan$func$fp32_divsqrt.sv:119$3.word[31:0]$200
+    56/218: $4\exponent$func$fp32_divsqrt.sv:135$19.word[31:0]$232
+    57/218: $4\exponent$func$fp32_divsqrt.sv:135$19.$result[9:0]$231
+    58/218: $4\exponent$func$fp32_divsqrt.sv:134$18.word[31:0]$230
+    59/218: $4\exponent$func$fp32_divsqrt.sv:134$18.$result[9:0]$229
+    60/218: $4\is_inf$func$fp32_divsqrt.sv:131$17.word[31:0]$228
+    61/218: $4\is_inf$func$fp32_divsqrt.sv:131$17.$result[0:0]$227
+    62/218: $4\is_zero$func$fp32_divsqrt.sv:131$16.word[31:0]$226
+    63/218: $4\is_zero$func$fp32_divsqrt.sv:131$16.$result[0:0]$225
+    64/218: $4\is_inf$func$fp32_divsqrt.sv:130$15.word[31:0]$224
+    65/218: $4\is_inf$func$fp32_divsqrt.sv:130$15.$result[0:0]$223
+    66/218: $4\is_zero$func$fp32_divsqrt.sv:128$14.word[31:0]$222
+    67/218: $4\is_zero$func$fp32_divsqrt.sv:128$14.$result[0:0]$221
+    68/218: $4\is_inf$func$fp32_divsqrt.sv:128$13.word[31:0]$220
+    69/218: $4\is_inf$func$fp32_divsqrt.sv:128$13.$result[0:0]$219
+    70/218: $4\is_inf$func$fp32_divsqrt.sv:127$12.word[31:0]$218
+    71/218: $4\is_inf$func$fp32_divsqrt.sv:127$12.$result[0:0]$217
+    72/218: $4\is_inf$func$fp32_divsqrt.sv:126$11.word[31:0]$216
+    73/218: $4\is_inf$func$fp32_divsqrt.sv:126$11.$result[0:0]$215
+    74/218: $4\is_zero$func$fp32_divsqrt.sv:126$10.word[31:0]$214
+    75/218: $4\is_zero$func$fp32_divsqrt.sv:126$10.$result[0:0]$213
+    76/218: $4\is_inf$func$fp32_divsqrt.sv:123$9.word[31:0]$212
+    77/218: $4\is_inf$func$fp32_divsqrt.sv:123$9.$result[0:0]$211
+    78/218: $4\is_inf$func$fp32_divsqrt.sv:123$8.word[31:0]$210
+    79/218: $4\is_inf$func$fp32_divsqrt.sv:123$8.$result[0:0]$209
+    80/218: $4\is_zero$func$fp32_divsqrt.sv:122$7.word[31:0]$208
+    81/218: $4\is_zero$func$fp32_divsqrt.sv:122$7.$result[0:0]$207
+    82/218: $4\is_zero$func$fp32_divsqrt.sv:122$6.word[31:0]$206
+    83/218: $4\is_zero$func$fp32_divsqrt.sv:122$6.$result[0:0]$205
+    84/218: $4\is_zero$func$fp32_divsqrt.sv:121$5.word[31:0]$204
+    85/218: $4\is_zero$func$fp32_divsqrt.sv:121$5.$result[0:0]$203
+    86/218: $3\exponent$func$fp32_divsqrt.sv:135$19.word[31:0]$186
+    87/218: $3\exponent$func$fp32_divsqrt.sv:135$19.$result[9:0]$185
+    88/218: $3\exponent$func$fp32_divsqrt.sv:134$18.word[31:0]$184
+    89/218: $3\exponent$func$fp32_divsqrt.sv:134$18.$result[9:0]$183
+    90/218: $3\is_inf$func$fp32_divsqrt.sv:131$17.word[31:0]$182
+    91/218: $3\is_inf$func$fp32_divsqrt.sv:131$17.$result[0:0]$181
+    92/218: $3\is_zero$func$fp32_divsqrt.sv:131$16.word[31:0]$180
+    93/218: $3\is_zero$func$fp32_divsqrt.sv:131$16.$result[0:0]$179
+    94/218: $3\is_inf$func$fp32_divsqrt.sv:130$15.word[31:0]$178
+    95/218: $3\is_inf$func$fp32_divsqrt.sv:130$15.$result[0:0]$177
+    96/218: $3\is_zero$func$fp32_divsqrt.sv:128$14.word[31:0]$176
+    97/218: $3\is_zero$func$fp32_divsqrt.sv:128$14.$result[0:0]$175
+    98/218: $3\is_inf$func$fp32_divsqrt.sv:128$13.word[31:0]$174
+    99/218: $3\is_inf$func$fp32_divsqrt.sv:128$13.$result[0:0]$173
+   100/218: $3\is_inf$func$fp32_divsqrt.sv:127$12.word[31:0]$172
+   101/218: $3\is_inf$func$fp32_divsqrt.sv:127$12.$result[0:0]$171
+   102/218: $3\is_inf$func$fp32_divsqrt.sv:126$11.word[31:0]$170
+   103/218: $3\is_inf$func$fp32_divsqrt.sv:126$11.$result[0:0]$169
+   104/218: $3\is_zero$func$fp32_divsqrt.sv:126$10.word[31:0]$168
+   105/218: $3\is_zero$func$fp32_divsqrt.sv:126$10.$result[0:0]$167
+   106/218: $3\is_inf$func$fp32_divsqrt.sv:123$9.word[31:0]$166
+   107/218: $3\is_inf$func$fp32_divsqrt.sv:123$9.$result[0:0]$165
+   108/218: $3\is_inf$func$fp32_divsqrt.sv:123$8.word[31:0]$164
+   109/218: $3\is_inf$func$fp32_divsqrt.sv:123$8.$result[0:0]$163
+   110/218: $3\is_zero$func$fp32_divsqrt.sv:122$7.word[31:0]$162
+   111/218: $3\is_zero$func$fp32_divsqrt.sv:122$7.$result[0:0]$161
+   112/218: $3\is_zero$func$fp32_divsqrt.sv:122$6.word[31:0]$160
+   113/218: $3\is_zero$func$fp32_divsqrt.sv:122$6.$result[0:0]$159
+   114/218: $3\is_zero$func$fp32_divsqrt.sv:121$5.word[31:0]$158
+   115/218: $3\is_zero$func$fp32_divsqrt.sv:121$5.$result[0:0]$157
+   116/218: $3\is_nan$func$fp32_divsqrt.sv:120$4.word[31:0]$156
+   117/218: $3\is_nan$func$fp32_divsqrt.sv:120$4.$result[0:0]$155
+   118/218: $3\is_nan$func$fp32_divsqrt.sv:119$3.word[31:0]$154
+   119/218: $3\is_nan$func$fp32_divsqrt.sv:119$3.$result[0:0]$153
+   120/218: $3\is_nan$func$fp32_divsqrt.sv:117$2.$result[0:0]$151
+   121/218: $3\is_nan$func$fp32_divsqrt.sv:117$2.word[31:0]$152
+   122/218: $3\is_nan$func$fp32_divsqrt.sv:117$1.$result[0:0]$149
+   123/218: $3\is_nan$func$fp32_divsqrt.sv:117$1.word[31:0]$150
+   124/218: $2\exponent$func$fp32_divsqrt.sv:135$19.word[31:0]$148
+   125/218: $2\exponent$func$fp32_divsqrt.sv:135$19.$result[9:0]$147
+   126/218: $2\exponent$func$fp32_divsqrt.sv:134$18.word[31:0]$146
+   127/218: $2\exponent$func$fp32_divsqrt.sv:134$18.$result[9:0]$145
+   128/218: $2\is_inf$func$fp32_divsqrt.sv:131$17.word[31:0]$144
+   129/218: $2\is_inf$func$fp32_divsqrt.sv:131$17.$result[0:0]$143
+   130/218: $2\is_zero$func$fp32_divsqrt.sv:131$16.word[31:0]$142
+   131/218: $2\is_zero$func$fp32_divsqrt.sv:131$16.$result[0:0]$141
+   132/218: $2\is_inf$func$fp32_divsqrt.sv:130$15.word[31:0]$140
+   133/218: $2\is_inf$func$fp32_divsqrt.sv:130$15.$result[0:0]$139
+   134/218: $2\is_zero$func$fp32_divsqrt.sv:128$14.word[31:0]$138
+   135/218: $2\is_zero$func$fp32_divsqrt.sv:128$14.$result[0:0]$137
+   136/218: $2\is_inf$func$fp32_divsqrt.sv:128$13.word[31:0]$136
+   137/218: $2\is_inf$func$fp32_divsqrt.sv:128$13.$result[0:0]$135
+   138/218: $2\is_inf$func$fp32_divsqrt.sv:127$12.word[31:0]$134
+   139/218: $2\is_inf$func$fp32_divsqrt.sv:127$12.$result[0:0]$133
+   140/218: $2\is_inf$func$fp32_divsqrt.sv:126$11.word[31:0]$132
+   141/218: $2\is_inf$func$fp32_divsqrt.sv:126$11.$result[0:0]$131
+   142/218: $2\is_zero$func$fp32_divsqrt.sv:126$10.word[31:0]$130
+   143/218: $2\is_zero$func$fp32_divsqrt.sv:126$10.$result[0:0]$129
+   144/218: $2\is_inf$func$fp32_divsqrt.sv:123$9.word[31:0]$128
+   145/218: $2\is_inf$func$fp32_divsqrt.sv:123$9.$result[0:0]$127
+   146/218: $2\is_inf$func$fp32_divsqrt.sv:123$8.word[31:0]$126
+   147/218: $2\is_inf$func$fp32_divsqrt.sv:123$8.$result[0:0]$125
+   148/218: $2\is_zero$func$fp32_divsqrt.sv:122$7.word[31:0]$124
+   149/218: $2\is_zero$func$fp32_divsqrt.sv:122$7.$result[0:0]$123
+   150/218: $2\is_zero$func$fp32_divsqrt.sv:122$6.word[31:0]$122
+   151/218: $2\is_zero$func$fp32_divsqrt.sv:122$6.$result[0:0]$121
+   152/218: $2\is_zero$func$fp32_divsqrt.sv:121$5.word[31:0]$120
+   153/218: $2\is_zero$func$fp32_divsqrt.sv:121$5.$result[0:0]$119
+   154/218: $2\is_nan$func$fp32_divsqrt.sv:120$4.word[31:0]$118
+   155/218: $2\is_nan$func$fp32_divsqrt.sv:120$4.$result[0:0]$117
+   156/218: $2\is_nan$func$fp32_divsqrt.sv:119$3.word[31:0]$116
+   157/218: $2\is_nan$func$fp32_divsqrt.sv:119$3.$result[0:0]$115
+   158/218: $2\is_nan$func$fp32_divsqrt.sv:117$2.word[31:0]$114
+   159/218: $2\is_nan$func$fp32_divsqrt.sv:117$2.$result[0:0]$113
+   160/218: $2\is_nan$func$fp32_divsqrt.sv:117$1.word[31:0]$112
+   161/218: $2\is_nan$func$fp32_divsqrt.sv:117$1.$result[0:0]$111
+   162/218: $1\exponent$func$fp32_divsqrt.sv:135$19.word[31:0]$110
+   163/218: $1\exponent$func$fp32_divsqrt.sv:135$19.$result[9:0]$109
+   164/218: $1\exponent$func$fp32_divsqrt.sv:134$18.word[31:0]$108
+   165/218: $1\exponent$func$fp32_divsqrt.sv:134$18.$result[9:0]$107
+   166/218: $1\is_inf$func$fp32_divsqrt.sv:131$17.word[31:0]$106
+   167/218: $1\is_inf$func$fp32_divsqrt.sv:131$17.$result[0:0]$105
+   168/218: $1\is_zero$func$fp32_divsqrt.sv:131$16.word[31:0]$104
+   169/218: $1\is_zero$func$fp32_divsqrt.sv:131$16.$result[0:0]$103
+   170/218: $1\is_inf$func$fp32_divsqrt.sv:130$15.word[31:0]$102
+   171/218: $1\is_inf$func$fp32_divsqrt.sv:130$15.$result[0:0]$101
+   172/218: $1\is_zero$func$fp32_divsqrt.sv:128$14.word[31:0]$100
+   173/218: $1\is_zero$func$fp32_divsqrt.sv:128$14.$result[0:0]$99
+   174/218: $1\is_inf$func$fp32_divsqrt.sv:128$13.word[31:0]$98
+   175/218: $1\is_inf$func$fp32_divsqrt.sv:128$13.$result[0:0]$97
+   176/218: $1\is_inf$func$fp32_divsqrt.sv:127$12.word[31:0]$96
+   177/218: $1\is_inf$func$fp32_divsqrt.sv:127$12.$result[0:0]$95
+   178/218: $1\is_inf$func$fp32_divsqrt.sv:126$11.word[31:0]$94
+   179/218: $1\is_inf$func$fp32_divsqrt.sv:126$11.$result[0:0]$93
+   180/218: $1\is_zero$func$fp32_divsqrt.sv:126$10.word[31:0]$92
+   181/218: $1\is_zero$func$fp32_divsqrt.sv:126$10.$result[0:0]$91
+   182/218: $1\is_inf$func$fp32_divsqrt.sv:123$9.word[31:0]$90
+   183/218: $1\is_inf$func$fp32_divsqrt.sv:123$9.$result[0:0]$89
+   184/218: $1\is_inf$func$fp32_divsqrt.sv:123$8.word[31:0]$88
+   185/218: $1\is_inf$func$fp32_divsqrt.sv:123$8.$result[0:0]$87
+   186/218: $1\is_zero$func$fp32_divsqrt.sv:122$7.word[31:0]$86
+   187/218: $1\is_zero$func$fp32_divsqrt.sv:122$7.$result[0:0]$85
+   188/218: $1\is_zero$func$fp32_divsqrt.sv:122$6.word[31:0]$84
+   189/218: $1\is_zero$func$fp32_divsqrt.sv:122$6.$result[0:0]$83
+   190/218: $1\is_zero$func$fp32_divsqrt.sv:121$5.word[31:0]$82
+   191/218: $1\is_zero$func$fp32_divsqrt.sv:121$5.$result[0:0]$81
+   192/218: $1\is_nan$func$fp32_divsqrt.sv:120$4.word[31:0]$80
+   193/218: $1\is_nan$func$fp32_divsqrt.sv:120$4.$result[0:0]$79
+   194/218: $1\is_nan$func$fp32_divsqrt.sv:119$3.word[31:0]$78
+   195/218: $1\is_nan$func$fp32_divsqrt.sv:119$3.$result[0:0]$77
+   196/218: $1\is_nan$func$fp32_divsqrt.sv:117$2.word[31:0]$76
+   197/218: $1\is_nan$func$fp32_divsqrt.sv:117$2.$result[0:0]$75
+   198/218: $1\is_nan$func$fp32_divsqrt.sv:117$1.word[31:0]$74
+   199/218: $1\is_nan$func$fp32_divsqrt.sv:117$1.$result[0:0]$73
+   200/218: $0\done[0:0]
+   201/218: $0\special_exception[0:0]
+   202/218: $0\special[1:0]
+   203/218: $0\digit_index[4:0]
+   204/218: $0\digits[26:0]
+   205/218: $0\remainder[26:0]
+   206/218: $8\exponent$func$fp32_divsqrt.sv:135$19.word[31:0]$354
+   207/218: $0\sig_b[23:0] [23:2]
+   208/218: $0\exp_b[9:0]
+   209/218: $0\exp_a[9:0]
+   210/218: $0\result_sign[0:0]
+   211/218: $0\root_mode[0:0]
+   212/218: $0\state[2:0]
+   213/218: $0\sig_a[23:0]
+   214/218: $0\inexact[0:0]
+   215/218: $0\underflow[0:0]
+   216/218: $0\divide_by_zero[0:0]
+   217/218: $0\invalid[0:0]
+   218/218: $0\result[31:0]
+Creating decoders for process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:69$30'.
+     1/3: $1\subtract[0:0]
+     2/3: $1\alu_right[27:0]
+     3/3: $1\alu_left[27:0]
+
+4.2.8. Executing PROC_DLATCH pass (convert process syncs to latches).
+No latch inferred for signal `\fp32_divsqrt.\alu_left' from process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:69$30'.
+No latch inferred for signal `\fp32_divsqrt.\alu_right' from process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:69$30'.
+No latch inferred for signal `\fp32_divsqrt.\subtract' from process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:69$30'.
+
+4.2.9. Executing PROC_DFF pass (convert process syncs to FFs).
+Creating register for signal `\fp32_divsqrt.\done' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3111' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3116' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\invalid' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3121' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\divide_by_zero' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3126' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\overflow' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3131' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\underflow' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3136' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\inexact' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3141' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\state' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3146' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\root_mode' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3151' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\result_sign' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3156' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\exp_a' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3161' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\exp_b' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3166' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\sig_a' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3171' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\sig_b' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3176' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\remainder' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3181' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\digits' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3186' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\digit_index' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3191' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\special' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3196' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\special_exception' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3201' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_nan$func$fp32_divsqrt.sv:117$1.$result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3206' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_nan$func$fp32_divsqrt.sv:117$1.word' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3211' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_nan$func$fp32_divsqrt.sv:117$2.$result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3216' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_nan$func$fp32_divsqrt.sv:117$2.word' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3221' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_nan$func$fp32_divsqrt.sv:119$3.$result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3226' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_nan$func$fp32_divsqrt.sv:119$3.word' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3231' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_nan$func$fp32_divsqrt.sv:120$4.$result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3236' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_nan$func$fp32_divsqrt.sv:120$4.word' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3241' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_zero$func$fp32_divsqrt.sv:121$5.$result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3246' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_zero$func$fp32_divsqrt.sv:121$5.word' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3251' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_zero$func$fp32_divsqrt.sv:122$6.$result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3256' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_zero$func$fp32_divsqrt.sv:122$6.word' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3261' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_zero$func$fp32_divsqrt.sv:122$7.$result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3266' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_zero$func$fp32_divsqrt.sv:122$7.word' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3271' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_inf$func$fp32_divsqrt.sv:123$8.$result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3276' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_inf$func$fp32_divsqrt.sv:123$8.word' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3281' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_inf$func$fp32_divsqrt.sv:123$9.$result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3286' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_inf$func$fp32_divsqrt.sv:123$9.word' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3291' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_zero$func$fp32_divsqrt.sv:126$10.$result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3296' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_zero$func$fp32_divsqrt.sv:126$10.word' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3301' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_inf$func$fp32_divsqrt.sv:126$11.$result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3306' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_inf$func$fp32_divsqrt.sv:126$11.word' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3311' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_inf$func$fp32_divsqrt.sv:127$12.$result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3316' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_inf$func$fp32_divsqrt.sv:127$12.word' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3321' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_inf$func$fp32_divsqrt.sv:128$13.$result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3326' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_inf$func$fp32_divsqrt.sv:128$13.word' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3331' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_zero$func$fp32_divsqrt.sv:128$14.$result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3336' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_zero$func$fp32_divsqrt.sv:128$14.word' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3341' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_inf$func$fp32_divsqrt.sv:130$15.$result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3346' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_inf$func$fp32_divsqrt.sv:130$15.word' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3351' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_zero$func$fp32_divsqrt.sv:131$16.$result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3356' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_zero$func$fp32_divsqrt.sv:131$16.word' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3361' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_inf$func$fp32_divsqrt.sv:131$17.$result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3366' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\is_inf$func$fp32_divsqrt.sv:131$17.word' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3371' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\exponent$func$fp32_divsqrt.sv:134$18.$result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3376' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\exponent$func$fp32_divsqrt.sv:134$18.word' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3381' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\exponent$func$fp32_divsqrt.sv:135$19.$result' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3386' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_divsqrt.\exponent$func$fp32_divsqrt.sv:135$19.word' using process `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+  created $adff cell `$procdff$3391' with positive edge clock and positive level reset.
+
+4.2.10. Executing PROC_MEMWR pass (convert process memory writes to cells).
+
+4.2.11. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Found and cleaned up 18 empty switches in `\fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+Removing empty process `fp32_divsqrt.$proc$fp32_divsqrt.sv:92$33'.
+Found and cleaned up 1 empty switch in `\fp32_divsqrt.$proc$fp32_divsqrt.sv:69$30'.
+Removing empty process `fp32_divsqrt.$proc$fp32_divsqrt.sv:69$30'.
+Cleaned up 19 empty switches.
+
+4.2.12. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_divsqrt.
+<suppressed ~296 debug messages>
+
+4.3. Executing FLATTEN pass (flatten design).
+
+4.4. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_divsqrt.
+
+4.5. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_divsqrt..
+Removed 988 unused cells and 1697 unused wires.
+<suppressed ~1008 debug messages>
+
+4.6. Executing CHECK pass (checking for obvious problems).
+Checking module fp32_divsqrt...
+Found and reported 0 problems.
+
+4.7. Executing OPT pass (performing simple optimizations).
+
+4.7.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_divsqrt.
+
+4.7.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_divsqrt'.
+<suppressed ~285 debug messages>
+Removed a total of 95 cells.
+
+4.7.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_divsqrt..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+      Replacing known input bits on port B of cell $procmux$3030: \sig_a -> { 1'1 \sig_a [22:0] }
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~28 debug messages>
+
+4.7.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_divsqrt.
+    New ctrl vector for $pmux cell $procmux$2761: $auto$opt_reduce.cc:137:opt_pmux$3393
+    New ctrl vector for $pmux cell $procmux$2984: { $procmux$2787_CMP $procmux$2878_CMP $procmux$2821_CMP $procmux$2820_CMP $procmux$2829_CMP $procmux$2828_CMP $auto$opt_reduce.cc:137:opt_pmux$3395 }
+    New ctrl vector for $pmux cell $procmux$3094: $auto$opt_reduce.cc:137:opt_pmux$3397
+  Optimizing cells in module \fp32_divsqrt.
+Performed a total of 3 changes.
+
+4.7.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_divsqrt'.
+<suppressed ~3 debug messages>
+Removed a total of 1 cells.
+
+4.7.6. Executing OPT_DFF pass (perform DFF optimizations).
+
+4.7.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_divsqrt..
+Removed 0 unused cells and 96 unused wires.
+<suppressed ~1 debug messages>
+
+4.7.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_divsqrt.
+
+4.7.9. Rerunning OPT passes. (Maybe there is more to do..)
+
+4.7.10. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_divsqrt..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~28 debug messages>
+
+4.7.11. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_divsqrt.
+Performed a total of 0 changes.
+
+4.7.12. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_divsqrt'.
+Removed a total of 0 cells.
+
+4.7.13. Executing OPT_DFF pass (perform DFF optimizations).
+
+4.7.14. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_divsqrt..
+
+4.7.15. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_divsqrt.
+
+4.7.16. Finished OPT passes. (There is nothing left to do.)
+
+4.8. Executing FSM pass (extract and optimize FSM).
+
+4.8.1. Executing FSM_DETECT pass (finding FSMs in design).
+Found FSM state register fp32_divsqrt.special.
+Not marking fp32_divsqrt.state as FSM state register:
+    Users of register don't seem to benefit from recoding.
+
+4.8.2. Executing FSM_EXTRACT pass (extracting FSM from design).
+Extracting FSM `\special' from module `\fp32_divsqrt'.
+  found $adff cell for state register: $procdff$3196
+  root of input selection tree: $0\special[1:0]
+  found reset state: 2'00 (from async reset)
+  found ctrl input: $procmux$2787_CMP
+  found ctrl input: \start
+  found ctrl input: $logic_or$fp32_divsqrt.sv:117$198_Y
+  found ctrl input: $logic_or$fp32_divsqrt.sv:121$268_Y
+  found ctrl input: $logic_and$fp32_divsqrt.sv:126$296_Y
+  found ctrl input: $logic_and$fp32_divsqrt.sv:128$326_Y
+  found ctrl input: $logic_and$fp32_divsqrt.sv:131$350_Y
+  found state code: 2'01
+  found ctrl input: $logic_and$fp32_divsqrt.sv:48$255_Y
+  found state code: 2'10
+  found ctrl output: $eq$fp32_divsqrt.sv:226$392_Y
+  found ctrl output: $eq$fp32_divsqrt.sv:227$394_Y
+  ctrl inputs: { $procmux$2787_CMP $logic_and$fp32_divsqrt.sv:131$350_Y $logic_and$fp32_divsqrt.sv:128$326_Y $logic_and$fp32_divsqrt.sv:126$296_Y $logic_or$fp32_divsqrt.sv:121$268_Y $logic_and$fp32_divsqrt.sv:48$255_Y $logic_or$fp32_divsqrt.sv:117$198_Y \start }
+  ctrl outputs: { $eq$fp32_divsqrt.sv:227$394_Y $eq$fp32_divsqrt.sv:226$392_Y $0\special[1:0] }
+  transition:       2'00 8'0------- ->       2'00 4'0000
+  transition:       2'00 8'1------0 ->       2'00 4'0000
+  transition:       2'00 8'10000-01 ->       2'00 4'0000
+  transition:       2'00 8'11000-01 ->       2'00 4'0000
+  transition:       2'00 8'1-100-01 ->       2'01 4'0001
+  transition:       2'00 8'1--10001 ->       2'00 4'0000
+  transition:       2'00 8'1--10101 ->       2'01 4'0001
+  transition:       2'00 8'1---1-01 ->       2'10 4'0010
+  transition:       2'00 8'1-----11 ->       2'10 4'0010
+  transition:       2'10 8'0------- ->       2'10 4'0110
+  transition:       2'10 8'1------0 ->       2'10 4'0110
+  transition:       2'10 8'10000-01 ->       2'10 4'0110
+  transition:       2'10 8'11000-01 ->       2'00 4'0100
+  transition:       2'10 8'1-100-01 ->       2'01 4'0101
+  transition:       2'10 8'1--10001 ->       2'00 4'0100
+  transition:       2'10 8'1--10101 ->       2'01 4'0101
+  transition:       2'10 8'1---1-01 ->       2'10 4'0110
+  transition:       2'10 8'1-----11 ->       2'10 4'0110
+  transition:       2'01 8'0------- ->       2'01 4'1001
+  transition:       2'01 8'1------0 ->       2'01 4'1001
+  transition:       2'01 8'10000-01 ->       2'01 4'1001
+  transition:       2'01 8'11000-01 ->       2'00 4'1000
+  transition:       2'01 8'1-100-01 ->       2'01 4'1001
+  transition:       2'01 8'1--10001 ->       2'00 4'1000
+  transition:       2'01 8'1--10101 ->       2'01 4'1001
+  transition:       2'01 8'1---1-01 ->       2'10 4'1010
+  transition:       2'01 8'1-----11 ->       2'10 4'1010
+
+4.8.3. Executing FSM_OPT pass (simple optimizations of FSMs).
+Optimizing FSM `$fsm$\special$3398' from module `\fp32_divsqrt'.
+  Merging pattern 8'10000-01 and 8'11000-01 from group (0 0 4'0000).
+  Merging pattern 8'11000-01 and 8'10000-01 from group (0 0 4'0000).
+
+4.8.4. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_divsqrt..
+Removed 11 unused cells and 11 unused wires.
+<suppressed ~12 debug messages>
+
+4.8.5. Executing FSM_OPT pass (simple optimizations of FSMs).
+Optimizing FSM `$fsm$\special$3398' from module `\fp32_divsqrt'.
+  Removing unused output signal $0\special[1:0] [0].
+  Removing unused output signal $0\special[1:0] [1].
+
+4.8.6. Executing FSM_RECODE pass (re-assigning FSM state encoding).
+Recoding FSM `$fsm$\special$3398' from module `\fp32_divsqrt' using `auto' encoding:
+  mapping auto encoding to `one-hot` for this FSM.
+  00 -> --1
+  10 -> -1-
+  01 -> 1--
+
+4.8.7. Executing FSM_INFO pass (dumping all available information on FSM cells).
+
+FSM `$fsm$\special$3398' from module `fp32_divsqrt':
+-------------------------------------
+
+  Information on FSM $fsm$\special$3398 (\special):
+
+  Number of input signals:    8
+  Number of output signals:   2
+  Number of state bits:       3
+
+  Input signals:
+    0: \start
+    1: $logic_or$fp32_divsqrt.sv:117$198_Y
+    2: $logic_and$fp32_divsqrt.sv:48$255_Y
+    3: $logic_or$fp32_divsqrt.sv:121$268_Y
+    4: $logic_and$fp32_divsqrt.sv:126$296_Y
+    5: $logic_and$fp32_divsqrt.sv:128$326_Y
+    6: $logic_and$fp32_divsqrt.sv:131$350_Y
+    7: $procmux$2787_CMP
+
+  Output signals:
+    0: $eq$fp32_divsqrt.sv:226$392_Y
+    1: $eq$fp32_divsqrt.sv:227$394_Y
+
+  State encoding:
+    0:      3'--1  <RESET STATE>
+    1:      3'-1-
+    2:      3'1--
+
+  Transition Table (state_in, ctrl_in, state_out, ctrl_out):
+      0:     0 8'1------0   ->     0 2'00
+      1:     0 8'1--10001   ->     0 2'00
+      2:     0 8'1-000-01   ->     0 2'00
+      3:     0 8'0-------   ->     0 2'00
+      4:     0 8'1---1-01   ->     1 2'00
+      5:     0 8'1-----11   ->     1 2'00
+      6:     0 8'1--10101   ->     2 2'00
+      7:     0 8'1-100-01   ->     2 2'00
+      8:     1 8'1--10001   ->     0 2'01
+      9:     1 8'11000-01   ->     0 2'01
+     10:     1 8'1------0   ->     1 2'01
+     11:     1 8'10000-01   ->     1 2'01
+     12:     1 8'1---1-01   ->     1 2'01
+     13:     1 8'1-----11   ->     1 2'01
+     14:     1 8'0-------   ->     1 2'01
+     15:     1 8'1--10101   ->     2 2'01
+     16:     1 8'1-100-01   ->     2 2'01
+     17:     2 8'1--10001   ->     0 2'10
+     18:     2 8'11000-01   ->     0 2'10
+     19:     2 8'1---1-01   ->     1 2'10
+     20:     2 8'1-----11   ->     1 2'10
+     21:     2 8'1------0   ->     2 2'10
+     22:     2 8'1--10101   ->     2 2'10
+     23:     2 8'10000-01   ->     2 2'10
+     24:     2 8'1-100-01   ->     2 2'10
+     25:     2 8'0-------   ->     2 2'10
+
+-------------------------------------
+
+4.8.8. Executing FSM_MAP pass (mapping FSMs to basic logic).
+Mapping FSM `$fsm$\special$3398' from module `\fp32_divsqrt'.
+
+4.9. Executing OPT pass (performing simple optimizations).
+
+4.9.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_divsqrt.
+<suppressed ~3 debug messages>
+
+4.9.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_divsqrt'.
+<suppressed ~15 debug messages>
+Removed a total of 5 cells.
+
+4.9.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_divsqrt..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~27 debug messages>
+
+4.9.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_divsqrt.
+Performed a total of 0 changes.
+
+4.9.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_divsqrt'.
+Removed a total of 0 cells.
+
+4.9.6. Executing OPT_DFF pass (perform DFF optimizations).
+Adding EN signal on $procdff$3201 ($adff) from module fp32_divsqrt (D = $procmux$2782_Y, Q = \special_exception).
+Adding EN signal on $procdff$3191 ($adff) from module fp32_divsqrt (D = $0\digit_index[4:0], Q = \digit_index).
+Adding EN signal on $procdff$3186 ($adff) from module fp32_divsqrt (D = $0\digits[26:0], Q = \digits).
+Adding EN signal on $procdff$3181 ($adff) from module fp32_divsqrt (D = $0\remainder[26:0], Q = \remainder).
+Adding EN signal on $procdff$3176 ($adff) from module fp32_divsqrt (D = $0\sig_b[23:0] [1:0], Q = \sig_b [1:0]).
+Adding EN signal on $procdff$3176 ($adff) from module fp32_divsqrt (D = $0\sig_b[23:0] [23:2], Q = \sig_b [23:2]).
+Adding EN signal on $procdff$3171 ($adff) from module fp32_divsqrt (D = $0\sig_a[23:0] [22:0], Q = \sig_a [22:0]).
+Adding EN signal on $procdff$3171 ($adff) from module fp32_divsqrt (D = $0\sig_a[23:0] [23], Q = \sig_a [23]).
+Adding EN signal on $procdff$3166 ($adff) from module fp32_divsqrt (D = $0\exp_b[9:0], Q = \exp_b).
+Adding EN signal on $procdff$3161 ($adff) from module fp32_divsqrt (D = $0\exp_a[9:0] [9], Q = \exp_a [9]).
+Adding EN signal on $procdff$3161 ($adff) from module fp32_divsqrt (D = $0\exp_a[9:0] [8:0], Q = \exp_a [8:0]).
+Adding EN signal on $procdff$3156 ($adff) from module fp32_divsqrt (D = $xor$fp32_divsqrt.sv:114$189_Y, Q = \result_sign).
+Adding EN signal on $procdff$3151 ($adff) from module fp32_divsqrt (D = \mode, Q = \root_mode).
+Adding EN signal on $procdff$3146 ($adff) from module fp32_divsqrt (D = $0\state[2:0], Q = \state).
+Adding EN signal on $procdff$3141 ($adff) from module fp32_divsqrt (D = $0\inexact[0:0], Q = \inexact).
+Adding EN signal on $procdff$3136 ($adff) from module fp32_divsqrt (D = $0\underflow[0:0], Q = \underflow).
+Adding EN signal on $procdff$3131 ($adff) from module fp32_divsqrt (D = $0\overflow[0:0], Q = \overflow).
+Adding EN signal on $procdff$3126 ($adff) from module fp32_divsqrt (D = $0\divide_by_zero[0:0], Q = \divide_by_zero).
+Adding EN signal on $procdff$3121 ($adff) from module fp32_divsqrt (D = $0\invalid[0:0], Q = \invalid).
+Adding EN signal on $procdff$3116 ($adff) from module fp32_divsqrt (D = $0\result[31:0], Q = \result).
+
+4.9.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_divsqrt..
+Removed 6 unused cells and 16 unused wires.
+<suppressed ~7 debug messages>
+
+4.9.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_divsqrt.
+<suppressed ~17 debug messages>
+
+4.9.9. Rerunning OPT passes. (Maybe there is more to do..)
+
+4.9.10. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_divsqrt..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~25 debug messages>
+
+4.9.11. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_divsqrt.
+Performed a total of 0 changes.
+
+4.9.12. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_divsqrt'.
+<suppressed ~183 debug messages>
+Removed a total of 61 cells.
+
+4.9.13. Executing OPT_DFF pass (perform DFF optimizations).
+
+4.9.14. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_divsqrt..
+Removed 0 unused cells and 61 unused wires.
+<suppressed ~1 debug messages>
+
+4.9.15. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_divsqrt.
+
+4.9.16. Rerunning OPT passes. (Maybe there is more to do..)
+
+4.9.17. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_divsqrt..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~25 debug messages>
+
+4.9.18. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_divsqrt.
+Performed a total of 0 changes.
+
+4.9.19. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_divsqrt'.
+Removed a total of 0 cells.
+
+4.9.20. Executing OPT_DFF pass (perform DFF optimizations).
+
+4.9.21. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_divsqrt..
+
+4.9.22. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_divsqrt.
+
+4.9.23. Finished OPT passes. (There is nothing left to do.)
+
+4.10. Executing WREDUCE pass (reducing word size of cells).
+Removed top 1 bits (of 30) from port A of cell fp32_divsqrt.$add$fp32_divsqrt.sv:40$21 ($add).
+Removed top 1 bits (of 30) from port B of cell fp32_divsqrt.$add$fp32_divsqrt.sv:40$21 ($add).
+Removed top 1 bits (of 28) from mux cell fp32_divsqrt.$ternary$fp32_divsqrt.sv:62$23 ($mux).
+Removed top 1 bits (of 28) from mux cell fp32_divsqrt.$ternary$fp32_divsqrt.sv:81$32 ($mux).
+Removed top 2 bits (of 10) from mux cell fp32_divsqrt.$ternary$fp32_divsqrt.sv:56$356 ($mux).
+Removed top 1 bits (of 10) from port A of cell fp32_divsqrt.$sub$fp32_divsqrt.sv:56$357 ($sub).
+Removed top 2 bits (of 10) from port B of cell fp32_divsqrt.$sub$fp32_divsqrt.sv:56$357 ($sub).
+Converting cell fp32_divsqrt.$sub$fp32_divsqrt.sv:56$357 ($sub) from signed to unsigned.
+Removed top 1 bits (of 9) from port A of cell fp32_divsqrt.$sub$fp32_divsqrt.sv:56$357 ($sub).
+Removed top 1 bits (of 8) from port B of cell fp32_divsqrt.$sub$fp32_divsqrt.sv:56$357 ($sub).
+Removed top 1 bits (of 10) from port Y of cell fp32_divsqrt.$sub$fp32_divsqrt.sv:56$357 ($sub).
+Removed top 2 bits (of 10) from mux cell fp32_divsqrt.$ternary$fp32_divsqrt.sv:56$359 ($mux).
+Removed top 1 bits (of 10) from port A of cell fp32_divsqrt.$sub$fp32_divsqrt.sv:56$360 ($sub).
+Removed top 2 bits (of 10) from port B of cell fp32_divsqrt.$sub$fp32_divsqrt.sv:56$360 ($sub).
+Converting cell fp32_divsqrt.$sub$fp32_divsqrt.sv:56$360 ($sub) from signed to unsigned.
+Removed top 1 bits (of 9) from port A of cell fp32_divsqrt.$sub$fp32_divsqrt.sv:56$360 ($sub).
+Removed top 1 bits (of 8) from port B of cell fp32_divsqrt.$sub$fp32_divsqrt.sv:56$360 ($sub).
+Removed top 1 bits (of 10) from port Y of cell fp32_divsqrt.$sub$fp32_divsqrt.sv:56$360 ($sub).
+Removed top 8 bits (of 10) from port B of cell fp32_divsqrt.$sub$fp32_divsqrt.sv:145$365 ($sub).
+Removed top 8 bits (of 10) from port B of cell fp32_divsqrt.$sub$fp32_divsqrt.sv:149$370 ($sub).
+Removed top 9 bits (of 10) from mux cell fp32_divsqrt.$ternary$fp32_divsqrt.sv:165$376 ($mux).
+Removed top 8 bits (of 10) from port B of cell fp32_divsqrt.$sub$fp32_divsqrt.sv:165$377 ($sub).
+Removed top 2 bits (of 27) from mux cell fp32_divsqrt.$ternary$fp32_divsqrt.sv:166$378 ($mux).
+Removed top 2 bits (of 10) from port B of cell fp32_divsqrt.$lt$fp32_divsqrt.sv:190$383 ($lt).
+Removed top 8 bits (of 10) from port B of cell fp32_divsqrt.$add$fp32_divsqrt.sv:192$386 ($add).
+Removed top 2 bits (of 10) from port B of cell fp32_divsqrt.$gt$fp32_divsqrt.sv:204$388 ($gt).
+Removed top 2 bits (of 10) from port B of cell fp32_divsqrt.$eq$fp32_divsqrt.sv:204$389 ($eq).
+Removed top 1 bits (of 3) from port B of cell fp32_divsqrt.$procmux$2820_CMP0 ($eq).
+Removed top 1 bits (of 3) from port B of cell fp32_divsqrt.$procmux$2821_CMP0 ($eq).
+Removed top 2 bits (of 27) from mux cell fp32_divsqrt.$procmux$2839 ($mux).
+Removed top 2 bits (of 3) from port B of cell fp32_divsqrt.$procmux$2878_CMP0 ($eq).
+Removed top 1 bits (of 32) from mux cell fp32_divsqrt.$procmux$3083 ($mux).
+Removed top 1 bits (of 32) from mux cell fp32_divsqrt.$procmux$3086 ($mux).
+Removed top 1 bits (of 32) from mux cell fp32_divsqrt.$procmux$3089 ($mux).
+Removed top 1 bits (of 28) from mux cell fp32_divsqrt.$procmux$3098 ($pmux).
+Removed top 2 bits (of 27) from wire fp32_divsqrt.$procmux$2839_Y.
+Removed top 9 bits (of 10) from wire fp32_divsqrt.$ternary$fp32_divsqrt.sv:165$376_Y.
+Removed top 2 bits (of 27) from wire fp32_divsqrt.$ternary$fp32_divsqrt.sv:166$378_Y.
+Removed top 2 bits (of 10) from wire fp32_divsqrt.$ternary$fp32_divsqrt.sv:56$356_Y.
+Removed top 2 bits (of 10) from wire fp32_divsqrt.$ternary$fp32_divsqrt.sv:56$359_Y.
+Removed top 1 bits (of 28) from wire fp32_divsqrt.$ternary$fp32_divsqrt.sv:81$32_Y.
+Removed top 1 bits (of 28) from wire fp32_divsqrt.alu_right.
+Removed top 1 bits (of 28) from wire fp32_divsqrt.next_remainder.
+
+4.11. Executing PEEPOPT pass (run peephole optimizers).
+
+4.12. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_divsqrt..
+Removed 0 unused cells and 8 unused wires.
+<suppressed ~1 debug messages>
+
+4.13. Executing ALUMACC pass (create $alu and $macc cells).
+Extracting $alu and $macc cells in module fp32_divsqrt:
+  creating $macc model for $add$fp32_divsqrt.sv:178$380 ($add).
+  creating $macc model for $add$fp32_divsqrt.sv:192$386 ($add).
+  creating $macc model for $add$fp32_divsqrt.sv:40$21 ($add).
+  creating $macc model for $add$fp32_divsqrt.sv:65$29 ($add).
+  creating $macc model for $sub$fp32_divsqrt.sv:145$365 ($sub).
+  creating $macc model for $sub$fp32_divsqrt.sv:149$370 ($sub).
+  creating $macc model for $sub$fp32_divsqrt.sv:165$375 ($sub).
+  creating $macc model for $sub$fp32_divsqrt.sv:165$377 ($sub).
+  creating $macc model for $sub$fp32_divsqrt.sv:56$357 ($sub).
+  creating $macc model for $sub$fp32_divsqrt.sv:56$360 ($sub).
+  merging $macc model for $sub$fp32_divsqrt.sv:165$375 into $sub$fp32_divsqrt.sv:165$377.
+  creating $alu model for $macc $sub$fp32_divsqrt.sv:56$357.
+  creating $alu model for $macc $sub$fp32_divsqrt.sv:56$360.
+  creating $alu model for $macc $sub$fp32_divsqrt.sv:149$370.
+  creating $alu model for $macc $sub$fp32_divsqrt.sv:145$365.
+  creating $alu model for $macc $add$fp32_divsqrt.sv:65$29.
+  creating $alu model for $macc $add$fp32_divsqrt.sv:40$21.
+  creating $alu model for $macc $add$fp32_divsqrt.sv:192$386.
+  creating $alu model for $macc $add$fp32_divsqrt.sv:178$380.
+  creating $macc cell for $sub$fp32_divsqrt.sv:165$377: $auto$alumacc.cc:365:replace_macc$3671
+  creating $alu model for $gt$fp32_divsqrt.sv:204$388 ($gt): new $alu
+  creating $alu model for $lt$fp32_divsqrt.sv:190$383 ($lt): new $alu
+  creating $alu model for $eq$fp32_divsqrt.sv:204$389 ($eq): merged with $gt$fp32_divsqrt.sv:204$388.
+  creating $alu cell for $lt$fp32_divsqrt.sv:190$383: $auto$alumacc.cc:495:replace_alu$3674
+  creating $alu cell for $gt$fp32_divsqrt.sv:204$388, $eq$fp32_divsqrt.sv:204$389: $auto$alumacc.cc:495:replace_alu$3681
+  creating $alu cell for $add$fp32_divsqrt.sv:178$380: $auto$alumacc.cc:495:replace_alu$3694
+  creating $alu cell for $add$fp32_divsqrt.sv:192$386: $auto$alumacc.cc:495:replace_alu$3697
+  creating $alu cell for $add$fp32_divsqrt.sv:40$21: $auto$alumacc.cc:495:replace_alu$3700
+  creating $alu cell for $add$fp32_divsqrt.sv:65$29: $auto$alumacc.cc:495:replace_alu$3703
+  creating $alu cell for $sub$fp32_divsqrt.sv:145$365: $auto$alumacc.cc:495:replace_alu$3706
+  creating $alu cell for $sub$fp32_divsqrt.sv:149$370: $auto$alumacc.cc:495:replace_alu$3709
+  creating $alu cell for $sub$fp32_divsqrt.sv:56$360: $auto$alumacc.cc:495:replace_alu$3712
+  creating $alu cell for $sub$fp32_divsqrt.sv:56$357: $auto$alumacc.cc:495:replace_alu$3715
+  created 10 $alu and 1 $macc cells.
+
+4.14. Executing SHARE pass (SAT-based resource sharing).
+
+4.15. Executing OPT pass (performing simple optimizations).
+
+4.15.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_divsqrt.
+
+4.15.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_divsqrt'.
+Removed a total of 0 cells.
+
+4.15.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_divsqrt..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~25 debug messages>
+
+4.15.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_divsqrt.
+Performed a total of 0 changes.
+
+4.15.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_divsqrt'.
+Removed a total of 0 cells.
+
+4.15.6. Executing OPT_DFF pass (perform DFF optimizations).
+
+4.15.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_divsqrt..
+Removed 1 unused cells and 4 unused wires.
+<suppressed ~2 debug messages>
+
+4.15.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_divsqrt.
+
+4.15.9. Rerunning OPT passes. (Maybe there is more to do..)
+
+4.15.10. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_divsqrt..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~25 debug messages>
+
+4.15.11. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_divsqrt.
+Performed a total of 0 changes.
+
+4.15.12. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_divsqrt'.
+Removed a total of 0 cells.
+
+4.15.13. Executing OPT_DFF pass (perform DFF optimizations).
+
+4.15.14. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_divsqrt..
+
+4.15.15. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_divsqrt.
+
+4.15.16. Finished OPT passes. (There is nothing left to do.)
+
+4.16. Executing MEMORY pass.
+
+4.16.1. Executing OPT_MEM pass (optimize memories).
+Performed a total of 0 transformations.
+
+4.16.2. Executing OPT_MEM_PRIORITY pass (removing unnecessary memory write priority relations).
+Performed a total of 0 transformations.
+
+4.16.3. Executing OPT_MEM_FEEDBACK pass (finding memory read-to-write feedback paths).
+
+4.16.4. Executing MEMORY_BMUX2ROM pass (converting muxes to ROMs).
+
+4.16.5. Executing MEMORY_DFF pass (merging $dff cells to $memrd).
+
+4.16.6. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_divsqrt..
+
+4.16.7. Executing MEMORY_SHARE pass (consolidating $memrd/$memwr cells).
+
+4.16.8. Executing OPT_MEM_WIDEN pass (optimize memories where all ports are wide).
+Performed a total of 0 transformations.
+
+4.16.9. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_divsqrt..
+
+4.16.10. Executing MEMORY_COLLECT pass (generating $mem cells).
+
+4.17. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_divsqrt..
+
+4.18. Executing OPT pass (performing simple optimizations).
+
+4.18.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_divsqrt.
+<suppressed ~74 debug messages>
+
+4.18.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_divsqrt'.
+Removed a total of 0 cells.
+
+4.18.3. Executing OPT_DFF pass (perform DFF optimizations).
+
+4.18.4. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_divsqrt..
+Removed 1 unused cells and 49 unused wires.
+<suppressed ~2 debug messages>
+
+4.18.5. Finished fast OPT passes.
+
+4.19. Executing MEMORY_MAP pass (converting memories to logic and flip-flops).
+
+4.20. Executing OPT pass (performing simple optimizations).
+
+4.20.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_divsqrt.
+
+4.20.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_divsqrt'.
+Removed a total of 0 cells.
+
+4.20.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_divsqrt..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~21 debug messages>
+
+4.20.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_divsqrt.
+    Consolidated identical input bits for $mux cell $procmux$3001:
+      Old ports: A=3'001, B=3'111, Y=$procmux$3001_Y
+      New ports: A=1'0, B=1'1, Y=$procmux$3001_Y [1]
+      New connections: { $procmux$3001_Y [2] $procmux$3001_Y [0] } = { $procmux$3001_Y [1] 1'1 }
+    Consolidated identical input bits for $pmux cell $procmux$3077:
+      Old ports: A={ \result_sign 31'0000000000000000000000000000000 }, B={ 32'01111111110000000000000000000000 \result_sign 31'1111111100000000000000000000000 }, Y=$procmux$3077_Y
+      New ports: A={ \result_sign 2'00 }, B={ 3'011 \result_sign 2'10 }, Y={ $procmux$3077_Y [31] $procmux$3077_Y [23:22] }
+      New connections: { $procmux$3077_Y [30:24] $procmux$3077_Y [21:0] } = { $procmux$3077_Y [23] $procmux$3077_Y [23] $procmux$3077_Y [23] $procmux$3077_Y [23] $procmux$3077_Y [23] $procmux$3077_Y [23] $procmux$3077_Y [23] 22'0000000000000000000000 }
+    Consolidated identical input bits for $mux cell $procmux$3083:
+      Old ports: A={ 8'00000000 \alu_extended [23:1] }, B={ \packed_exp \alu_extended [23:1] }, Y=$procmux$3083_Y [30:0]
+      New ports: A=8'00000000, B=\packed_exp, Y=$procmux$3083_Y [30:23]
+      New connections: $procmux$3083_Y [22:0] = \alu_extended [23:1]
+    Consolidated identical input bits for $mux cell $ternary$fp32_divsqrt.sv:162$374:
+      Old ports: A={ 1'0 \sig_a 1'0 }, B=26'xxxxxxxxxxxxxxxxxxxxxxxx00, Y={ $procmux$3027_Y $procmux$411_Y }
+      New ports: A={ 1'0 \sig_a }, B=25'xxxxxxxxxxxxxxxxxxxxxxxx0, Y={ $procmux$3027_Y $procmux$411_Y [1] }
+      New connections: $procmux$411_Y [0] = 1'0
+    Consolidated identical input bits for $mux cell $ternary$fp32_divsqrt.sv:65$28:
+      Old ports: A=8'01111111, B=8'10000000, Y=$ternary$fp32_divsqrt.sv:65$28_Y
+      New ports: A=2'01, B=2'10, Y={ $ternary$fp32_divsqrt.sv:65$28_Y [7] $ternary$fp32_divsqrt.sv:65$28_Y [0] }
+      New connections: $ternary$fp32_divsqrt.sv:65$28_Y [6:1] = { $ternary$fp32_divsqrt.sv:65$28_Y [0] $ternary$fp32_divsqrt.sv:65$28_Y [0] $ternary$fp32_divsqrt.sv:65$28_Y [0] $ternary$fp32_divsqrt.sv:65$28_Y [0] $ternary$fp32_divsqrt.sv:65$28_Y [0] $ternary$fp32_divsqrt.sv:65$28_Y [0] }
+  Optimizing cells in module \fp32_divsqrt.
+    Consolidated identical input bits for $mux cell $procmux$3004:
+      Old ports: A=$procmux$3001_Y, B=3'111, Y=$procmux$3004_Y
+      New ports: A=$procmux$3001_Y [1], B=1'1, Y=$procmux$3004_Y [1]
+      New connections: { $procmux$3004_Y [2] $procmux$3004_Y [0] } = { $procmux$3004_Y [1] 1'1 }
+  Optimizing cells in module \fp32_divsqrt.
+    Consolidated identical input bits for $mux cell $procmux$3007:
+      Old ports: A=$procmux$3004_Y, B=3'111, Y=$procmux$3007_Y
+      New ports: A=$procmux$3004_Y [1], B=1'1, Y=$procmux$3007_Y [1]
+      New connections: { $procmux$3007_Y [2] $procmux$3007_Y [0] } = { $procmux$3007_Y [1] 1'1 }
+  Optimizing cells in module \fp32_divsqrt.
+    Consolidated identical input bits for $mux cell $procmux$3010:
+      Old ports: A=$procmux$3007_Y, B=3'111, Y=$procmux$3010_Y
+      New ports: A=$procmux$3007_Y [1], B=1'1, Y=$procmux$3010_Y [1]
+      New connections: { $procmux$3010_Y [2] $procmux$3010_Y [0] } = { $procmux$3010_Y [1] 1'1 }
+  Optimizing cells in module \fp32_divsqrt.
+    Consolidated identical input bits for $mux cell $procmux$3013:
+      Old ports: A=$procmux$3010_Y, B=3'111, Y=$procmux$3013_Y
+      New ports: A=$procmux$3010_Y [1], B=1'1, Y=$procmux$3013_Y [1]
+      New connections: { $procmux$3013_Y [2] $procmux$3013_Y [0] } = { $procmux$3013_Y [1] 1'1 }
+  Optimizing cells in module \fp32_divsqrt.
+Performed a total of 9 changes.
+
+4.20.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_divsqrt'.
+Removed a total of 0 cells.
+
+4.20.6. Executing OPT_SHARE pass.
+
+4.20.7. Executing OPT_DFF pass (perform DFF optimizations).
+
+4.20.8. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_divsqrt..
+
+4.20.9. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_divsqrt.
+<suppressed ~5 debug messages>
+
+4.20.10. Rerunning OPT passes. (Maybe there is more to do..)
+
+4.20.11. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_divsqrt..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~21 debug messages>
+
+4.20.12. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_divsqrt.
+Performed a total of 0 changes.
+
+4.20.13. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_divsqrt'.
+Removed a total of 0 cells.
+
+4.20.14. Executing OPT_SHARE pass.
+
+4.20.15. Executing OPT_DFF pass (perform DFF optimizations).
+
+4.20.16. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_divsqrt..
+Removed 0 unused cells and 1 unused wires.
+<suppressed ~1 debug messages>
+
+4.20.17. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_divsqrt.
+
+4.20.18. Rerunning OPT passes. (Maybe there is more to do..)
+
+4.20.19. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_divsqrt..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~21 debug messages>
+
+4.20.20. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_divsqrt.
+Performed a total of 0 changes.
+
+4.20.21. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_divsqrt'.
+Removed a total of 0 cells.
+
+4.20.22. Executing OPT_SHARE pass.
+
+4.20.23. Executing OPT_DFF pass (perform DFF optimizations).
+
+4.20.24. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_divsqrt..
+
+4.20.25. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_divsqrt.
+
+4.20.26. Finished OPT passes. (There is nothing left to do.)
+
+4.21. Executing TECHMAP pass (map to technology primitives).
+
+4.21.1. Executing Verilog-2005 frontend: /usr/bin/../share/yosys/techmap.v
+Parsing Verilog input from `/usr/bin/../share/yosys/techmap.v' to AST representation.
+Generating RTLIL representation for module `\_90_simplemap_bool_ops'.
+Generating RTLIL representation for module `\_90_simplemap_reduce_ops'.
+Generating RTLIL representation for module `\_90_simplemap_logic_ops'.
+Generating RTLIL representation for module `\_90_simplemap_compare_ops'.
+Generating RTLIL representation for module `\_90_simplemap_various'.
+Generating RTLIL representation for module `\_90_simplemap_registers'.
+Generating RTLIL representation for module `\_90_shift_ops_shr_shl_sshl_sshr'.
+Generating RTLIL representation for module `\_90_shift_shiftx'.
+Generating RTLIL representation for module `\_90_fa'.
+Generating RTLIL representation for module `\_90_lcu_brent_kung'.
+Generating RTLIL representation for module `\_90_alu'.
+Generating RTLIL representation for module `\_90_macc'.
+Generating RTLIL representation for module `\_90_alumacc'.
+Generating RTLIL representation for module `\$__div_mod_u'.
+Generating RTLIL representation for module `\$__div_mod_trunc'.
+Generating RTLIL representation for module `\_90_div'.
+Generating RTLIL representation for module `\_90_mod'.
+Generating RTLIL representation for module `\$__div_mod_floor'.
+Generating RTLIL representation for module `\_90_divfloor'.
+Generating RTLIL representation for module `\_90_modfloor'.
+Generating RTLIL representation for module `\_90_pow'.
+Generating RTLIL representation for module `\_90_pmux'.
+Generating RTLIL representation for module `\_90_demux'.
+Generating RTLIL representation for module `\_90_lut'.
+Successfully finished Verilog frontend.
+
+4.21.2. Continuing TECHMAP pass.
+Using extmapper simplemap for cells of type $ne.
+Using extmapper simplemap for cells of type $adff.
+Using template $paramod$a1bc51c02ce12ac21eb18988e83292af48ed7d72\_90_alu for cells of type $alu.
+Using extmapper simplemap for cells of type $reduce_bool.
+Using extmapper simplemap for cells of type $mux.
+Using extmapper simplemap for cells of type $reduce_or.
+Using extmapper simplemap for cells of type $logic_or.
+Using extmapper simplemap for cells of type $logic_and.
+Using template $paramod$f969c13a21667a9c7a4135f0c027e5d916b33590\_90_alu for cells of type $alu.
+Using extmapper simplemap for cells of type $xor.
+Using extmapper simplemap for cells of type $logic_not.
+Using extmapper simplemap for cells of type $reduce_and.
+Using extmapper maccmap for cells of type $macc_v2.
+  add \exp_a (10 bits, signed)
+  sub { 1'0 $auto$wreduce.cc:514:run$3664 [0] } (2 bits, signed)
+  sub \exp_b (10 bits, signed)
+  packed 2 (1) bits / 1 words into adder tree
+Using extmapper simplemap for cells of type $and.
+Using extmapper simplemap for cells of type $eq.
+Using extmapper simplemap for cells of type $or.
+Using extmapper simplemap for cells of type $not.
+Using extmapper simplemap for cells of type $adffe.
+Using template $paramod$7d345e38ed17d1b9b7ad574498fe053cc5e778a7\_90_alu for cells of type $alu.
+Using template $paramod$b1ed770e5c6a32495d5bf09fda6cf0327bb52128\_90_alu for cells of type $alu.
+Using template $paramod$c6d197d8767d5e7f567fab59c9b3b537bafbfd3f\_90_alu for cells of type $alu.
+Using template $paramod$99a0a7918c240fc3d886da64d12ad56c6a80d49f\_90_pmux for cells of type $pmux.
+Using template $paramod$d4f0a2e39ea5137ff9343f34d5d8b0b64fbce317\_90_alu for cells of type $alu.
+Using template $paramod$672a140277c71df8314410f22acc08d55222c3c7\_90_alu for cells of type $alu.
+Using template $paramod$97565c3687be688407d1272a293bd9d0ae6852dc\_90_pmux for cells of type $pmux.
+Using template $paramod$c555f921704f4a0970c45571cfda1a59468c235d\_90_pmux for cells of type $pmux.
+Using template $paramod$adc6382435ba7fe50315523b10aedb8e224c8208\_90_alu for cells of type $alu.
+Using template $paramod$effaf36432c334223db2ff0ecd7fefb10188d957\_90_pmux for cells of type $pmux.
+Using template $paramod$57f63e8a3282e053be0430389b09fa050ac7dca0\_90_pmux for cells of type $pmux.
+Using template $paramod$c7c3015355b481805f4a7fa0e4ef64723c91fa3f\_90_pmux for cells of type $pmux.
+Using template $paramod$32e7c4d6f92ff4337599ece53082d2e88a82a9f2\_90_pmux for cells of type $pmux.
+Using extmapper simplemap for cells of type $pos.
+Using template $paramod\_90_lcu_brent_kung\WIDTH=32'00000000000000000000000000001001 for cells of type $lcu.
+Using template $paramod\_90_lcu_brent_kung\WIDTH=32'00000000000000000000000000000101 for cells of type $lcu.
+Using template $paramod\_90_lcu_brent_kung\WIDTH=32'00000000000000000000000000011110 for cells of type $lcu.
+Using template $paramod\_90_lcu_brent_kung\WIDTH=32'00000000000000000000000000001010 for cells of type $lcu.
+Using template $paramod\_90_fa\WIDTH=32'00000000000000000000000000001010 for cells of type $fa.
+Using template $paramod$484d51534650924b7ed4c69e46eed3a56904771f\_90_alu for cells of type $alu.
+Using template $paramod\_90_lcu_brent_kung\WIDTH=32'00000000000000000000000000001000 for cells of type $lcu.
+No more expansions possible.
+<suppressed ~1842 debug messages>
+
+4.22. Executing OPT pass (performing simple optimizations).
+
+4.22.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_divsqrt.
+<suppressed ~886 debug messages>
+
+4.22.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_divsqrt'.
+<suppressed ~648 debug messages>
+Removed a total of 216 cells.
+
+4.22.3. Executing OPT_DFF pass (perform DFF optimizations).
+
+4.22.4. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_divsqrt..
+Removed 104 unused cells and 1164 unused wires.
+<suppressed ~105 debug messages>
+
+4.22.5. Finished fast OPT passes.
+
+4.23. Executing HIERARCHY pass (managing design hierarchy).
+Attribute `top' found on module `fp32_divsqrt'. Setting top module to fp32_divsqrt.
+
+4.23.1. Analyzing design hierarchy..
+Top module:  \fp32_divsqrt
+
+4.23.2. Analyzing design hierarchy..
+Top module:  \fp32_divsqrt
+Removed 0 unused modules.
+
+4.24. Printing statistics.
+
+=== fp32_divsqrt ===
+
+   Number of wires:                627
+   Number of wire bits:           2828
+   Number of public wires:          37
+   Number of public wire bits:     421
+   Number of ports:                 14
+   Number of port bits:            107
+   Number of memories:               0
+   Number of memory bits:            0
+   Number of processes:              0
+   Number of cells:               2151
+     $_AND_                        639
+     $_DFFE_PN0P_                  170
+     $_DFF_PN0_                      3
+     $_MUX_                        542
+     $_NOT_                         76
+     $_OR_                         544
+     $_XOR_                        177
+
+4.25. Executing CHECK pass (checking for obvious problems).
+Checking module fp32_divsqrt...
+Found and reported 0 problems.
+
+5. Executing DFFLIBMAP pass (mapping DFF cells to sequential cells from liberty file).
+  cell sky130_fd_sc_hd__dfxtp_1 (noninv, pins=3, area=20.02) is a direct match for cell type $_DFF_P_.
+  cell sky130_fd_sc_hd__dfrtn_1 (noninv, pins=4, area=25.02) is a direct match for cell type $_DFF_NN0_.
+  cell sky130_fd_sc_hd__dfrtp_1 (noninv, pins=4, area=25.02) is a direct match for cell type $_DFF_PN0_.
+  cell sky130_fd_sc_hd__dfstp_2 (noninv, pins=4, area=26.28) is a direct match for cell type $_DFF_PN1_.
+  cell sky130_fd_sc_hd__edfxtp_1 (noninv, pins=4, area=30.03) is a direct match for cell type $_DFFE_PP_.
+  cell sky130_fd_sc_hd__dfbbn_1 (noninv, pins=6, area=32.53) is a direct match for cell type $_DFFSR_NNN_.
+  cell sky130_fd_sc_hd__dfbbp_1 (noninv, pins=6, area=32.53) is a direct match for cell type $_DFFSR_PNN_.
+  final dff cell mappings:
+    unmapped dff cell: $_DFF_N_
+    \sky130_fd_sc_hd__dfxtp_1 _DFF_P_ (.CLK( C), .D( D), .Q( Q));
+    \sky130_fd_sc_hd__dfrtn_1 _DFF_NN0_ (.CLK_N( C), .D( D), .Q( Q), .RESET_B( R));
+    unmapped dff cell: $_DFF_NN1_
+    unmapped dff cell: $_DFF_NP0_
+    unmapped dff cell: $_DFF_NP1_
+    \sky130_fd_sc_hd__dfrtp_1 _DFF_PN0_ (.CLK( C), .D( D), .Q( Q), .RESET_B( R));
+    \sky130_fd_sc_hd__dfstp_2 _DFF_PN1_ (.CLK( C), .D( D), .Q( Q), .SET_B( R));
+    unmapped dff cell: $_DFF_PP0_
+    unmapped dff cell: $_DFF_PP1_
+    unmapped dff cell: $_DFFE_NN_
+    unmapped dff cell: $_DFFE_NP_
+    unmapped dff cell: $_DFFE_PN_
+    \sky130_fd_sc_hd__edfxtp_1 _DFFE_PP_ (.CLK( C), .D( D), .DE( E), .Q( Q));
+    \sky130_fd_sc_hd__dfbbn_1 _DFFSR_NNN_ (.CLK_N( C), .D( D), .Q( Q), .Q_N(~Q), .RESET_B( R), .SET_B( S));
+    unmapped dff cell: $_DFFSR_NNP_
+    unmapped dff cell: $_DFFSR_NPN_
+    unmapped dff cell: $_DFFSR_NPP_
+    \sky130_fd_sc_hd__dfbbp_1 _DFFSR_PNN_ (.CLK( C), .D( D), .Q( Q), .Q_N(~Q), .RESET_B( R), .SET_B( S));
+    unmapped dff cell: $_DFFSR_PNP_
+    unmapped dff cell: $_DFFSR_PPN_
+    unmapped dff cell: $_DFFSR_PPP_
+
+5.1. Executing DFFLEGALIZE pass (convert FFs to types supported by the target).
+<suppressed ~24 debug messages>
+Mapping DFF cells in module `\fp32_divsqrt':
+  mapped 173 $_DFF_PN0_ cells to \sky130_fd_sc_hd__dfrtp_1 cells.
+
+6. Executing ABC pass (technology mapping using ABC).
+
+6.1. Extracting gate netlist of module `\fp32_divsqrt' to `<abc-temp-dir>/input.blif'..
+Replacing 48 occurrences of constant undef bits with constant zero bits
+Extracted 2148 gates and 2389 wires to a netlist network with 238 inputs and 174 outputs.
+
+6.1.1. Executing ABC.
+Running ABC command: "<yosys-exe-dir>/yosys-abc" -s -f <abc-temp-dir>/abc.script 2>&1
+ABC: ABC command line: "source <abc-temp-dir>/abc.script".
+ABC: 
+ABC: + read_blif <abc-temp-dir>/input.blif 
+ABC: + read_lib -w /home/Nabhah/sky130_lib/sky130_fd_sc_hd__tt_025C_1v80.lib 
+ABC: Parsing finished successfully.  Parsing time =     0.11 sec
+ABC: Scl_LibertyReadGenlib() skipped cell "sky130_fd_sc_hd__decap_12" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "sky130_fd_sc_hd__decap_3" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "sky130_fd_sc_hd__decap_4" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "sky130_fd_sc_hd__decap_6" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "sky130_fd_sc_hd__decap_8" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dfbbn_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dfbbn_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dfbbp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dfrbp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dfrbp_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dfrtn_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dfrtp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dfrtp_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dfrtp_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dfsbp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dfsbp_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dfstp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dfstp_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dfstp_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dfxbp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dfxbp_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dfxtp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dfxtp_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dfxtp_4".
+ABC: Scl_LibertyReadGenlib() skipped cell "sky130_fd_sc_hd__diode_2" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "sky130_fd_sc_hd__dlclkp_1" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "sky130_fd_sc_hd__dlclkp_2" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "sky130_fd_sc_hd__dlclkp_4" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dlrbn_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dlrbn_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dlrbp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dlrbp_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dlrtn_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dlrtn_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dlrtn_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dlrtp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dlrtp_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dlrtp_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dlxbn_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dlxbn_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dlxbp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dlxtn_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dlxtn_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dlxtn_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__dlxtp_1".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "sky130_fd_sc_hd__ebufn_1".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "sky130_fd_sc_hd__ebufn_2".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "sky130_fd_sc_hd__ebufn_4".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "sky130_fd_sc_hd__ebufn_8".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__edfxbp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__edfxtp_1".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "sky130_fd_sc_hd__einvn_0".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "sky130_fd_sc_hd__einvn_1".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "sky130_fd_sc_hd__einvn_2".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "sky130_fd_sc_hd__einvn_4".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "sky130_fd_sc_hd__einvn_8".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "sky130_fd_sc_hd__einvp_1".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "sky130_fd_sc_hd__einvp_2".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "sky130_fd_sc_hd__einvp_4".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "sky130_fd_sc_hd__einvp_8".
+ABC: Scl_LibertyReadGenlib() skipped cell "sky130_fd_sc_hd__lpflow_bleeder_1" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "sky130_fd_sc_hd__lpflow_decapkapwr_12" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "sky130_fd_sc_hd__lpflow_decapkapwr_3" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "sky130_fd_sc_hd__lpflow_decapkapwr_4" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "sky130_fd_sc_hd__lpflow_decapkapwr_6" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "sky130_fd_sc_hd__lpflow_decapkapwr_8" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__lpflow_inputisolatch_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sdfbbn_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sdfbbn_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sdfbbp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sdfrbp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sdfrbp_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sdfrtn_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sdfrtp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sdfrtp_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sdfrtp_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sdfsbp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sdfsbp_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sdfstp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sdfstp_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sdfstp_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sdfxbp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sdfxbp_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sdfxtp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sdfxtp_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sdfxtp_4".
+ABC: Scl_LibertyReadGenlib() skipped cell "sky130_fd_sc_hd__sdlclkp_1" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "sky130_fd_sc_hd__sdlclkp_2" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "sky130_fd_sc_hd__sdlclkp_4" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sedfxbp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sedfxbp_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sedfxtp_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sedfxtp_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "sky130_fd_sc_hd__sedfxtp_4".
+ABC: Library "sky130_fd_sc_hd__tt_025C_1v80" from "/home/Nabhah/sky130_lib/sky130_fd_sc_hd__tt_025C_1v80.lib" has 334 cells (94 skipped: 63 seq; 13 tri-state; 18 no func; 0 dont_use).  Time =     0.15 sec
+ABC: Memory =   19.81 MB. Time =     0.15 sec
+ABC: Warning: Detected 9 multi-output gates (for example, "sky130_fd_sc_hd__fa_1").
+ABC: + strash 
+ABC: + &get -n 
+ABC: + &fraig -x 
+ABC: + &put 
+ABC: + scorr 
+ABC: Warning: The network is combinational (run "fraig" or "fraig_sweep").
+ABC: + dc2 
+ABC: + dretime 
+ABC: + retime -o -D 20000 
+ABC: + strash 
+ABC: + &get -n 
+ABC: + &dch -f 
+ABC: + &nf -D 20000 
+ABC: + &put 
+ABC: + write_blif <abc-temp-dir>/output.blif 
+
+6.1.2. Re-integrating ABC results.
+ABC RESULTS:   sky130_fd_sc_hd__a2111oi_0 cells:        2
+ABC RESULTS:   sky130_fd_sc_hd__a211oi_1 cells:        9
+ABC RESULTS:   sky130_fd_sc_hd__a21boi_0 cells:        2
+ABC RESULTS:   sky130_fd_sc_hd__a21o_1 cells:        5
+ABC RESULTS:   sky130_fd_sc_hd__a21oi_1 cells:      115
+ABC RESULTS:   sky130_fd_sc_hd__a221o_1 cells:        7
+ABC RESULTS:   sky130_fd_sc_hd__a221oi_1 cells:        8
+ABC RESULTS:   sky130_fd_sc_hd__a222oi_1 cells:       27
+ABC RESULTS:   sky130_fd_sc_hd__a22o_1 cells:       10
+ABC RESULTS:   sky130_fd_sc_hd__a22oi_1 cells:       75
+ABC RESULTS:   sky130_fd_sc_hd__a311o_1 cells:        2
+ABC RESULTS:   sky130_fd_sc_hd__a311oi_1 cells:        3
+ABC RESULTS:   sky130_fd_sc_hd__a31o_1 cells:       10
+ABC RESULTS:   sky130_fd_sc_hd__a31oi_1 cells:       61
+ABC RESULTS:   sky130_fd_sc_hd__a32o_1 cells:        1
+ABC RESULTS:   sky130_fd_sc_hd__a32oi_1 cells:        1
+ABC RESULTS:   sky130_fd_sc_hd__a41oi_1 cells:        2
+ABC RESULTS:   sky130_fd_sc_hd__and2_0 cells:       10
+ABC RESULTS:   sky130_fd_sc_hd__and3_1 cells:       12
+ABC RESULTS:   sky130_fd_sc_hd__and3b_1 cells:        2
+ABC RESULTS:   sky130_fd_sc_hd__and4_1 cells:        6
+ABC RESULTS:   sky130_fd_sc_hd__and4b_1 cells:        1
+ABC RESULTS:   sky130_fd_sc_hd__clkinv_1 cells:       22
+ABC RESULTS:   sky130_fd_sc_hd__lpflow_inputiso1p_1 cells:        7
+ABC RESULTS:   sky130_fd_sc_hd__lpflow_isobufsrc_1 cells:       18
+ABC RESULTS:   sky130_fd_sc_hd__maj3_1 cells:        6
+ABC RESULTS:   sky130_fd_sc_hd__mux2_1 cells:        1
+ABC RESULTS:   sky130_fd_sc_hd__mux2i_1 cells:       25
+ABC RESULTS:   sky130_fd_sc_hd__nand2_1 cells:      208
+ABC RESULTS:   sky130_fd_sc_hd__nand2b_1 cells:        8
+ABC RESULTS:   sky130_fd_sc_hd__nand3_1 cells:       19
+ABC RESULTS:   sky130_fd_sc_hd__nand3b_1 cells:       13
+ABC RESULTS:   sky130_fd_sc_hd__nand4_1 cells:       17
+ABC RESULTS:   sky130_fd_sc_hd__nor2_1 cells:      151
+ABC RESULTS:   sky130_fd_sc_hd__nor2b_1 cells:        1
+ABC RESULTS:   sky130_fd_sc_hd__nor3_1 cells:       21
+ABC RESULTS:   sky130_fd_sc_hd__nor3b_1 cells:        4
+ABC RESULTS:   sky130_fd_sc_hd__nor4_1 cells:       29
+ABC RESULTS:   sky130_fd_sc_hd__nor4b_1 cells:        1
+ABC RESULTS:   sky130_fd_sc_hd__nor4bb_1 cells:        1
+ABC RESULTS:   sky130_fd_sc_hd__o2111ai_1 cells:        1
+ABC RESULTS:   sky130_fd_sc_hd__o211ai_1 cells:        4
+ABC RESULTS:   sky130_fd_sc_hd__o21a_1 cells:       28
+ABC RESULTS:   sky130_fd_sc_hd__o21ai_0 cells:      133
+ABC RESULTS:   sky130_fd_sc_hd__o22a_1 cells:        2
+ABC RESULTS:   sky130_fd_sc_hd__o22ai_1 cells:        7
+ABC RESULTS:   sky130_fd_sc_hd__o311a_1 cells:        1
+ABC RESULTS:   sky130_fd_sc_hd__o311ai_0 cells:        5
+ABC RESULTS:   sky130_fd_sc_hd__o31a_1 cells:        1
+ABC RESULTS:   sky130_fd_sc_hd__o31ai_1 cells:       10
+ABC RESULTS:   sky130_fd_sc_hd__o32a_1 cells:        1
+ABC RESULTS:   sky130_fd_sc_hd__o32ai_1 cells:        2
+ABC RESULTS:   sky130_fd_sc_hd__or3_1 cells:        7
+ABC RESULTS:   sky130_fd_sc_hd__or3b_1 cells:        1
+ABC RESULTS:   sky130_fd_sc_hd__or4_1 cells:        4
+ABC RESULTS:   sky130_fd_sc_hd__xnor2_1 cells:       42
+ABC RESULTS:   sky130_fd_sc_hd__xor2_1 cells:       30
+ABC RESULTS:        internal signals:     1977
+ABC RESULTS:           input signals:      238
+ABC RESULTS:          output signals:      174
+Removing temp directory.
+Removed 0 unused cells and 1010 unused wires.
+
+7. Executing CHECK pass (checking for obvious problems).
+Checking module fp32_divsqrt...
+Found and reported 0 problems.
+
+8. Printing statistics.
+
+=== fp32_divsqrt ===
+
+   Number of wires:               1227
+   Number of wire bits:           1451
+   Number of public wires:          26
+   Number of public wire bits:     245
+   Number of ports:                 14
+   Number of port bits:            107
+   Number of memories:               0
+   Number of memory bits:            0
+   Number of processes:              0
+   Number of cells:               1375
+     sky130_fd_sc_hd__a2111oi_0      2
+     sky130_fd_sc_hd__a211oi_1       9
+     sky130_fd_sc_hd__a21boi_0       2
+     sky130_fd_sc_hd__a21o_1         5
+     sky130_fd_sc_hd__a21oi_1      115
+     sky130_fd_sc_hd__a221o_1        7
+     sky130_fd_sc_hd__a221oi_1       8
+     sky130_fd_sc_hd__a222oi_1      27
+     sky130_fd_sc_hd__a22o_1        10
+     sky130_fd_sc_hd__a22oi_1       75
+     sky130_fd_sc_hd__a311o_1        2
+     sky130_fd_sc_hd__a311oi_1       3
+     sky130_fd_sc_hd__a31o_1        10
+     sky130_fd_sc_hd__a31oi_1       61
+     sky130_fd_sc_hd__a32o_1         1
+     sky130_fd_sc_hd__a32oi_1        1
+     sky130_fd_sc_hd__a41oi_1        2
+     sky130_fd_sc_hd__and2_0        10
+     sky130_fd_sc_hd__and3_1        12
+     sky130_fd_sc_hd__and3b_1        2
+     sky130_fd_sc_hd__and4_1         6
+     sky130_fd_sc_hd__and4b_1        1
+     sky130_fd_sc_hd__clkinv_1      22
+     sky130_fd_sc_hd__dfrtp_1      173
+     sky130_fd_sc_hd__lpflow_inputiso1p_1      7
+     sky130_fd_sc_hd__lpflow_isobufsrc_1     18
+     sky130_fd_sc_hd__maj3_1         6
+     sky130_fd_sc_hd__mux2_1         1
+     sky130_fd_sc_hd__mux2i_1       25
+     sky130_fd_sc_hd__nand2_1      208
+     sky130_fd_sc_hd__nand2b_1       8
+     sky130_fd_sc_hd__nand3_1       19
+     sky130_fd_sc_hd__nand3b_1      13
+     sky130_fd_sc_hd__nand4_1       17
+     sky130_fd_sc_hd__nor2_1       151
+     sky130_fd_sc_hd__nor2b_1        1
+     sky130_fd_sc_hd__nor3_1        21
+     sky130_fd_sc_hd__nor3b_1        4
+     sky130_fd_sc_hd__nor4_1        29
+     sky130_fd_sc_hd__nor4b_1        1
+     sky130_fd_sc_hd__nor4bb_1       1
+     sky130_fd_sc_hd__o2111ai_1      1
+     sky130_fd_sc_hd__o211ai_1       4
+     sky130_fd_sc_hd__o21a_1        28
+     sky130_fd_sc_hd__o21ai_0      133
+     sky130_fd_sc_hd__o22a_1         2
+     sky130_fd_sc_hd__o22ai_1        7
+     sky130_fd_sc_hd__o311a_1        1
+     sky130_fd_sc_hd__o311ai_0       5
+     sky130_fd_sc_hd__o31a_1         1
+     sky130_fd_sc_hd__o31ai_1       10
+     sky130_fd_sc_hd__o32a_1         1
+     sky130_fd_sc_hd__o32ai_1        2
+     sky130_fd_sc_hd__or3_1          7
+     sky130_fd_sc_hd__or3b_1         1
+     sky130_fd_sc_hd__or4_1          4
+     sky130_fd_sc_hd__xnor2_1       42
+     sky130_fd_sc_hd__xor2_1        30
+
+   Chip area for module '\fp32_divsqrt': 11325.862400
+     of which used for sequential elements: 4329.152000 (38.22%)
+
+End of script. Logfile hash: 03582e2681, CPU: user 0.79s system 0.08s, MEM: 47.77 MB peak
+Yosys 0.52 (git sha1 fee39a3284c90249e1d9684cf6944ffbbcbb8f90)
+Time spent: 40% 1x abc (0 sec), 9% 28x opt_expr (0 sec), ...

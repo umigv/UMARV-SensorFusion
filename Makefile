@@ -31,3 +31,7 @@ synth-divsqrt:
 synth-divsqrt-sky130:
 	test -r "$(SKY130_LIBERTY)"
 	$(YOSYS) -p 'script tests/synth_fp32_divsqrt.ys; dfflibmap -liberty "$(SKY130_LIBERTY)"; abc -liberty "$(SKY130_LIBERTY)"; clean; stat -liberty "$(SKY130_LIBERTY)"'
+
+.PHONY: timing
+timing:
+	CC="$(CC)" IVERILOG="$(IVERILOG)" $(PYTHON) tests/fp32_timing.py

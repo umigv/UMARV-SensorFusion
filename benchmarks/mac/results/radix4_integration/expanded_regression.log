@@ -1,0 +1,3 @@
+Benchmark: 135113 checked commands per architecture, 100000 randomized targets
+production: PASS: 135113 reference MAC operations, max sampled latency 22 cycles
+production {'min': 1, 'mean': 19.187716948036087, 'median': 21, 'p95': 22, 'p99': 22, 'max': 22, 'bound': 22}

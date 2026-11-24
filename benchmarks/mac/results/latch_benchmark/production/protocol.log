@@ -1,0 +1,2 @@
+PASS: 10112 reference MAC operations, max sampled latency 22 cycles
+/tmp/tmpfg42zvc3/tb_fp32_mac.sv:135: $finish called at 3195900000 (1ps)

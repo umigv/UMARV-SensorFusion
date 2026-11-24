@@ -1,0 +1,4 @@
+production: 27,944 bit-exact requests in 24 phases
+  original/+1: replay mean 37,333.000, expected 37,689.000, bound 50,962, conservative margin 11,538
+  correction: replay mean 16,835.375, expected 16,845.375, bound 26,217, conservative margin 36,283
+  original/-1: replay mean 37,338.000, expected 37,694.000, bound 50,962, conservative margin 11,538

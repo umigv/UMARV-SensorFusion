@@ -1,0 +1,9 @@
+baseline: PASS: 135113 reference MAC operations, max sampled latency 177 cycles
+b: PASS: 135113 reference MAC operations, max sampled latency 18 cycles
+a: PASS: 135113 reference MAC operations, max sampled latency 22 cycles
+a_iterative_shift: PASS: 135113 reference MAC operations, max sampled latency 166 cycles
+e: PASS: 135113 reference MAC operations, max sampled latency 11 cycles
+d: PASS: 135113 reference MAC operations, max sampled latency 12 cycles
+c: PASS: 135113 reference MAC operations, max sampled latency 15 cycles
+f: PASS: 135113 reference MAC operations, max sampled latency 10 cycles
+g: PASS: 135113 reference MAC operations, max sampled latency 10 cycles

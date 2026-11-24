@@ -1,0 +1,48 @@
+read_verilog -sv benchmarks/mac/dadda_generated.sv benchmarks/mac/mac_adders.sv benchmarks/mac/mac_products.sv benchmarks/mac/fp32_mac_experiment.sv benchmarks/mac/mac_variants.sv
+hierarchy -check -top fp32_mac_a
+proc
+flatten
+opt
+async2sync
+opt
+rename fp32_mac_a gold
+design -stash gold
+
+read_verilog -sv fp32_mac.sv
+hierarchy -check -top fp32_mac
+proc
+opt
+async2sync
+opt
+rename fp32_mac gate
+design -copy-from gold gold
+# Match retained core registers and combinational signal names across the
+# experimental wrapper boundary, for structural matching and induction.
+cd gold
+rename core.state state
+rename core.accumulator accumulator
+rename core.next_value next_value
+rename core.flags flags
+rename core.publish publish
+rename core.product_sign product_sign
+rename core.sum_sign sum_sign
+rename core.multiplicand multiplicand
+rename core.multiply_step multiply_step
+rename core.digits digits
+rename core.booth_upper booth_upper
+rename core.booth_lower booth_lower
+rename core.booth_sum booth_sum
+rename core.product_mag product_mag
+rename core.acc_mag acc_mag
+rename core.product_exp product_exp
+rename core.acc_exp acc_exp
+rename core.rounded rounded
+rename core.discarded discarded
+rename core.biased_exp biased_exp
+cd ..
+equiv_make gold gate equiv
+hierarchy -top equiv
+equiv_struct
+equiv_simple
+equiv_induct -seq 4
+equiv_status -assert

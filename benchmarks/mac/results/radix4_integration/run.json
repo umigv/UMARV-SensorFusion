@@ -1,0 +1,17 @@
+{
+  "tools": {
+    "yosys": "/usr/bin/yosys",
+    "sta": null,
+    "openroad": null,
+    "openlane": null,
+    "volare": null,
+    "tt_tool": null
+  },
+  "liberty": "/home/Nabhah/sky130_lib/sky130_fd_sc_hd__tt_025C_1v80.lib",
+  "liberty_sha256": "ec0e1067a35c8bf20b11e58d1e8ac53326067e4dac84a125cc1b917a3518d0d9",
+  "production_sha256": "db11f6217dd5e29154e538dfd46f08fdccb2300f843f37ca436f4451de3aabeb",
+  "legacy_sha256": "bdca30f904d4439ba4eba65f6b4b0707016a9cacb1b06d90adfe3ba2d25639d5",
+  "clock_ns": 20,
+  "input_delay_ns": 2,
+  "output_delay_ns": 2
+}

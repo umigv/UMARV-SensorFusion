@@ -1,0 +1,2 @@
+PASS 10052 exact adder vectors per topology (all five topologies)
+benchmarks/mac/test_adders.sv:35: $finish called at 10052000 (1ps)

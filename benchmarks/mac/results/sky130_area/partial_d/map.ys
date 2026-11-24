@@ -1,0 +1,11 @@
+read_liberty -lib -ignore_miss_func "REQUIRED_SKY130_HD_LIBERTY.lib"
+read_verilog -sv "/home/Nabhah/sqrtUKF/UMARV-SensorFusion/benchmarks/mac/dadda_generated.sv" "/home/Nabhah/sqrtUKF/UMARV-SensorFusion/benchmarks/mac/fp32_mac_experiment.sv" "/home/Nabhah/sqrtUKF/UMARV-SensorFusion/benchmarks/mac/mac_adders.sv" "/home/Nabhah/sqrtUKF/UMARV-SensorFusion/benchmarks/mac/mac_products.sv" "/home/Nabhah/sqrtUKF/UMARV-SensorFusion/benchmarks/mac/mac_variants.sv" "/home/Nabhah/sqrtUKF/UMARV-SensorFusion/benchmarks/mac/results/sky130_area/isolation.sv" "/home/Nabhah/sqrtUKF/UMARV-SensorFusion/benchmarks/mac/results/sky130_area/partial_d/top.sv"
+hierarchy -check -top mac_physical_top
+synth -flatten -noabc -top mac_physical_top
+dfflibmap -liberty "REQUIRED_SKY130_HD_LIBERTY.lib"
+abc -D 20000 -liberty "REQUIRED_SKY130_HD_LIBERTY.lib"
+clean -purge
+check -assert
+stat -liberty "REQUIRED_SKY130_HD_LIBERTY.lib"
+write_json "/home/Nabhah/sqrtUKF/UMARV-SensorFusion/benchmarks/mac/results/sky130_area/partial_d/mapped.json"
+write_verilog -noattr -noexpr "/home/Nabhah/sqrtUKF/UMARV-SensorFusion/benchmarks/mac/results/sky130_area/partial_d/mapped.v"

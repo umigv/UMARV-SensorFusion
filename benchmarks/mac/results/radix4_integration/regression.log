@@ -1,0 +1,3166 @@
+CC="cc" IVERILOG="iverilog" python3 tests/test_fp32_divsqrt.py
+PASS mode 0: 12162 results and flags, latency min/max/mean 1/81/33.792 cycles
+     recurrence only: 12054 operations, min/max/mean 31/81/34.086 cycles
+PASS mode 1: 12162 results and flags, latency min/max/mean 1/54/31.045 cycles
+     recurrence only: 12065 operations, min/max/mean 31/54/31.286 cycles
+tests/tb_fp32_divsqrt.sv:146: $finish called at 16263080000 (1ps)
+python3 tests/test_fp32_mac.py
+PASS: 10112 reference MAC operations, max sampled latency 22 cycles
+tests/tb_fp32_mac.sv:135: $finish called at 3195900000 (1ps)
+iverilog -g2012 -Wall -S -tnull -s fp32_divsqrt fp32_divsqrt.sv
+iverilog -g2012 -Wall -S -tnull -s fp32_mac fp32_mac.sv
+CC="cc" IVERILOG="iverilog" python3 tests/fp32_timing.py
+PASS: 15112 reference MAC operations, max sampled latency 22 cycles
+tests/tb_fp32_mac.sv:135: $finish called at 4814760000 (1ps)
+PASS mode 0: 12162 results and flags, latency min/max/mean 1/81/33.792 cycles
+     recurrence only: 12054 operations, min/max/mean 31/81/34.086 cycles
+PASS mode 1: 12162 results and flags, latency min/max/mean 1/54/31.045 cycles
+     recurrence only: 12065 operations, min/max/mean 31/54/31.286 cycles
+tests/tb_fp32_divsqrt.sv:146: $finish called at 16263080000 (1ps)
+Group | N | Min | Mean | Median | P95 | P99 | Max
+MAC all / consecutive | 15112 | 1 | 14.911 | 21 | 22 | 22 | 22
+MAC normal operands, zero accumulator | 2153 | 19 | 19.000 | 19 | 19 | 19 | 19
+MAC normal operands, normal nonzero accumulator | 8229 | 19 | 21.349 | 21 | 22 | 22 | 22
+MAC normal operands, both positive | 4025 | 19 | 20.748 | 21 | 22 | 22 | 22
+MAC normal operands, at least one negative | 6357 | 19 | 20.934 | 21 | 22 | 22 | 22
+MAC exponent gap >= 50 | 3864 | 21 | 21.417 | 21 | 22 | 22 | 22
+MAC near cancellation | 1026 | 21 | 21.499 | 21 | 22 | 22 | 22
+MAC exact cancellation | 9 | 19 | 19.000 | 19 | 19 | 19 | 19
+MAC subnormal operand or accumulator | 453 | 1 | 9.883 | 1 | 22 | 22 | 22
+MAC subnormal result | 163 | 1 | 16.982 | 19 | 21 | 22 | 22
+MAC overflow | 443 | 19 | 20.783 | 21 | 21 | 21 | 21
+MAC underflow | 68 | 19 | 19.221 | 19 | 21 | 22 | 22
+MAC NaN / infinity input | 4192 | 1 | 1.000 | 1 | 1 | 1 | 1
+MAC zero multiplier input | 565 | 1 | 1.000 | 1 | 1 | 1 | 1
+Division all | 12162 | 1 | 33.792 | 31 | 58 | 58 | 81
+Division recurrence | 12054 | 31 | 34.086 | 31 | 58 | 58 | 81
+Division normal operands | 10440 | 31 | 33.771 | 31 | 58 | 58 | 58
+Square root all | 12162 | 1 | 31.045 | 31 | 33 | 35 | 54
+Square root recurrence | 12065 | 31 | 31.286 | 31 | 33 | 35 | 54
+Square root positive normal | 10500 | 31 | 31.000 | 31 | 31 | 31 | 31
+Maximum witness: MAC a=3f800001 b=3f7ffffe c=bf800000 result=a8800000 flags=00 cycles=22
+Maximum witness: DIV a=00000001 b=7f7fffff c=00000000 result=00000000 flags=03 cycles=81
+Maximum witness: SQRT a=00000001 b=00000000 c=00000000 result=1a3504f3 flags=01 cycles=54
+Directed: DIV a=3f800000 b=3f800000 c=00000000 result=3f800000 flags=00 cycles=31
+Directed: DIV a=3f800000 b=40400000 c=00000000 result=3eaaaaab flags=01 cycles=31
+Directed: DIV a=7f7fffff b=00000001 c=00000000 result=7f800000 flags=05 cycles=54
+Directed: DIV a=00000001 b=7f7fffff c=00000000 result=00000000 flags=03 cycles=81
+Directed: DIV a=bf800000 b=40400000 c=00000000 result=beaaaaab flags=01 cycles=31
+Directed: DIV a=00000001 b=40000000 c=00000000 result=00000000 flags=03 cycles=78
+Directed: DIV a=3f800000 b=00000001 c=00000000 result=7f800000 flags=05 cycles=54
+Directed: DIV a=00000001 b=00000001 c=00000000 result=3f800000 flags=00 cycles=54
+Directed: DIV a=00800000 b=40000000 c=00000000 result=00400000 flags=00 cycles=32
+Directed: DIV a=00000000 b=3f800000 c=00000000 result=00000000 flags=00 cycles=1
+Directed: DIV a=7f800000 b=3f800000 c=00000000 result=7f800000 flags=00 cycles=1
+Directed: DIV a=3f800000 b=7f800000 c=00000000 result=00000000 flags=00 cycles=1
+Directed: DIV a=3f800000 b=80000000 c=00000000 result=ff800000 flags=08 cycles=1
+Directed: DIV a=00000000 b=00000000 c=00000000 result=7fc00000 flags=10 cycles=1
+Directed: DIV a=7f800000 b=7f800000 c=00000000 result=7fc00000 flags=10 cycles=1
+Directed: DIV a=7fc12345 b=3f800000 c=00000000 result=7fc00000 flags=00 cycles=1
+Directed: SQRT a=3f800000 b=00000000 c=00000000 result=3f800000 flags=00 cycles=31
+Directed: SQRT a=40000000 b=00000000 c=00000000 result=3fb504f3 flags=01 cycles=31
+Directed: SQRT a=40800000 b=00000000 c=00000000 result=40000000 flags=00 cycles=31
+Directed: SQRT a=00000000 b=00000000 c=00000000 result=00000000 flags=00 cycles=1
+Directed: SQRT a=80000000 b=00000000 c=00000000 result=80000000 flags=00 cycles=1
+Directed: SQRT a=7f7fffff b=00000000 c=00000000 result=5f7fffff flags=01 cycles=31
+Directed: SQRT a=00800000 b=00000000 c=00000000 result=20000000 flags=00 cycles=31
+Directed: SQRT a=00000001 b=00000000 c=00000000 result=1a3504f3 flags=01 cycles=54
+Directed: SQRT a=00000002 b=00000000 c=00000000 result=1a800000 flags=00 cycles=53
+Directed: SQRT a=00000003 b=00000000 c=00000000 result=1a9cc471 flags=01 cycles=53
+Directed: SQRT a=00000004 b=00000000 c=00000000 result=1ab504f3 flags=01 cycles=52
+Directed: SQRT a=007fffff b=00000000 c=00000000 result=1fffffff flags=01 cycles=32
+Directed: SQRT a=bf800000 b=00000000 c=00000000 result=7fc00000 flags=10 cycles=1
+Directed: SQRT a=7f800000 b=00000000 c=00000000 result=7f800000 flags=00 cycles=1
+Directed: SQRT a=ff800000 b=00000000 c=00000000 result=7fc00000 flags=10 cycles=1
+Directed: SQRT a=7fc12345 b=00000000 c=00000000 result=7fc00000 flags=00 cycles=1
+Directed: SQRT a=ff812345 b=00000000 c=00000000 result=7fc00000 flags=10 cycles=1
+yosys -s tests/synth_fp32_mac.ys
+
+ /----------------------------------------------------------------------------\
+ |  yosys -- Yosys Open SYnthesis Suite                                       |
+ |  Copyright (C) 2012 - 2025  Claire Xenia Wolf <claire@yosyshq.com>         |
+ |  Distributed under an ISC-like license, type "license" to see terms        |
+ \----------------------------------------------------------------------------/
+ Yosys 0.52 (git sha1 fee39a3284c90249e1d9684cf6944ffbbcbb8f90)
+
+-- Executing script file `tests/synth_fp32_mac.ys' --
+
+1. Executing Verilog-2005 frontend: fp32_mac.sv
+Parsing SystemVerilog input from `fp32_mac.sv' to AST representation.
+Generating RTLIL representation for module `\fp32_mac'.
+Successfully finished Verilog frontend.
+
+2. Executing HIERARCHY pass (managing design hierarchy).
+
+2.1. Analyzing design hierarchy..
+Top module:  \fp32_mac
+
+2.2. Analyzing design hierarchy..
+Top module:  \fp32_mac
+Removed 0 unused modules.
+
+3. Executing PROC pass (convert processes to netlists).
+
+3.1. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Cleaned up 0 empty switches.
+
+3.2. Executing PROC_RMDEAD pass (remove dead branches from decision trees).
+Marked 6 switch rules as full_case in process $proc$fp32_mac.sv:0$910 in module fp32_mac.
+Marked 6 switch rules as full_case in process $proc$fp32_mac.sv:0$877 in module fp32_mac.
+Marked 36 switch rules as full_case in process $proc$fp32_mac.sv:189$89 in module fp32_mac.
+Marked 1 switch rules as full_case in process $proc$fp32_mac.sv:92$80 in module fp32_mac.
+Removed a total of 0 dead cases.
+
+3.3. Executing PROC_PRUNE pass (remove redundant assignments in processes).
+Removed 2 redundant assignments.
+Promoted 210 assignments to connections.
+
+3.4. Executing PROC_INIT pass (extract init attributes).
+
+3.5. Executing PROC_ARST pass (detect async resets in processes).
+Found async reset \rst_n in `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+
+3.6. Executing PROC_ROM pass (convert switches to ROMs).
+Converted 0 switches.
+<suppressed ~52 debug messages>
+
+3.7. Executing PROC_MUX pass (convert decision trees to multiplexers).
+Creating decoders for process `\fp32_mac.$proc$fp32_mac.sv:0$943'.
+Creating decoders for process `\fp32_mac.$proc$fp32_mac.sv:0$910'.
+     1/11: $6\left_count$func$fp32_mac.sv:182$51.zeros[0:0]$942
+     2/11: $5\left_count$func$fp32_mac.sv:182$51.zeros[1:1]$939
+     3/11: $5\left_count$func$fp32_mac.sv:182$51.x[63:0]$938
+     4/11: $4\left_count$func$fp32_mac.sv:182$51.zeros[2:2]$934
+     5/11: $4\left_count$func$fp32_mac.sv:182$51.x[63:0]$933
+     6/11: $3\left_count$func$fp32_mac.sv:182$51.zeros[3:3]$929
+     7/11: $3\left_count$func$fp32_mac.sv:182$51.x[63:0]$928
+     8/11: $2\left_count$func$fp32_mac.sv:182$51.zeros[4:4]$924
+     9/11: $2\left_count$func$fp32_mac.sv:182$51.x[63:0]$923
+    10/11: $1\left_count$func$fp32_mac.sv:182$51.zeros[5:5]$919
+    11/11: $1\left_count$func$fp32_mac.sv:182$51.x[63:0]$918
+Creating decoders for process `\fp32_mac.$proc$fp32_mac.sv:0$877'.
+     1/11: $6\left_count$func$fp32_mac.sv:181$50.zeros[0:0]$909
+     2/11: $5\left_count$func$fp32_mac.sv:181$50.zeros[1:1]$906
+     3/11: $5\left_count$func$fp32_mac.sv:181$50.x[63:0]$905
+     4/11: $4\left_count$func$fp32_mac.sv:181$50.zeros[2:2]$901
+     5/11: $4\left_count$func$fp32_mac.sv:181$50.x[63:0]$900
+     6/11: $3\left_count$func$fp32_mac.sv:181$50.zeros[3:3]$896
+     7/11: $3\left_count$func$fp32_mac.sv:181$50.x[63:0]$895
+     8/11: $2\left_count$func$fp32_mac.sv:181$50.zeros[4:4]$891
+     9/11: $2\left_count$func$fp32_mac.sv:181$50.x[63:0]$890
+    10/11: $1\left_count$func$fp32_mac.sv:181$50.zeros[5:5]$886
+    11/11: $1\left_count$func$fp32_mac.sv:181$50.x[63:0]$885
+Creating decoders for process `\fp32_mac.$proc$fp32_mac.sv:0$638'.
+Creating decoders for process `\fp32_mac.$proc$fp32_mac.sv:0$631'.
+Creating decoders for process `\fp32_mac.$proc$fp32_mac.sv:0$623'.
+Creating decoders for process `\fp32_mac.$proc$fp32_mac.sv:0$617'.
+Creating decoders for process `\fp32_mac.$proc$fp32_mac.sv:0$611'.
+Creating decoders for process `\fp32_mac.$proc$fp32_mac.sv:0$603'.
+Creating decoders for process `\fp32_mac.$proc$fp32_mac.sv:0$596'.
+Creating decoders for process `\fp32_mac.$proc$fp32_mac.sv:0$589'.
+Creating decoders for process `\fp32_mac.$proc$fp32_mac.sv:0$583'.
+Creating decoders for process `\fp32_mac.$proc$fp32_mac.sv:0$577'.
+Creating decoders for process `\fp32_mac.$proc$fp32_mac.sv:0$569'.
+Creating decoders for process `\fp32_mac.$proc$fp32_mac.sv:0$561'.
+Creating decoders for process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+     1/292: $0\flags[4:0] [2]
+     2/292: $0\flags[4:0] [1]
+     3/292: $0\flags[4:0] [0]
+     4/292: $0\flags[4:0] [3]
+     5/292: $5\shift_right_jam$func$fp32_mac.sv:321$37.mag[51:0]$548
+     6/292: $10\align_jam$func$fp32_mac.sv:318$36.x[51:0]$539
+     7/292: $9\align_jam$func$fp32_mac.sv:318$36.x[51:0]$534
+     8/292: $8\align_jam$func$fp32_mac.sv:318$36.x[51:0]$529
+     9/292: $7\align_jam$func$fp32_mac.sv:318$36.x[51:0]$524
+    10/292: $6\align_jam$func$fp32_mac.sv:318$36.x[51:0]$519
+    11/292: $5\align_jam$func$fp32_mac.sv:318$36.x[51:0]$514
+    12/292: $4\align_jam$func$fp32_mac.sv:318$36.$result[51:0]$506
+    13/292: $4\align_jam$func$fp32_mac.sv:318$36.k[31:0]$510
+    14/292: $4\align_jam$func$fp32_mac.sv:318$36.x[51:0]$509
+    15/292: $4\align_jam$func$fp32_mac.sv:318$36.distance[10:0]$508
+    16/292: $4\align_jam$func$fp32_mac.sv:318$36.mag[51:0]$507
+    17/292: $4\shift_right_jam$func$fp32_mac.sv:321$37.mag[51:0]$512
+    18/292: $4\shift_right_jam$func$fp32_mac.sv:321$37.$result[51:0]$511
+    19/292: $3\shift_right_jam$func$fp32_mac.sv:321$37.mag[51:0]$504
+    20/292: $3\shift_right_jam$func$fp32_mac.sv:321$37.$result[51:0]$503
+    21/292: $3\align_jam$func$fp32_mac.sv:318$36.k[31:0]$502
+    22/292: $3\align_jam$func$fp32_mac.sv:318$36.x[51:0]$501
+    23/292: $3\align_jam$func$fp32_mac.sv:318$36.distance[10:0]$500
+    24/292: $3\align_jam$func$fp32_mac.sv:318$36.mag[51:0]$499
+    25/292: $3\align_jam$func$fp32_mac.sv:318$36.$result[51:0]$498
+    26/292: $10\align_jam$func$fp32_mac.sv:290$35.x[51:0]$488
+    27/292: $9\align_jam$func$fp32_mac.sv:290$35.x[51:0]$483
+    28/292: $8\align_jam$func$fp32_mac.sv:290$35.x[51:0]$478
+    29/292: $7\align_jam$func$fp32_mac.sv:290$35.x[51:0]$473
+    30/292: $6\align_jam$func$fp32_mac.sv:290$35.x[51:0]$468
+    31/292: $5\align_jam$func$fp32_mac.sv:290$35.x[51:0]$463
+    32/292: $4\align_jam$func$fp32_mac.sv:290$35.$result[51:0]$457
+    33/292: $4\align_jam$func$fp32_mac.sv:290$35.k[31:0]$461
+    34/292: $4\align_jam$func$fp32_mac.sv:290$35.x[51:0]$460
+    35/292: $4\align_jam$func$fp32_mac.sv:290$35.distance[10:0]$459
+    36/292: $4\align_jam$func$fp32_mac.sv:290$35.mag[51:0]$458
+    37/292: $9\align_jam$func$fp32_mac.sv:287$34.x[51:0]$448
+    38/292: $8\align_jam$func$fp32_mac.sv:287$34.x[51:0]$443
+    39/292: $7\align_jam$func$fp32_mac.sv:287$34.x[51:0]$438
+    40/292: $6\align_jam$func$fp32_mac.sv:287$34.x[51:0]$433
+    41/292: $5\align_jam$func$fp32_mac.sv:287$34.x[51:0]$428
+    42/292: $4\align_jam$func$fp32_mac.sv:287$34.x[51:0]$423
+    43/292: $3\align_jam$func$fp32_mac.sv:287$34.$result[51:0]$412
+    44/292: $3\align_jam$func$fp32_mac.sv:287$34.k[31:0]$416
+    45/292: $3\align_jam$func$fp32_mac.sv:287$34.x[51:0]$415
+    46/292: $3\align_jam$func$fp32_mac.sv:287$34.distance[10:0]$414
+    47/292: $3\align_jam$func$fp32_mac.sv:287$34.mag[51:0]$413
+    48/292: $3\align_jam$func$fp32_mac.sv:290$35.k[31:0]$421
+    49/292: $3\align_jam$func$fp32_mac.sv:290$35.x[51:0]$420
+    50/292: $3\align_jam$func$fp32_mac.sv:290$35.distance[10:0]$419
+    51/292: $3\align_jam$func$fp32_mac.sv:290$35.mag[51:0]$418
+    52/292: $3\align_jam$func$fp32_mac.sv:290$35.$result[51:0]$417
+    53/292: $8\is_zero$func$fp32_mac.sv:237$27.$result[0:0]$369
+    54/292: $8\is_zero$func$fp32_mac.sv:237$27.word[31:0]$370
+    55/292: $8\significand$func$fp32_mac.sv:246$33.word[31:0]$382
+    56/292: $8\significand$func$fp32_mac.sv:246$33.$result[23:0]$381
+    57/292: $8\significand$func$fp32_mac.sv:245$32.word[31:0]$380
+    58/292: $8\significand$func$fp32_mac.sv:245$32.$result[23:0]$379
+    59/292: $8\significand$func$fp32_mac.sv:244$31.word[31:0]$378
+    60/292: $8\significand$func$fp32_mac.sv:244$31.$result[23:0]$377
+    61/292: $8\exponent$func$fp32_mac.sv:243$30.word[31:0]$376
+    62/292: $8\exponent$func$fp32_mac.sv:243$30.$result[9:0]$375
+    63/292: $8\exponent$func$fp32_mac.sv:242$29.word[31:0]$374
+    64/292: $8\exponent$func$fp32_mac.sv:242$29.$result[9:0]$373
+    65/292: $8\exponent$func$fp32_mac.sv:242$28.word[31:0]$372
+    66/292: $8\exponent$func$fp32_mac.sv:242$28.$result[9:0]$371
+    67/292: $7\significand$func$fp32_mac.sv:246$33.word[31:0]$363
+    68/292: $7\significand$func$fp32_mac.sv:246$33.$result[23:0]$362
+    69/292: $7\significand$func$fp32_mac.sv:245$32.word[31:0]$361
+    70/292: $7\significand$func$fp32_mac.sv:245$32.$result[23:0]$360
+    71/292: $7\significand$func$fp32_mac.sv:244$31.word[31:0]$359
+    72/292: $7\significand$func$fp32_mac.sv:244$31.$result[23:0]$358
+    73/292: $7\exponent$func$fp32_mac.sv:243$30.word[31:0]$357
+    74/292: $7\exponent$func$fp32_mac.sv:243$30.$result[9:0]$356
+    75/292: $7\exponent$func$fp32_mac.sv:242$29.word[31:0]$355
+    76/292: $7\exponent$func$fp32_mac.sv:242$29.$result[9:0]$354
+    77/292: $7\exponent$func$fp32_mac.sv:242$28.word[31:0]$353
+    78/292: $7\exponent$func$fp32_mac.sv:242$28.$result[9:0]$352
+    79/292: $7\is_zero$func$fp32_mac.sv:237$27.word[31:0]$351
+    80/292: $7\is_zero$func$fp32_mac.sv:237$27.$result[0:0]$350
+    81/292: $7\is_zero$func$fp32_mac.sv:236$26.word[31:0]$349
+    82/292: $7\is_zero$func$fp32_mac.sv:236$26.$result[0:0]$348
+    83/292: $7\is_zero$func$fp32_mac.sv:236$25.word[31:0]$347
+    84/292: $7\is_zero$func$fp32_mac.sv:236$25.$result[0:0]$346
+    85/292: $6\significand$func$fp32_mac.sv:246$33.word[31:0]$340
+    86/292: $6\significand$func$fp32_mac.sv:246$33.$result[23:0]$339
+    87/292: $6\significand$func$fp32_mac.sv:245$32.word[31:0]$338
+    88/292: $6\significand$func$fp32_mac.sv:245$32.$result[23:0]$337
+    89/292: $6\significand$func$fp32_mac.sv:244$31.word[31:0]$336
+    90/292: $6\significand$func$fp32_mac.sv:244$31.$result[23:0]$335
+    91/292: $6\exponent$func$fp32_mac.sv:243$30.word[31:0]$334
+    92/292: $6\exponent$func$fp32_mac.sv:243$30.$result[9:0]$333
+    93/292: $6\exponent$func$fp32_mac.sv:242$29.word[31:0]$332
+    94/292: $6\exponent$func$fp32_mac.sv:242$29.$result[9:0]$331
+    95/292: $6\exponent$func$fp32_mac.sv:242$28.word[31:0]$330
+    96/292: $6\exponent$func$fp32_mac.sv:242$28.$result[9:0]$329
+    97/292: $6\is_zero$func$fp32_mac.sv:237$27.word[31:0]$328
+    98/292: $6\is_zero$func$fp32_mac.sv:237$27.$result[0:0]$327
+    99/292: $6\is_zero$func$fp32_mac.sv:236$26.word[31:0]$326
+   100/292: $6\is_zero$func$fp32_mac.sv:236$26.$result[0:0]$325
+   101/292: $6\is_zero$func$fp32_mac.sv:236$25.word[31:0]$324
+   102/292: $6\is_zero$func$fp32_mac.sv:236$25.$result[0:0]$323
+   103/292: $6\is_inf$func$fp32_mac.sv:234$24.word[31:0]$322
+   104/292: $6\is_inf$func$fp32_mac.sv:234$24.$result[0:0]$321
+   105/292: $5\significand$func$fp32_mac.sv:246$33.word[31:0]$320
+   106/292: $5\significand$func$fp32_mac.sv:246$33.$result[23:0]$319
+   107/292: $5\significand$func$fp32_mac.sv:245$32.word[31:0]$318
+   108/292: $5\significand$func$fp32_mac.sv:245$32.$result[23:0]$317
+   109/292: $5\significand$func$fp32_mac.sv:244$31.word[31:0]$316
+   110/292: $5\significand$func$fp32_mac.sv:244$31.$result[23:0]$315
+   111/292: $5\exponent$func$fp32_mac.sv:243$30.word[31:0]$314
+   112/292: $5\exponent$func$fp32_mac.sv:243$30.$result[9:0]$313
+   113/292: $5\exponent$func$fp32_mac.sv:242$29.word[31:0]$312
+   114/292: $5\exponent$func$fp32_mac.sv:242$29.$result[9:0]$311
+   115/292: $5\exponent$func$fp32_mac.sv:242$28.word[31:0]$310
+   116/292: $5\exponent$func$fp32_mac.sv:242$28.$result[9:0]$309
+   117/292: $5\is_zero$func$fp32_mac.sv:237$27.word[31:0]$308
+   118/292: $5\is_zero$func$fp32_mac.sv:237$27.$result[0:0]$307
+   119/292: $5\is_zero$func$fp32_mac.sv:236$26.word[31:0]$306
+   120/292: $5\is_zero$func$fp32_mac.sv:236$26.$result[0:0]$305
+   121/292: $5\is_zero$func$fp32_mac.sv:236$25.word[31:0]$304
+   122/292: $5\is_zero$func$fp32_mac.sv:236$25.$result[0:0]$303
+   123/292: $5\is_inf$func$fp32_mac.sv:234$24.word[31:0]$302
+   124/292: $5\is_inf$func$fp32_mac.sv:234$24.$result[0:0]$301
+   125/292: $0\flags[4:0] [4]
+   126/292: $5\shift_right_jam$func$fp32_mac.sv:321$37.$result[51:0]$547
+   127/292: $4\significand$func$fp32_mac.sv:246$33.$result[23:0]$288
+   128/292: $4\significand$func$fp32_mac.sv:245$32.word[31:0]$287
+   129/292: $4\significand$func$fp32_mac.sv:245$32.$result[23:0]$286
+   130/292: $4\significand$func$fp32_mac.sv:244$31.word[31:0]$285
+   131/292: $4\significand$func$fp32_mac.sv:244$31.$result[23:0]$284
+   132/292: $4\exponent$func$fp32_mac.sv:243$30.word[31:0]$283
+   133/292: $4\exponent$func$fp32_mac.sv:243$30.$result[9:0]$282
+   134/292: $4\exponent$func$fp32_mac.sv:242$29.word[31:0]$281
+   135/292: $4\exponent$func$fp32_mac.sv:242$29.$result[9:0]$280
+   136/292: $4\exponent$func$fp32_mac.sv:242$28.word[31:0]$279
+   137/292: $4\exponent$func$fp32_mac.sv:242$28.$result[9:0]$278
+   138/292: $4\is_zero$func$fp32_mac.sv:237$27.word[31:0]$277
+   139/292: $4\is_zero$func$fp32_mac.sv:237$27.$result[0:0]$276
+   140/292: $4\is_zero$func$fp32_mac.sv:236$26.word[31:0]$275
+   141/292: $4\is_zero$func$fp32_mac.sv:236$26.$result[0:0]$274
+   142/292: $4\is_zero$func$fp32_mac.sv:236$25.word[31:0]$273
+   143/292: $4\is_zero$func$fp32_mac.sv:236$25.$result[0:0]$272
+   144/292: $4\is_inf$func$fp32_mac.sv:234$24.word[31:0]$271
+   145/292: $4\is_inf$func$fp32_mac.sv:234$24.$result[0:0]$270
+   146/292: $4\is_nan$func$fp32_mac.sv:230$23.word[31:0]$269
+   147/292: $4\is_nan$func$fp32_mac.sv:230$23.$result[0:0]$268
+   148/292: $4\is_nan$func$fp32_mac.sv:230$22.word[31:0]$267
+   149/292: $4\is_nan$func$fp32_mac.sv:230$22.$result[0:0]$266
+   150/292: $4\is_nan$func$fp32_mac.sv:230$21.word[31:0]$265
+   151/292: $4\is_nan$func$fp32_mac.sv:230$21.$result[0:0]$264
+   152/292: $3\significand$func$fp32_mac.sv:246$33.word[31:0]$253
+   153/292: $3\significand$func$fp32_mac.sv:246$33.$result[23:0]$252
+   154/292: $3\significand$func$fp32_mac.sv:245$32.word[31:0]$251
+   155/292: $3\significand$func$fp32_mac.sv:245$32.$result[23:0]$250
+   156/292: $3\significand$func$fp32_mac.sv:244$31.word[31:0]$249
+   157/292: $3\significand$func$fp32_mac.sv:244$31.$result[23:0]$248
+   158/292: $3\exponent$func$fp32_mac.sv:243$30.word[31:0]$247
+   159/292: $3\exponent$func$fp32_mac.sv:243$30.$result[9:0]$246
+   160/292: $3\exponent$func$fp32_mac.sv:242$29.word[31:0]$245
+   161/292: $3\exponent$func$fp32_mac.sv:242$29.$result[9:0]$244
+   162/292: $3\exponent$func$fp32_mac.sv:242$28.word[31:0]$243
+   163/292: $3\exponent$func$fp32_mac.sv:242$28.$result[9:0]$242
+   164/292: $3\is_zero$func$fp32_mac.sv:237$27.word[31:0]$241
+   165/292: $3\is_zero$func$fp32_mac.sv:237$27.$result[0:0]$240
+   166/292: $3\is_zero$func$fp32_mac.sv:236$26.word[31:0]$239
+   167/292: $3\is_zero$func$fp32_mac.sv:236$26.$result[0:0]$238
+   168/292: $3\is_zero$func$fp32_mac.sv:236$25.word[31:0]$237
+   169/292: $3\is_zero$func$fp32_mac.sv:236$25.$result[0:0]$236
+   170/292: $3\is_inf$func$fp32_mac.sv:234$24.word[31:0]$235
+   171/292: $3\is_inf$func$fp32_mac.sv:234$24.$result[0:0]$234
+   172/292: $3\is_nan$func$fp32_mac.sv:230$23.word[31:0]$233
+   173/292: $3\is_nan$func$fp32_mac.sv:230$23.$result[0:0]$232
+   174/292: $3\is_nan$func$fp32_mac.sv:230$22.word[31:0]$231
+   175/292: $3\is_nan$func$fp32_mac.sv:230$22.$result[0:0]$230
+   176/292: $3\is_nan$func$fp32_mac.sv:230$21.word[31:0]$229
+   177/292: $3\is_nan$func$fp32_mac.sv:230$21.$result[0:0]$228
+   178/292: $3\is_inf$func$fp32_mac.sv:226$20.$result[0:0]$226
+   179/292: $3\is_inf$func$fp32_mac.sv:226$20.word[31:0]$227
+   180/292: $2\significand$func$fp32_mac.sv:246$33.word[31:0]$208
+   181/292: $2\significand$func$fp32_mac.sv:246$33.$result[23:0]$207
+   182/292: $2\significand$func$fp32_mac.sv:245$32.word[31:0]$206
+   183/292: $2\significand$func$fp32_mac.sv:245$32.$result[23:0]$205
+   184/292: $2\significand$func$fp32_mac.sv:244$31.word[31:0]$204
+   185/292: $2\significand$func$fp32_mac.sv:244$31.$result[23:0]$203
+   186/292: $2\exponent$func$fp32_mac.sv:243$30.word[31:0]$202
+   187/292: $2\exponent$func$fp32_mac.sv:243$30.$result[9:0]$201
+   188/292: $2\exponent$func$fp32_mac.sv:242$29.word[31:0]$200
+   189/292: $2\exponent$func$fp32_mac.sv:242$29.$result[9:0]$199
+   190/292: $2\exponent$func$fp32_mac.sv:242$28.word[31:0]$198
+   191/292: $2\exponent$func$fp32_mac.sv:242$28.$result[9:0]$197
+   192/292: $2\is_zero$func$fp32_mac.sv:237$27.word[31:0]$196
+   193/292: $2\is_zero$func$fp32_mac.sv:237$27.$result[0:0]$195
+   194/292: $2\is_zero$func$fp32_mac.sv:236$26.word[31:0]$194
+   195/292: $2\is_zero$func$fp32_mac.sv:236$26.$result[0:0]$193
+   196/292: $2\is_zero$func$fp32_mac.sv:236$25.word[31:0]$192
+   197/292: $2\is_zero$func$fp32_mac.sv:236$25.$result[0:0]$191
+   198/292: $2\is_inf$func$fp32_mac.sv:234$24.word[31:0]$190
+   199/292: $2\is_inf$func$fp32_mac.sv:234$24.$result[0:0]$189
+   200/292: $2\is_nan$func$fp32_mac.sv:230$23.word[31:0]$188
+   201/292: $2\is_nan$func$fp32_mac.sv:230$23.$result[0:0]$187
+   202/292: $2\is_nan$func$fp32_mac.sv:230$22.word[31:0]$186
+   203/292: $2\is_nan$func$fp32_mac.sv:230$22.$result[0:0]$185
+   204/292: $2\is_nan$func$fp32_mac.sv:230$21.word[31:0]$184
+   205/292: $2\is_nan$func$fp32_mac.sv:230$21.$result[0:0]$183
+   206/292: $2\is_inf$func$fp32_mac.sv:226$20.word[31:0]$182
+   207/292: $2\is_inf$func$fp32_mac.sv:226$20.$result[0:0]$181
+   208/292: $2\shift_right_jam$func$fp32_mac.sv:321$37.mag[51:0]$225
+   209/292: $2\shift_right_jam$func$fp32_mac.sv:321$37.$result[51:0]$224
+   210/292: $2\align_jam$func$fp32_mac.sv:318$36.k[31:0]$223
+   211/292: $2\align_jam$func$fp32_mac.sv:318$36.x[51:0]$222
+   212/292: $2\align_jam$func$fp32_mac.sv:318$36.distance[10:0]$221
+   213/292: $2\align_jam$func$fp32_mac.sv:318$36.mag[51:0]$220
+   214/292: $2\align_jam$func$fp32_mac.sv:318$36.$result[51:0]$219
+   215/292: $2\align_jam$func$fp32_mac.sv:290$35.k[31:0]$218
+   216/292: $2\align_jam$func$fp32_mac.sv:290$35.x[51:0]$217
+   217/292: $2\align_jam$func$fp32_mac.sv:290$35.distance[10:0]$216
+   218/292: $2\align_jam$func$fp32_mac.sv:290$35.mag[51:0]$215
+   219/292: $2\align_jam$func$fp32_mac.sv:290$35.$result[51:0]$214
+   220/292: $2\align_jam$func$fp32_mac.sv:287$34.k[31:0]$213
+   221/292: $2\align_jam$func$fp32_mac.sv:287$34.x[51:0]$212
+   222/292: $2\align_jam$func$fp32_mac.sv:287$34.distance[10:0]$211
+   223/292: $2\align_jam$func$fp32_mac.sv:287$34.mag[51:0]$210
+   224/292: $2\align_jam$func$fp32_mac.sv:287$34.$result[51:0]$209
+   225/292: $1\shift_right_jam$func$fp32_mac.sv:321$37.mag[51:0]$180
+   226/292: $1\shift_right_jam$func$fp32_mac.sv:321$37.$result[51:0]$179
+   227/292: $1\align_jam$func$fp32_mac.sv:318$36.k[31:0]$178
+   228/292: $1\align_jam$func$fp32_mac.sv:318$36.x[51:0]$177
+   229/292: $1\align_jam$func$fp32_mac.sv:318$36.distance[10:0]$176
+   230/292: $1\align_jam$func$fp32_mac.sv:318$36.mag[51:0]$175
+   231/292: $1\align_jam$func$fp32_mac.sv:318$36.$result[51:0]$174
+   232/292: $1\align_jam$func$fp32_mac.sv:290$35.k[31:0]$173
+   233/292: $1\align_jam$func$fp32_mac.sv:290$35.x[51:0]$172
+   234/292: $1\align_jam$func$fp32_mac.sv:290$35.distance[10:0]$171
+   235/292: $1\align_jam$func$fp32_mac.sv:290$35.mag[51:0]$170
+   236/292: $1\align_jam$func$fp32_mac.sv:290$35.$result[51:0]$169
+   237/292: $1\align_jam$func$fp32_mac.sv:287$34.k[31:0]$168
+   238/292: $1\align_jam$func$fp32_mac.sv:287$34.x[51:0]$167
+   239/292: $1\align_jam$func$fp32_mac.sv:287$34.distance[10:0]$166
+   240/292: $1\align_jam$func$fp32_mac.sv:287$34.mag[51:0]$165
+   241/292: $1\align_jam$func$fp32_mac.sv:287$34.$result[51:0]$164
+   242/292: $1\significand$func$fp32_mac.sv:246$33.word[31:0]$163
+   243/292: $1\significand$func$fp32_mac.sv:246$33.$result[23:0]$162
+   244/292: $1\significand$func$fp32_mac.sv:245$32.word[31:0]$161
+   245/292: $1\significand$func$fp32_mac.sv:245$32.$result[23:0]$160
+   246/292: $1\significand$func$fp32_mac.sv:244$31.word[31:0]$159
+   247/292: $1\significand$func$fp32_mac.sv:244$31.$result[23:0]$158
+   248/292: $1\exponent$func$fp32_mac.sv:243$30.word[31:0]$157
+   249/292: $1\exponent$func$fp32_mac.sv:243$30.$result[9:0]$156
+   250/292: $1\exponent$func$fp32_mac.sv:242$29.word[31:0]$155
+   251/292: $1\exponent$func$fp32_mac.sv:242$29.$result[9:0]$154
+   252/292: $1\exponent$func$fp32_mac.sv:242$28.word[31:0]$153
+   253/292: $1\exponent$func$fp32_mac.sv:242$28.$result[9:0]$152
+   254/292: $1\is_zero$func$fp32_mac.sv:237$27.word[31:0]$151
+   255/292: $1\is_zero$func$fp32_mac.sv:237$27.$result[0:0]$150
+   256/292: $1\is_zero$func$fp32_mac.sv:236$26.word[31:0]$149
+   257/292: $1\is_zero$func$fp32_mac.sv:236$26.$result[0:0]$148
+   258/292: $1\is_zero$func$fp32_mac.sv:236$25.word[31:0]$147
+   259/292: $1\is_zero$func$fp32_mac.sv:236$25.$result[0:0]$146
+   260/292: $1\is_inf$func$fp32_mac.sv:234$24.word[31:0]$145
+   261/292: $1\is_inf$func$fp32_mac.sv:234$24.$result[0:0]$144
+   262/292: $1\is_nan$func$fp32_mac.sv:230$23.word[31:0]$143
+   263/292: $1\is_nan$func$fp32_mac.sv:230$23.$result[0:0]$142
+   264/292: $1\is_nan$func$fp32_mac.sv:230$22.word[31:0]$141
+   265/292: $1\is_nan$func$fp32_mac.sv:230$22.$result[0:0]$140
+   266/292: $1\is_nan$func$fp32_mac.sv:230$21.word[31:0]$139
+   267/292: $1\is_nan$func$fp32_mac.sv:230$21.$result[0:0]$138
+   268/292: $1\is_inf$func$fp32_mac.sv:226$20.word[31:0]$137
+   269/292: $1\is_inf$func$fp32_mac.sv:226$20.$result[0:0]$136
+   270/292: $0\result_valid[0:0]
+   271/292: $0\done[0:0]
+   272/292: $0\biased_exp[7:0]
+   273/292: $0\discarded[0:0]
+   274/292: $0\rounded[24:0]
+   275/292: $0\acc_exp[9:0]
+   276/292: $0\product_exp[9:0]
+   277/292: $0\acc_mag[51:0]
+   278/292: $0\product_mag[51:0]
+   279/292: $0\booth_lower[23:0]
+   280/292: $0\booth_upper[27:0]
+   281/292: $0\digits[26:0]
+   282/292: $0\multiply_step[4:0]
+   283/292: $0\multiplicand[23:0]
+   284/292: $0\sum_sign[0:0]
+   285/292: $0\product_sign[0:0]
+   286/292: $0\publish[0:0]
+   287/292: $4\significand$func$fp32_mac.sv:246$33.word[31:0]$289
+   288/292: $0\next_value[31:0]
+   289/292: $0\accumulator[31:0]
+   290/292: $0\state[3:0]
+   291/292: $0\exception_flags[4:0]
+   292/292: $0\result[31:0]
+Creating decoders for process `\fp32_mac.$proc$fp32_mac.sv:92$80'.
+     1/3: $1\alu_right[51:0]
+     2/3: $1\alu_left[51:0]
+     3/3: $1\subtract[0:0]
+
+3.8. Executing PROC_DLATCH pass (convert process syncs to latches).
+No latch inferred for signal `\fp32_mac.\prefix_p[0]' from process `\fp32_mac.$proc$fp32_mac.sv:0$943'.
+No latch inferred for signal `\fp32_mac.\prefix_p[1]' from process `\fp32_mac.$proc$fp32_mac.sv:0$943'.
+No latch inferred for signal `\fp32_mac.\prefix_p[2]' from process `\fp32_mac.$proc$fp32_mac.sv:0$943'.
+No latch inferred for signal `\fp32_mac.\prefix_p[3]' from process `\fp32_mac.$proc$fp32_mac.sv:0$943'.
+No latch inferred for signal `\fp32_mac.\prefix_p[4]' from process `\fp32_mac.$proc$fp32_mac.sv:0$943'.
+No latch inferred for signal `\fp32_mac.\prefix_g[0]' from process `\fp32_mac.$proc$fp32_mac.sv:0$943'.
+No latch inferred for signal `\fp32_mac.\prefix_g[1]' from process `\fp32_mac.$proc$fp32_mac.sv:0$943'.
+No latch inferred for signal `\fp32_mac.\prefix_g[2]' from process `\fp32_mac.$proc$fp32_mac.sv:0$943'.
+No latch inferred for signal `\fp32_mac.\prefix_g[3]' from process `\fp32_mac.$proc$fp32_mac.sv:0$943'.
+No latch inferred for signal `\fp32_mac.\prefix_g[4]' from process `\fp32_mac.$proc$fp32_mac.sv:0$943'.
+No latch inferred for signal `\fp32_mac.\left_count$func$fp32_mac.sv:182$19.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$910'.
+No latch inferred for signal `\fp32_mac.\left_count$func$fp32_mac.sv:182$51.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$910'.
+No latch inferred for signal `\fp32_mac.\left_count$func$fp32_mac.sv:182$51.mag' from process `\fp32_mac.$proc$fp32_mac.sv:0$910'.
+No latch inferred for signal `\fp32_mac.\left_count$func$fp32_mac.sv:182$51.x' from process `\fp32_mac.$proc$fp32_mac.sv:0$910'.
+No latch inferred for signal `\fp32_mac.\left_count$func$fp32_mac.sv:182$51.zeros' from process `\fp32_mac.$proc$fp32_mac.sv:0$910'.
+No latch inferred for signal `\fp32_mac.\left_count$func$fp32_mac.sv:181$18.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$877'.
+No latch inferred for signal `\fp32_mac.\left_count$func$fp32_mac.sv:181$50.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$877'.
+No latch inferred for signal `\fp32_mac.\left_count$func$fp32_mac.sv:181$50.mag' from process `\fp32_mac.$proc$fp32_mac.sv:0$877'.
+No latch inferred for signal `\fp32_mac.\left_count$func$fp32_mac.sv:181$50.x' from process `\fp32_mac.$proc$fp32_mac.sv:0$877'.
+No latch inferred for signal `\fp32_mac.\left_count$func$fp32_mac.sv:181$50.zeros' from process `\fp32_mac.$proc$fp32_mac.sv:0$877'.
+No latch inferred for signal `\fp32_mac.\is_nan$func$fp32_mac.sv:89$17.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$638'.
+No latch inferred for signal `\fp32_mac.\is_nan$func$fp32_mac.sv:89$49.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$638'.
+No latch inferred for signal `\fp32_mac.\is_nan$func$fp32_mac.sv:89$49.word' from process `\fp32_mac.$proc$fp32_mac.sv:0$638'.
+No latch inferred for signal `\fp32_mac.\is_nan$func$fp32_mac.sv:89$16.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$631'.
+No latch inferred for signal `\fp32_mac.\is_nan$func$fp32_mac.sv:89$48.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$631'.
+No latch inferred for signal `\fp32_mac.\is_nan$func$fp32_mac.sv:89$48.word' from process `\fp32_mac.$proc$fp32_mac.sv:0$631'.
+No latch inferred for signal `\fp32_mac.\is_inf$func$fp32_mac.sv:88$15.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$623'.
+No latch inferred for signal `\fp32_mac.\is_inf$func$fp32_mac.sv:88$47.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$623'.
+No latch inferred for signal `\fp32_mac.\is_inf$func$fp32_mac.sv:88$47.word' from process `\fp32_mac.$proc$fp32_mac.sv:0$623'.
+No latch inferred for signal `\fp32_mac.\is_zero$func$fp32_mac.sv:88$14.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$617'.
+No latch inferred for signal `\fp32_mac.\is_zero$func$fp32_mac.sv:88$46.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$617'.
+No latch inferred for signal `\fp32_mac.\is_zero$func$fp32_mac.sv:88$46.word' from process `\fp32_mac.$proc$fp32_mac.sv:0$617'.
+No latch inferred for signal `\fp32_mac.\is_zero$func$fp32_mac.sv:88$13.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$611'.
+No latch inferred for signal `\fp32_mac.\is_zero$func$fp32_mac.sv:88$45.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$611'.
+No latch inferred for signal `\fp32_mac.\is_zero$func$fp32_mac.sv:88$45.word' from process `\fp32_mac.$proc$fp32_mac.sv:0$611'.
+No latch inferred for signal `\fp32_mac.\is_inf$func$fp32_mac.sv:88$12.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$603'.
+No latch inferred for signal `\fp32_mac.\is_inf$func$fp32_mac.sv:88$44.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$603'.
+No latch inferred for signal `\fp32_mac.\is_inf$func$fp32_mac.sv:88$44.word' from process `\fp32_mac.$proc$fp32_mac.sv:0$603'.
+No latch inferred for signal `\fp32_mac.\is_nan$func$fp32_mac.sv:87$11.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$596'.
+No latch inferred for signal `\fp32_mac.\is_nan$func$fp32_mac.sv:87$43.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$596'.
+No latch inferred for signal `\fp32_mac.\is_nan$func$fp32_mac.sv:87$43.word' from process `\fp32_mac.$proc$fp32_mac.sv:0$596'.
+No latch inferred for signal `\fp32_mac.\is_nan$func$fp32_mac.sv:87$10.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$589'.
+No latch inferred for signal `\fp32_mac.\is_nan$func$fp32_mac.sv:87$42.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$589'.
+No latch inferred for signal `\fp32_mac.\is_nan$func$fp32_mac.sv:87$42.word' from process `\fp32_mac.$proc$fp32_mac.sv:0$589'.
+No latch inferred for signal `\fp32_mac.\is_zero$func$fp32_mac.sv:87$9.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$583'.
+No latch inferred for signal `\fp32_mac.\is_zero$func$fp32_mac.sv:87$41.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$583'.
+No latch inferred for signal `\fp32_mac.\is_zero$func$fp32_mac.sv:87$41.word' from process `\fp32_mac.$proc$fp32_mac.sv:0$583'.
+No latch inferred for signal `\fp32_mac.\is_zero$func$fp32_mac.sv:87$8.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$577'.
+No latch inferred for signal `\fp32_mac.\is_zero$func$fp32_mac.sv:87$40.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$577'.
+No latch inferred for signal `\fp32_mac.\is_zero$func$fp32_mac.sv:87$40.word' from process `\fp32_mac.$proc$fp32_mac.sv:0$577'.
+No latch inferred for signal `\fp32_mac.\is_inf$func$fp32_mac.sv:86$7.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$569'.
+No latch inferred for signal `\fp32_mac.\is_inf$func$fp32_mac.sv:86$39.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$569'.
+No latch inferred for signal `\fp32_mac.\is_inf$func$fp32_mac.sv:86$39.word' from process `\fp32_mac.$proc$fp32_mac.sv:0$569'.
+No latch inferred for signal `\fp32_mac.\is_inf$func$fp32_mac.sv:86$6.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$561'.
+No latch inferred for signal `\fp32_mac.\is_inf$func$fp32_mac.sv:86$38.$result' from process `\fp32_mac.$proc$fp32_mac.sv:0$561'.
+No latch inferred for signal `\fp32_mac.\is_inf$func$fp32_mac.sv:86$38.word' from process `\fp32_mac.$proc$fp32_mac.sv:0$561'.
+No latch inferred for signal `\fp32_mac.\alu_left' from process `\fp32_mac.$proc$fp32_mac.sv:92$80'.
+No latch inferred for signal `\fp32_mac.\alu_right' from process `\fp32_mac.$proc$fp32_mac.sv:92$80'.
+No latch inferred for signal `\fp32_mac.\subtract' from process `\fp32_mac.$proc$fp32_mac.sv:92$80'.
+
+3.9. Executing PROC_DFF pass (convert process syncs to FFs).
+Creating register for signal `\fp32_mac.\done' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5682' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\result_valid' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5687' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\result' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5692' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\exception_flags' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5697' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\state' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5702' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\accumulator' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5707' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\next_value' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5712' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\flags' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5717' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\publish' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5722' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\product_sign' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5727' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\sum_sign' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5732' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\multiplicand' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5737' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\multiply_step' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5742' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\digits' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5747' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\booth_upper' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5752' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\booth_lower' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5757' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\product_mag' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5762' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\acc_mag' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5767' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\product_exp' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5772' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\acc_exp' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5777' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\rounded' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5782' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\discarded' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5787' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\biased_exp' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5792' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\is_inf$func$fp32_mac.sv:226$20.$result' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5797' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\is_inf$func$fp32_mac.sv:226$20.word' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5802' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\is_nan$func$fp32_mac.sv:230$21.$result' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5807' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\is_nan$func$fp32_mac.sv:230$21.word' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5812' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\is_nan$func$fp32_mac.sv:230$22.$result' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5817' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\is_nan$func$fp32_mac.sv:230$22.word' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5822' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\is_nan$func$fp32_mac.sv:230$23.$result' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5827' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\is_nan$func$fp32_mac.sv:230$23.word' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5832' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\is_inf$func$fp32_mac.sv:234$24.$result' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5837' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\is_inf$func$fp32_mac.sv:234$24.word' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5842' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\is_zero$func$fp32_mac.sv:236$25.$result' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5847' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\is_zero$func$fp32_mac.sv:236$25.word' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5852' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\is_zero$func$fp32_mac.sv:236$26.$result' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5857' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\is_zero$func$fp32_mac.sv:236$26.word' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5862' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\is_zero$func$fp32_mac.sv:237$27.$result' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5867' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\is_zero$func$fp32_mac.sv:237$27.word' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5872' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\exponent$func$fp32_mac.sv:242$28.$result' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5877' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\exponent$func$fp32_mac.sv:242$28.word' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5882' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\exponent$func$fp32_mac.sv:242$29.$result' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5887' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\exponent$func$fp32_mac.sv:242$29.word' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5892' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\exponent$func$fp32_mac.sv:243$30.$result' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5897' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\exponent$func$fp32_mac.sv:243$30.word' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5902' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\significand$func$fp32_mac.sv:244$31.$result' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5907' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\significand$func$fp32_mac.sv:244$31.word' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5912' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\significand$func$fp32_mac.sv:245$32.$result' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5917' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\significand$func$fp32_mac.sv:245$32.word' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5922' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\significand$func$fp32_mac.sv:246$33.$result' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5927' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\significand$func$fp32_mac.sv:246$33.word' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5932' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\align_jam$func$fp32_mac.sv:287$34.$result' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5937' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\align_jam$func$fp32_mac.sv:287$34.mag' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5942' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\align_jam$func$fp32_mac.sv:287$34.distance' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5947' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\align_jam$func$fp32_mac.sv:287$34.x' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5952' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\align_jam$func$fp32_mac.sv:287$34.k' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5957' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\align_jam$func$fp32_mac.sv:290$35.$result' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5962' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\align_jam$func$fp32_mac.sv:290$35.mag' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5967' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\align_jam$func$fp32_mac.sv:290$35.distance' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5972' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\align_jam$func$fp32_mac.sv:290$35.x' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5977' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\align_jam$func$fp32_mac.sv:290$35.k' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5982' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\align_jam$func$fp32_mac.sv:318$36.$result' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5987' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\align_jam$func$fp32_mac.sv:318$36.mag' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5992' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\align_jam$func$fp32_mac.sv:318$36.distance' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$5997' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\align_jam$func$fp32_mac.sv:318$36.x' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$6002' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\align_jam$func$fp32_mac.sv:318$36.k' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$6007' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\shift_right_jam$func$fp32_mac.sv:321$37.$result' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$6012' with positive edge clock and positive level reset.
+Creating register for signal `\fp32_mac.\shift_right_jam$func$fp32_mac.sv:321$37.mag' using process `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+  created $adff cell `$procdff$6017' with positive edge clock and positive level reset.
+
+3.10. Executing PROC_MEMWR pass (convert process memory writes to cells).
+
+3.11. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Removing empty process `fp32_mac.$proc$fp32_mac.sv:0$943'.
+Found and cleaned up 6 empty switches in `\fp32_mac.$proc$fp32_mac.sv:0$910'.
+Removing empty process `fp32_mac.$proc$fp32_mac.sv:0$910'.
+Found and cleaned up 6 empty switches in `\fp32_mac.$proc$fp32_mac.sv:0$877'.
+Removing empty process `fp32_mac.$proc$fp32_mac.sv:0$877'.
+Removing empty process `fp32_mac.$proc$fp32_mac.sv:0$638'.
+Removing empty process `fp32_mac.$proc$fp32_mac.sv:0$631'.
+Removing empty process `fp32_mac.$proc$fp32_mac.sv:0$623'.
+Removing empty process `fp32_mac.$proc$fp32_mac.sv:0$617'.
+Removing empty process `fp32_mac.$proc$fp32_mac.sv:0$611'.
+Removing empty process `fp32_mac.$proc$fp32_mac.sv:0$603'.
+Removing empty process `fp32_mac.$proc$fp32_mac.sv:0$596'.
+Removing empty process `fp32_mac.$proc$fp32_mac.sv:0$589'.
+Removing empty process `fp32_mac.$proc$fp32_mac.sv:0$583'.
+Removing empty process `fp32_mac.$proc$fp32_mac.sv:0$577'.
+Removing empty process `fp32_mac.$proc$fp32_mac.sv:0$569'.
+Removing empty process `fp32_mac.$proc$fp32_mac.sv:0$561'.
+Found and cleaned up 39 empty switches in `\fp32_mac.$proc$fp32_mac.sv:189$89'.
+Removing empty process `fp32_mac.$proc$fp32_mac.sv:189$89'.
+Found and cleaned up 1 empty switch in `\fp32_mac.$proc$fp32_mac.sv:92$80'.
+Removing empty process `fp32_mac.$proc$fp32_mac.sv:92$80'.
+Cleaned up 52 empty switches.
+
+3.12. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+<suppressed ~393 debug messages>
+
+4. Executing OPT pass (performing simple optimizations).
+
+4.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+
+4.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_mac'.
+<suppressed ~1314 debug messages>
+Removed a total of 438 cells.
+
+4.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_mac..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+      Replacing known input bits on port B of cell $procmux$5297: { 1'0 \product_mag [51:2] $or$fp32_mac.sv:79$549_Y } -> { 2'01 \product_mag [50:2] $or$fp32_mac.sv:79$549_Y }
+      Replacing known input bits on port B of cell $procmux$5294: \product_mag -> { 2'01 \product_mag [49:0] }
+      Replacing known input bits on port A of cell $ternary$fp32_mac.sv:40$53: \digit -> { 1'0 \digit [1:0] }
+  Analyzing evaluation results.
+    dead port 1/2 on $mux $procmux$4272.
+    dead port 2/2 on $mux $procmux$4272.
+    dead port 1/2 on $mux $procmux$4258.
+    dead port 2/2 on $mux $procmux$4258.
+    dead port 1/2 on $mux $procmux$4256.
+    dead port 2/2 on $mux $procmux$4256.
+    dead port 1/2 on $mux $procmux$4242.
+    dead port 2/2 on $mux $procmux$4242.
+    dead port 1/2 on $mux $procmux$4240.
+    dead port 2/2 on $mux $procmux$4240.
+    dead port 1/2 on $mux $procmux$4226.
+    dead port 2/2 on $mux $procmux$4226.
+    dead port 1/2 on $mux $procmux$4224.
+    dead port 2/2 on $mux $procmux$4224.
+    dead port 1/2 on $mux $procmux$4210.
+    dead port 2/2 on $mux $procmux$4210.
+    dead port 1/2 on $mux $procmux$4208.
+    dead port 2/2 on $mux $procmux$4208.
+    dead port 1/2 on $mux $procmux$4206.
+    dead port 2/2 on $mux $procmux$4206.
+    dead port 1/2 on $mux $procmux$4191.
+    dead port 2/2 on $mux $procmux$4191.
+    dead port 1/2 on $mux $procmux$4189.
+    dead port 2/2 on $mux $procmux$4189.
+    dead port 1/2 on $mux $procmux$4187.
+    dead port 2/2 on $mux $procmux$4187.
+    dead port 1/2 on $mux $procmux$4172.
+    dead port 2/2 on $mux $procmux$4172.
+    dead port 1/2 on $mux $procmux$4170.
+    dead port 2/2 on $mux $procmux$4170.
+    dead port 1/2 on $mux $procmux$4168.
+    dead port 2/2 on $mux $procmux$4168.
+    dead port 1/2 on $mux $procmux$4153.
+    dead port 2/2 on $mux $procmux$4153.
+    dead port 1/2 on $mux $procmux$4151.
+    dead port 2/2 on $mux $procmux$4151.
+    dead port 1/2 on $mux $procmux$4149.
+    dead port 2/2 on $mux $procmux$4149.
+    dead port 1/2 on $mux $procmux$4134.
+    dead port 2/2 on $mux $procmux$4134.
+    dead port 1/2 on $mux $procmux$4132.
+    dead port 2/2 on $mux $procmux$4132.
+    dead port 1/2 on $mux $procmux$4130.
+    dead port 2/2 on $mux $procmux$4130.
+    dead port 1/2 on $mux $procmux$4115.
+    dead port 2/2 on $mux $procmux$4115.
+    dead port 1/2 on $mux $procmux$4113.
+    dead port 2/2 on $mux $procmux$4113.
+    dead port 1/2 on $mux $procmux$4111.
+    dead port 2/2 on $mux $procmux$4111.
+    dead port 1/2 on $mux $procmux$4096.
+    dead port 2/2 on $mux $procmux$4096.
+    dead port 1/2 on $mux $procmux$4094.
+    dead port 2/2 on $mux $procmux$4094.
+    dead port 1/2 on $mux $procmux$4092.
+    dead port 2/2 on $mux $procmux$4092.
+    dead port 1/2 on $mux $procmux$4077.
+    dead port 2/2 on $mux $procmux$4077.
+    dead port 1/2 on $mux $procmux$4075.
+    dead port 2/2 on $mux $procmux$4075.
+    dead port 1/2 on $mux $procmux$4073.
+    dead port 2/2 on $mux $procmux$4073.
+    dead port 1/2 on $mux $procmux$4058.
+    dead port 2/2 on $mux $procmux$4058.
+    dead port 1/2 on $mux $procmux$4056.
+    dead port 2/2 on $mux $procmux$4056.
+    dead port 1/2 on $mux $procmux$4054.
+    dead port 2/2 on $mux $procmux$4054.
+    dead port 1/2 on $mux $procmux$4039.
+    dead port 2/2 on $mux $procmux$4039.
+    dead port 1/2 on $mux $procmux$4037.
+    dead port 2/2 on $mux $procmux$4037.
+    dead port 1/2 on $mux $procmux$4035.
+    dead port 2/2 on $mux $procmux$4035.
+    dead port 1/2 on $mux $procmux$4020.
+    dead port 2/2 on $mux $procmux$4020.
+    dead port 1/2 on $mux $procmux$4018.
+    dead port 2/2 on $mux $procmux$4018.
+    dead port 1/2 on $mux $procmux$4016.
+    dead port 2/2 on $mux $procmux$4016.
+    dead port 1/2 on $mux $procmux$4001.
+    dead port 2/2 on $mux $procmux$4001.
+    dead port 1/2 on $mux $procmux$3999.
+    dead port 2/2 on $mux $procmux$3999.
+    dead port 1/2 on $mux $procmux$3997.
+    dead port 2/2 on $mux $procmux$3997.
+    dead port 1/2 on $mux $procmux$3982.
+    dead port 2/2 on $mux $procmux$3982.
+    dead port 1/2 on $mux $procmux$3980.
+    dead port 2/2 on $mux $procmux$3980.
+    dead port 1/2 on $mux $procmux$3978.
+    dead port 2/2 on $mux $procmux$3978.
+    dead port 1/2 on $mux $procmux$3963.
+    dead port 2/2 on $mux $procmux$3963.
+    dead port 1/2 on $mux $procmux$3961.
+    dead port 2/2 on $mux $procmux$3961.
+    dead port 1/2 on $mux $procmux$3959.
+    dead port 2/2 on $mux $procmux$3959.
+    dead port 1/2 on $mux $procmux$3944.
+    dead port 2/2 on $mux $procmux$3944.
+    dead port 1/2 on $mux $procmux$3942.
+    dead port 2/2 on $mux $procmux$3942.
+    dead port 1/2 on $mux $procmux$3940.
+    dead port 2/2 on $mux $procmux$3940.
+    dead port 1/2 on $mux $procmux$3925.
+    dead port 2/2 on $mux $procmux$3925.
+    dead port 1/2 on $mux $procmux$3923.
+    dead port 2/2 on $mux $procmux$3923.
+    dead port 1/2 on $mux $procmux$3921.
+    dead port 2/2 on $mux $procmux$3921.
+    dead port 1/2 on $mux $procmux$3906.
+    dead port 2/2 on $mux $procmux$3906.
+    dead port 1/2 on $mux $procmux$3904.
+    dead port 2/2 on $mux $procmux$3904.
+    dead port 1/2 on $mux $procmux$3902.
+    dead port 2/2 on $mux $procmux$3902.
+    dead port 1/2 on $mux $procmux$3887.
+    dead port 2/2 on $mux $procmux$3887.
+    dead port 1/2 on $mux $procmux$3885.
+    dead port 2/2 on $mux $procmux$3885.
+    dead port 1/2 on $mux $procmux$3883.
+    dead port 2/2 on $mux $procmux$3883.
+    dead port 1/2 on $mux $procmux$3868.
+    dead port 2/2 on $mux $procmux$3868.
+    dead port 1/2 on $mux $procmux$3866.
+    dead port 2/2 on $mux $procmux$3866.
+    dead port 1/2 on $mux $procmux$3864.
+    dead port 2/2 on $mux $procmux$3864.
+    dead port 1/2 on $mux $procmux$3849.
+    dead port 2/2 on $mux $procmux$3849.
+    dead port 1/2 on $mux $procmux$3847.
+    dead port 2/2 on $mux $procmux$3847.
+    dead port 1/2 on $mux $procmux$3845.
+    dead port 2/2 on $mux $procmux$3845.
+    dead port 1/2 on $mux $procmux$3830.
+    dead port 2/2 on $mux $procmux$3830.
+    dead port 1/2 on $mux $procmux$3828.
+    dead port 2/2 on $mux $procmux$3828.
+    dead port 1/2 on $mux $procmux$3826.
+    dead port 2/2 on $mux $procmux$3826.
+    dead port 1/2 on $mux $procmux$3811.
+    dead port 2/2 on $mux $procmux$3811.
+    dead port 1/2 on $mux $procmux$3809.
+    dead port 2/2 on $mux $procmux$3809.
+    dead port 1/2 on $mux $procmux$3807.
+    dead port 2/2 on $mux $procmux$3807.
+    dead port 1/2 on $mux $procmux$3792.
+    dead port 2/2 on $mux $procmux$3792.
+    dead port 1/2 on $mux $procmux$3790.
+    dead port 2/2 on $mux $procmux$3790.
+    dead port 1/2 on $mux $procmux$3788.
+    dead port 2/2 on $mux $procmux$3788.
+    dead port 1/2 on $mux $procmux$3773.
+    dead port 2/2 on $mux $procmux$3773.
+    dead port 1/2 on $mux $procmux$3771.
+    dead port 2/2 on $mux $procmux$3771.
+    dead port 1/2 on $mux $procmux$3769.
+    dead port 2/2 on $mux $procmux$3769.
+    dead port 1/2 on $mux $procmux$3754.
+    dead port 2/2 on $mux $procmux$3754.
+    dead port 1/2 on $mux $procmux$3752.
+    dead port 2/2 on $mux $procmux$3752.
+    dead port 1/2 on $mux $procmux$3750.
+    dead port 2/2 on $mux $procmux$3750.
+    dead port 1/2 on $mux $procmux$3735.
+    dead port 2/2 on $mux $procmux$3735.
+    dead port 1/2 on $mux $procmux$3733.
+    dead port 2/2 on $mux $procmux$3733.
+    dead port 1/2 on $mux $procmux$3730.
+    dead port 2/2 on $mux $procmux$3730.
+    dead port 1/2 on $mux $procmux$3727.
+    dead port 2/2 on $mux $procmux$3727.
+    dead port 1/2 on $mux $procmux$3701.
+    dead port 2/2 on $mux $procmux$3701.
+    dead port 1/2 on $mux $procmux$3699.
+    dead port 2/2 on $mux $procmux$3699.
+    dead port 1/2 on $mux $procmux$3697.
+    dead port 2/2 on $mux $procmux$3697.
+    dead port 1/2 on $mux $procmux$3694.
+    dead port 2/2 on $mux $procmux$3694.
+    dead port 1/2 on $mux $procmux$3679.
+    dead port 2/2 on $mux $procmux$3679.
+    dead port 1/2 on $mux $procmux$3677.
+    dead port 2/2 on $mux $procmux$3677.
+    dead port 1/2 on $mux $procmux$3675.
+    dead port 2/2 on $mux $procmux$3675.
+    dead port 1/2 on $mux $procmux$3672.
+    dead port 2/2 on $mux $procmux$3672.
+    dead port 1/2 on $mux $procmux$3657.
+    dead port 2/2 on $mux $procmux$3657.
+    dead port 1/2 on $mux $procmux$3655.
+    dead port 2/2 on $mux $procmux$3655.
+    dead port 1/2 on $mux $procmux$3653.
+    dead port 2/2 on $mux $procmux$3653.
+    dead port 1/2 on $mux $procmux$3650.
+    dead port 2/2 on $mux $procmux$3650.
+    dead port 1/2 on $mux $procmux$3635.
+    dead port 2/2 on $mux $procmux$3635.
+    dead port 1/2 on $mux $procmux$3633.
+    dead port 2/2 on $mux $procmux$3633.
+    dead port 1/2 on $mux $procmux$3631.
+    dead port 2/2 on $mux $procmux$3631.
+    dead port 1/2 on $mux $procmux$3628.
+    dead port 2/2 on $mux $procmux$3628.
+    dead port 1/2 on $mux $procmux$3613.
+    dead port 2/2 on $mux $procmux$3613.
+    dead port 1/2 on $mux $procmux$3611.
+    dead port 2/2 on $mux $procmux$3611.
+    dead port 1/2 on $mux $procmux$3609.
+    dead port 2/2 on $mux $procmux$3609.
+    dead port 1/2 on $mux $procmux$3606.
+    dead port 2/2 on $mux $procmux$3606.
+    dead port 1/2 on $mux $procmux$3591.
+    dead port 2/2 on $mux $procmux$3591.
+    dead port 1/2 on $mux $procmux$3589.
+    dead port 2/2 on $mux $procmux$3589.
+    dead port 1/2 on $mux $procmux$3587.
+    dead port 2/2 on $mux $procmux$3587.
+    dead port 1/2 on $mux $procmux$3584.
+    dead port 2/2 on $mux $procmux$3584.
+    dead port 1/2 on $mux $procmux$3569.
+    dead port 2/2 on $mux $procmux$3569.
+    dead port 1/2 on $mux $procmux$3567.
+    dead port 2/2 on $mux $procmux$3567.
+    dead port 1/2 on $mux $procmux$3565.
+    dead port 2/2 on $mux $procmux$3565.
+    dead port 1/2 on $mux $procmux$3562.
+    dead port 2/2 on $mux $procmux$3562.
+    dead port 1/2 on $mux $procmux$3547.
+    dead port 2/2 on $mux $procmux$3547.
+    dead port 1/2 on $mux $procmux$3545.
+    dead port 2/2 on $mux $procmux$3545.
+    dead port 1/2 on $mux $procmux$3543.
+    dead port 2/2 on $mux $procmux$3543.
+    dead port 1/2 on $mux $procmux$3540.
+    dead port 2/2 on $mux $procmux$3540.
+    dead port 1/2 on $mux $procmux$3525.
+    dead port 2/2 on $mux $procmux$3525.
+    dead port 1/2 on $mux $procmux$3523.
+    dead port 2/2 on $mux $procmux$3523.
+    dead port 1/2 on $mux $procmux$3521.
+    dead port 2/2 on $mux $procmux$3521.
+    dead port 1/2 on $mux $procmux$3518.
+    dead port 2/2 on $mux $procmux$3518.
+    dead port 1/2 on $mux $procmux$3503.
+    dead port 2/2 on $mux $procmux$3503.
+    dead port 1/2 on $mux $procmux$3501.
+    dead port 2/2 on $mux $procmux$3501.
+    dead port 1/2 on $mux $procmux$3499.
+    dead port 2/2 on $mux $procmux$3499.
+    dead port 1/2 on $mux $procmux$3496.
+    dead port 2/2 on $mux $procmux$3496.
+    dead port 1/2 on $mux $procmux$3481.
+    dead port 2/2 on $mux $procmux$3481.
+    dead port 1/2 on $mux $procmux$3479.
+    dead port 2/2 on $mux $procmux$3479.
+    dead port 1/2 on $mux $procmux$3477.
+    dead port 2/2 on $mux $procmux$3477.
+    dead port 1/2 on $mux $procmux$3474.
+    dead port 2/2 on $mux $procmux$3474.
+    dead port 1/2 on $mux $procmux$3459.
+    dead port 2/2 on $mux $procmux$3459.
+    dead port 1/2 on $mux $procmux$3457.
+    dead port 2/2 on $mux $procmux$3457.
+    dead port 1/2 on $mux $procmux$3455.
+    dead port 2/2 on $mux $procmux$3455.
+    dead port 1/2 on $mux $procmux$3452.
+    dead port 2/2 on $mux $procmux$3452.
+    dead port 1/2 on $mux $procmux$3437.
+    dead port 2/2 on $mux $procmux$3437.
+    dead port 1/2 on $mux $procmux$3435.
+    dead port 2/2 on $mux $procmux$3435.
+    dead port 1/2 on $mux $procmux$3433.
+    dead port 2/2 on $mux $procmux$3433.
+    dead port 1/2 on $mux $procmux$3430.
+    dead port 2/2 on $mux $procmux$3430.
+    dead port 1/2 on $mux $procmux$3415.
+    dead port 2/2 on $mux $procmux$3415.
+    dead port 1/2 on $mux $procmux$3413.
+    dead port 2/2 on $mux $procmux$3413.
+    dead port 1/2 on $mux $procmux$3411.
+    dead port 2/2 on $mux $procmux$3411.
+    dead port 1/2 on $mux $procmux$3408.
+    dead port 2/2 on $mux $procmux$3408.
+    dead port 1/2 on $mux $procmux$3393.
+    dead port 2/2 on $mux $procmux$3393.
+    dead port 1/2 on $mux $procmux$3391.
+    dead port 2/2 on $mux $procmux$3391.
+    dead port 1/2 on $mux $procmux$3389.
+    dead port 2/2 on $mux $procmux$3389.
+    dead port 1/2 on $mux $procmux$3386.
+    dead port 2/2 on $mux $procmux$3386.
+    dead port 1/2 on $mux $procmux$3371.
+    dead port 2/2 on $mux $procmux$3371.
+    dead port 1/2 on $mux $procmux$3369.
+    dead port 2/2 on $mux $procmux$3369.
+    dead port 1/2 on $mux $procmux$3367.
+    dead port 2/2 on $mux $procmux$3367.
+    dead port 1/2 on $mux $procmux$3364.
+    dead port 2/2 on $mux $procmux$3364.
+    dead port 1/2 on $mux $procmux$3349.
+    dead port 2/2 on $mux $procmux$3349.
+    dead port 1/2 on $mux $procmux$3347.
+    dead port 2/2 on $mux $procmux$3347.
+    dead port 1/2 on $mux $procmux$3345.
+    dead port 2/2 on $mux $procmux$3345.
+    dead port 1/2 on $mux $procmux$3342.
+    dead port 2/2 on $mux $procmux$3342.
+    dead port 1/2 on $mux $procmux$3327.
+    dead port 2/2 on $mux $procmux$3327.
+    dead port 1/2 on $mux $procmux$3325.
+    dead port 2/2 on $mux $procmux$3325.
+    dead port 1/2 on $mux $procmux$3323.
+    dead port 2/2 on $mux $procmux$3323.
+    dead port 1/2 on $mux $procmux$3320.
+    dead port 2/2 on $mux $procmux$3320.
+    dead port 1/2 on $mux $procmux$3305.
+    dead port 2/2 on $mux $procmux$3305.
+    dead port 1/2 on $mux $procmux$3303.
+    dead port 2/2 on $mux $procmux$3303.
+    dead port 1/2 on $mux $procmux$3301.
+    dead port 2/2 on $mux $procmux$3301.
+    dead port 1/2 on $mux $procmux$3298.
+    dead port 2/2 on $mux $procmux$3298.
+    dead port 1/2 on $mux $procmux$3283.
+    dead port 2/2 on $mux $procmux$3283.
+    dead port 1/2 on $mux $procmux$3281.
+    dead port 2/2 on $mux $procmux$3281.
+    dead port 1/2 on $mux $procmux$3279.
+    dead port 2/2 on $mux $procmux$3279.
+    dead port 1/2 on $mux $procmux$3276.
+    dead port 2/2 on $mux $procmux$3276.
+    dead port 1/2 on $mux $procmux$3261.
+    dead port 2/2 on $mux $procmux$3261.
+    dead port 1/2 on $mux $procmux$3259.
+    dead port 2/2 on $mux $procmux$3259.
+    dead port 1/2 on $mux $procmux$3257.
+    dead port 2/2 on $mux $procmux$3257.
+    dead port 1/2 on $mux $procmux$3254.
+    dead port 2/2 on $mux $procmux$3254.
+    dead port 1/2 on $mux $procmux$3251.
+    dead port 2/2 on $mux $procmux$3251.
+    dead port 1/2 on $mux $procmux$3236.
+    dead port 2/2 on $mux $procmux$3236.
+    dead port 1/2 on $mux $procmux$3234.
+    dead port 2/2 on $mux $procmux$3234.
+    dead port 1/2 on $mux $procmux$3232.
+    dead port 2/2 on $mux $procmux$3232.
+    dead port 1/2 on $mux $procmux$3229.
+    dead port 2/2 on $mux $procmux$3229.
+    dead port 1/2 on $mux $procmux$3226.
+    dead port 2/2 on $mux $procmux$3226.
+    dead port 1/2 on $mux $procmux$3211.
+    dead port 2/2 on $mux $procmux$3211.
+    dead port 1/2 on $mux $procmux$3209.
+    dead port 2/2 on $mux $procmux$3209.
+    dead port 1/2 on $mux $procmux$3207.
+    dead port 2/2 on $mux $procmux$3207.
+    dead port 1/2 on $mux $procmux$3204.
+    dead port 2/2 on $mux $procmux$3204.
+    dead port 1/2 on $mux $procmux$3201.
+    dead port 2/2 on $mux $procmux$3201.
+    dead port 1/2 on $mux $procmux$3186.
+    dead port 2/2 on $mux $procmux$3186.
+    dead port 1/2 on $mux $procmux$3184.
+    dead port 2/2 on $mux $procmux$3184.
+    dead port 1/2 on $mux $procmux$3182.
+    dead port 2/2 on $mux $procmux$3182.
+    dead port 1/2 on $mux $procmux$3179.
+    dead port 2/2 on $mux $procmux$3179.
+    dead port 1/2 on $mux $procmux$3176.
+    dead port 2/2 on $mux $procmux$3176.
+    dead port 1/2 on $mux $procmux$3161.
+    dead port 2/2 on $mux $procmux$3161.
+    dead port 1/2 on $mux $procmux$3159.
+    dead port 2/2 on $mux $procmux$3159.
+    dead port 1/2 on $mux $procmux$3157.
+    dead port 2/2 on $mux $procmux$3157.
+    dead port 1/2 on $mux $procmux$3154.
+    dead port 2/2 on $mux $procmux$3154.
+    dead port 1/2 on $mux $procmux$3151.
+    dead port 2/2 on $mux $procmux$3151.
+    dead port 1/2 on $mux $procmux$3136.
+    dead port 2/2 on $mux $procmux$3136.
+    dead port 1/2 on $mux $procmux$3134.
+    dead port 2/2 on $mux $procmux$3134.
+    dead port 1/2 on $mux $procmux$3132.
+    dead port 2/2 on $mux $procmux$3132.
+    dead port 1/2 on $mux $procmux$3129.
+    dead port 2/2 on $mux $procmux$3129.
+    dead port 1/2 on $mux $procmux$3126.
+    dead port 2/2 on $mux $procmux$3126.
+    dead port 1/2 on $mux $procmux$3111.
+    dead port 2/2 on $mux $procmux$3111.
+    dead port 1/2 on $mux $procmux$3109.
+    dead port 2/2 on $mux $procmux$3109.
+    dead port 1/2 on $mux $procmux$3107.
+    dead port 2/2 on $mux $procmux$3107.
+    dead port 1/2 on $mux $procmux$3104.
+    dead port 2/2 on $mux $procmux$3104.
+    dead port 1/2 on $mux $procmux$3101.
+    dead port 2/2 on $mux $procmux$3101.
+    dead port 1/2 on $mux $procmux$3086.
+    dead port 2/2 on $mux $procmux$3086.
+    dead port 1/2 on $mux $procmux$3084.
+    dead port 2/2 on $mux $procmux$3084.
+    dead port 1/2 on $mux $procmux$3082.
+    dead port 2/2 on $mux $procmux$3082.
+    dead port 1/2 on $mux $procmux$3079.
+    dead port 2/2 on $mux $procmux$3079.
+    dead port 1/2 on $mux $procmux$3076.
+    dead port 2/2 on $mux $procmux$3076.
+    dead port 1/2 on $mux $procmux$3061.
+    dead port 2/2 on $mux $procmux$3061.
+    dead port 1/2 on $mux $procmux$3059.
+    dead port 2/2 on $mux $procmux$3059.
+    dead port 1/2 on $mux $procmux$3057.
+    dead port 2/2 on $mux $procmux$3057.
+    dead port 1/2 on $mux $procmux$3054.
+    dead port 2/2 on $mux $procmux$3054.
+    dead port 1/2 on $mux $procmux$3051.
+    dead port 2/2 on $mux $procmux$3051.
+    dead port 1/2 on $mux $procmux$3036.
+    dead port 2/2 on $mux $procmux$3036.
+    dead port 1/2 on $mux $procmux$3034.
+    dead port 2/2 on $mux $procmux$3034.
+    dead port 1/2 on $mux $procmux$3032.
+    dead port 2/2 on $mux $procmux$3032.
+    dead port 1/2 on $mux $procmux$3029.
+    dead port 2/2 on $mux $procmux$3029.
+    dead port 1/2 on $mux $procmux$3026.
+    dead port 2/2 on $mux $procmux$3026.
+    dead port 1/2 on $mux $procmux$3011.
+    dead port 2/2 on $mux $procmux$3011.
+    dead port 1/2 on $mux $procmux$3009.
+    dead port 2/2 on $mux $procmux$3009.
+    dead port 1/2 on $mux $procmux$3007.
+    dead port 2/2 on $mux $procmux$3007.
+    dead port 1/2 on $mux $procmux$3004.
+    dead port 2/2 on $mux $procmux$3004.
+    dead port 1/2 on $mux $procmux$3001.
+    dead port 2/2 on $mux $procmux$3001.
+    dead port 1/2 on $mux $procmux$2986.
+    dead port 2/2 on $mux $procmux$2986.
+    dead port 1/2 on $mux $procmux$2984.
+    dead port 2/2 on $mux $procmux$2984.
+    dead port 1/2 on $mux $procmux$2982.
+    dead port 2/2 on $mux $procmux$2982.
+    dead port 1/2 on $mux $procmux$2979.
+    dead port 2/2 on $mux $procmux$2979.
+    dead port 1/2 on $mux $procmux$2976.
+    dead port 2/2 on $mux $procmux$2976.
+    dead port 1/2 on $mux $procmux$2961.
+    dead port 2/2 on $mux $procmux$2961.
+    dead port 1/2 on $mux $procmux$2959.
+    dead port 2/2 on $mux $procmux$2959.
+    dead port 1/2 on $mux $procmux$2957.
+    dead port 2/2 on $mux $procmux$2957.
+    dead port 1/2 on $mux $procmux$2954.
+    dead port 2/2 on $mux $procmux$2954.
+    dead port 1/2 on $mux $procmux$2951.
+    dead port 2/2 on $mux $procmux$2951.
+    dead port 1/2 on $mux $procmux$2936.
+    dead port 2/2 on $mux $procmux$2936.
+    dead port 1/2 on $mux $procmux$2934.
+    dead port 2/2 on $mux $procmux$2934.
+    dead port 1/2 on $mux $procmux$2932.
+    dead port 2/2 on $mux $procmux$2932.
+    dead port 1/2 on $mux $procmux$2929.
+    dead port 2/2 on $mux $procmux$2929.
+    dead port 1/2 on $mux $procmux$2926.
+    dead port 2/2 on $mux $procmux$2926.
+    dead port 1/2 on $mux $procmux$2911.
+    dead port 2/2 on $mux $procmux$2911.
+    dead port 1/2 on $mux $procmux$2909.
+    dead port 2/2 on $mux $procmux$2909.
+    dead port 1/2 on $mux $procmux$2907.
+    dead port 2/2 on $mux $procmux$2907.
+    dead port 1/2 on $mux $procmux$2904.
+    dead port 2/2 on $mux $procmux$2904.
+    dead port 1/2 on $mux $procmux$2901.
+    dead port 2/2 on $mux $procmux$2901.
+    dead port 1/2 on $mux $procmux$2886.
+    dead port 2/2 on $mux $procmux$2886.
+    dead port 1/2 on $mux $procmux$2884.
+    dead port 2/2 on $mux $procmux$2884.
+    dead port 1/2 on $mux $procmux$2882.
+    dead port 2/2 on $mux $procmux$2882.
+    dead port 1/2 on $mux $procmux$2879.
+    dead port 2/2 on $mux $procmux$2879.
+    dead port 1/2 on $mux $procmux$2876.
+    dead port 2/2 on $mux $procmux$2876.
+    dead port 1/2 on $mux $procmux$2861.
+    dead port 2/2 on $mux $procmux$2861.
+    dead port 1/2 on $mux $procmux$2859.
+    dead port 2/2 on $mux $procmux$2859.
+    dead port 1/2 on $mux $procmux$2857.
+    dead port 2/2 on $mux $procmux$2857.
+    dead port 1/2 on $mux $procmux$2854.
+    dead port 2/2 on $mux $procmux$2854.
+    dead port 1/2 on $mux $procmux$2851.
+    dead port 2/2 on $mux $procmux$2851.
+    dead port 1/2 on $mux $procmux$2836.
+    dead port 2/2 on $mux $procmux$2836.
+    dead port 1/2 on $mux $procmux$2834.
+    dead port 2/2 on $mux $procmux$2834.
+    dead port 1/2 on $mux $procmux$2832.
+    dead port 2/2 on $mux $procmux$2832.
+    dead port 1/2 on $mux $procmux$2829.
+    dead port 2/2 on $mux $procmux$2829.
+    dead port 1/2 on $mux $procmux$2826.
+    dead port 2/2 on $mux $procmux$2826.
+    dead port 1/2 on $mux $procmux$2811.
+    dead port 2/2 on $mux $procmux$2811.
+    dead port 1/2 on $mux $procmux$2809.
+    dead port 2/2 on $mux $procmux$2809.
+    dead port 1/2 on $mux $procmux$2807.
+    dead port 2/2 on $mux $procmux$2807.
+    dead port 1/2 on $mux $procmux$2804.
+    dead port 2/2 on $mux $procmux$2804.
+    dead port 1/2 on $mux $procmux$2801.
+    dead port 2/2 on $mux $procmux$2801.
+    dead port 1/2 on $mux $procmux$2786.
+    dead port 2/2 on $mux $procmux$2786.
+    dead port 1/2 on $mux $procmux$2784.
+    dead port 2/2 on $mux $procmux$2784.
+    dead port 1/2 on $mux $procmux$2782.
+    dead port 2/2 on $mux $procmux$2782.
+    dead port 1/2 on $mux $procmux$2779.
+    dead port 2/2 on $mux $procmux$2779.
+    dead port 1/2 on $mux $procmux$2776.
+    dead port 2/2 on $mux $procmux$2776.
+    dead port 1/2 on $mux $procmux$2761.
+    dead port 2/2 on $mux $procmux$2761.
+    dead port 1/2 on $mux $procmux$2759.
+    dead port 2/2 on $mux $procmux$2759.
+    dead port 1/2 on $mux $procmux$2757.
+    dead port 2/2 on $mux $procmux$2757.
+    dead port 1/2 on $mux $procmux$2754.
+    dead port 2/2 on $mux $procmux$2754.
+    dead port 1/2 on $mux $procmux$2751.
+    dead port 2/2 on $mux $procmux$2751.
+    dead port 1/2 on $mux $procmux$2748.
+    dead port 2/2 on $mux $procmux$2748.
+    dead port 1/2 on $mux $procmux$2733.
+    dead port 2/2 on $mux $procmux$2733.
+    dead port 1/2 on $mux $procmux$2731.
+    dead port 2/2 on $mux $procmux$2731.
+    dead port 1/2 on $mux $procmux$2729.
+    dead port 2/2 on $mux $procmux$2729.
+    dead port 1/2 on $mux $procmux$2726.
+    dead port 2/2 on $mux $procmux$2726.
+    dead port 1/2 on $mux $procmux$2723.
+    dead port 2/2 on $mux $procmux$2723.
+    dead port 1/2 on $mux $procmux$2720.
+    dead port 2/2 on $mux $procmux$2720.
+    dead port 1/2 on $mux $procmux$2705.
+    dead port 2/2 on $mux $procmux$2705.
+    dead port 1/2 on $mux $procmux$2703.
+    dead port 2/2 on $mux $procmux$2703.
+    dead port 1/2 on $mux $procmux$2701.
+    dead port 2/2 on $mux $procmux$2701.
+    dead port 1/2 on $mux $procmux$2698.
+    dead port 2/2 on $mux $procmux$2698.
+    dead port 1/2 on $mux $procmux$2695.
+    dead port 2/2 on $mux $procmux$2695.
+    dead port 1/2 on $mux $procmux$2692.
+    dead port 2/2 on $mux $procmux$2692.
+    dead port 1/2 on $mux $procmux$2677.
+    dead port 2/2 on $mux $procmux$2677.
+    dead port 1/2 on $mux $procmux$2675.
+    dead port 2/2 on $mux $procmux$2675.
+    dead port 1/2 on $mux $procmux$2673.
+    dead port 2/2 on $mux $procmux$2673.
+    dead port 1/2 on $mux $procmux$2670.
+    dead port 2/2 on $mux $procmux$2670.
+    dead port 1/2 on $mux $procmux$2667.
+    dead port 2/2 on $mux $procmux$2667.
+    dead port 1/2 on $mux $procmux$2664.
+    dead port 2/2 on $mux $procmux$2664.
+    dead port 1/2 on $mux $procmux$2649.
+    dead port 2/2 on $mux $procmux$2649.
+    dead port 1/2 on $mux $procmux$2647.
+    dead port 2/2 on $mux $procmux$2647.
+    dead port 1/2 on $mux $procmux$2645.
+    dead port 2/2 on $mux $procmux$2645.
+    dead port 1/2 on $mux $procmux$2642.
+    dead port 2/2 on $mux $procmux$2642.
+    dead port 1/2 on $mux $procmux$2639.
+    dead port 2/2 on $mux $procmux$2639.
+    dead port 1/2 on $mux $procmux$2636.
+    dead port 2/2 on $mux $procmux$2636.
+    dead port 1/2 on $mux $procmux$2621.
+    dead port 2/2 on $mux $procmux$2621.
+    dead port 1/2 on $mux $procmux$2619.
+    dead port 2/2 on $mux $procmux$2619.
+    dead port 1/2 on $mux $procmux$2617.
+    dead port 2/2 on $mux $procmux$2617.
+    dead port 1/2 on $mux $procmux$2614.
+    dead port 2/2 on $mux $procmux$2614.
+    dead port 1/2 on $mux $procmux$2611.
+    dead port 2/2 on $mux $procmux$2611.
+    dead port 1/2 on $mux $procmux$2608.
+    dead port 2/2 on $mux $procmux$2608.
+    dead port 1/2 on $mux $procmux$2593.
+    dead port 2/2 on $mux $procmux$2593.
+    dead port 1/2 on $mux $procmux$2591.
+    dead port 2/2 on $mux $procmux$2591.
+    dead port 1/2 on $mux $procmux$2589.
+    dead port 2/2 on $mux $procmux$2589.
+    dead port 1/2 on $mux $procmux$2586.
+    dead port 2/2 on $mux $procmux$2586.
+    dead port 1/2 on $mux $procmux$2583.
+    dead port 2/2 on $mux $procmux$2583.
+    dead port 1/2 on $mux $procmux$2580.
+    dead port 2/2 on $mux $procmux$2580.
+    dead port 1/2 on $mux $procmux$2565.
+    dead port 2/2 on $mux $procmux$2565.
+    dead port 1/2 on $mux $procmux$2563.
+    dead port 2/2 on $mux $procmux$2563.
+    dead port 1/2 on $mux $procmux$2561.
+    dead port 2/2 on $mux $procmux$2561.
+    dead port 1/2 on $mux $procmux$2558.
+    dead port 2/2 on $mux $procmux$2558.
+    dead port 1/2 on $mux $procmux$2555.
+    dead port 2/2 on $mux $procmux$2555.
+    dead port 1/2 on $mux $procmux$2552.
+    dead port 2/2 on $mux $procmux$2552.
+    dead port 1/2 on $mux $procmux$2537.
+    dead port 2/2 on $mux $procmux$2537.
+    dead port 1/2 on $mux $procmux$2535.
+    dead port 2/2 on $mux $procmux$2535.
+    dead port 1/2 on $mux $procmux$2533.
+    dead port 2/2 on $mux $procmux$2533.
+    dead port 1/2 on $mux $procmux$2530.
+    dead port 2/2 on $mux $procmux$2530.
+    dead port 1/2 on $mux $procmux$2527.
+    dead port 2/2 on $mux $procmux$2527.
+    dead port 1/2 on $mux $procmux$2524.
+    dead port 2/2 on $mux $procmux$2524.
+    dead port 1/2 on $mux $procmux$2509.
+    dead port 2/2 on $mux $procmux$2509.
+    dead port 1/2 on $mux $procmux$2507.
+    dead port 2/2 on $mux $procmux$2507.
+    dead port 1/2 on $mux $procmux$2505.
+    dead port 2/2 on $mux $procmux$2505.
+    dead port 1/2 on $mux $procmux$2502.
+    dead port 2/2 on $mux $procmux$2502.
+    dead port 1/2 on $mux $procmux$2499.
+    dead port 2/2 on $mux $procmux$2499.
+    dead port 1/2 on $mux $procmux$2496.
+    dead port 2/2 on $mux $procmux$2496.
+    dead port 1/2 on $mux $procmux$2481.
+    dead port 2/2 on $mux $procmux$2481.
+    dead port 1/2 on $mux $procmux$2479.
+    dead port 2/2 on $mux $procmux$2479.
+    dead port 1/2 on $mux $procmux$2477.
+    dead port 2/2 on $mux $procmux$2477.
+    dead port 1/2 on $mux $procmux$2474.
+    dead port 2/2 on $mux $procmux$2474.
+    dead port 1/2 on $mux $procmux$2471.
+    dead port 2/2 on $mux $procmux$2471.
+    dead port 1/2 on $mux $procmux$2468.
+    dead port 2/2 on $mux $procmux$2468.
+    dead port 1/2 on $mux $procmux$2453.
+    dead port 2/2 on $mux $procmux$2453.
+    dead port 1/2 on $mux $procmux$2451.
+    dead port 2/2 on $mux $procmux$2451.
+    dead port 1/2 on $mux $procmux$2449.
+    dead port 2/2 on $mux $procmux$2449.
+    dead port 1/2 on $mux $procmux$2446.
+    dead port 2/2 on $mux $procmux$2446.
+    dead port 1/2 on $mux $procmux$2443.
+    dead port 2/2 on $mux $procmux$2443.
+    dead port 1/2 on $mux $procmux$2440.
+    dead port 2/2 on $mux $procmux$2440.
+    dead port 1/2 on $mux $procmux$2425.
+    dead port 2/2 on $mux $procmux$2425.
+    dead port 1/2 on $mux $procmux$2423.
+    dead port 2/2 on $mux $procmux$2423.
+    dead port 1/2 on $mux $procmux$2421.
+    dead port 2/2 on $mux $procmux$2421.
+    dead port 1/2 on $mux $procmux$2418.
+    dead port 2/2 on $mux $procmux$2418.
+    dead port 1/2 on $mux $procmux$2415.
+    dead port 2/2 on $mux $procmux$2415.
+    dead port 1/2 on $mux $procmux$2412.
+    dead port 2/2 on $mux $procmux$2412.
+    dead port 1/2 on $mux $procmux$2397.
+    dead port 2/2 on $mux $procmux$2397.
+    dead port 1/2 on $mux $procmux$2395.
+    dead port 2/2 on $mux $procmux$2395.
+    dead port 1/2 on $mux $procmux$2393.
+    dead port 2/2 on $mux $procmux$2393.
+    dead port 1/2 on $mux $procmux$2390.
+    dead port 2/2 on $mux $procmux$2390.
+    dead port 1/2 on $mux $procmux$2387.
+    dead port 2/2 on $mux $procmux$2387.
+    dead port 1/2 on $mux $procmux$2384.
+    dead port 2/2 on $mux $procmux$2384.
+    dead port 1/2 on $mux $procmux$2369.
+    dead port 2/2 on $mux $procmux$2369.
+    dead port 1/2 on $mux $procmux$2367.
+    dead port 2/2 on $mux $procmux$2367.
+    dead port 1/2 on $mux $procmux$2365.
+    dead port 2/2 on $mux $procmux$2365.
+    dead port 1/2 on $mux $procmux$2362.
+    dead port 2/2 on $mux $procmux$2362.
+    dead port 1/2 on $mux $procmux$2359.
+    dead port 2/2 on $mux $procmux$2359.
+    dead port 1/2 on $mux $procmux$2356.
+    dead port 2/2 on $mux $procmux$2356.
+    dead port 1/2 on $mux $procmux$2341.
+    dead port 2/2 on $mux $procmux$2341.
+    dead port 1/2 on $mux $procmux$2339.
+    dead port 2/2 on $mux $procmux$2339.
+    dead port 1/2 on $mux $procmux$2337.
+    dead port 2/2 on $mux $procmux$2337.
+    dead port 1/2 on $mux $procmux$2334.
+    dead port 2/2 on $mux $procmux$2334.
+    dead port 1/2 on $mux $procmux$2331.
+    dead port 2/2 on $mux $procmux$2331.
+    dead port 1/2 on $mux $procmux$2328.
+    dead port 2/2 on $mux $procmux$2328.
+    dead port 1/2 on $mux $procmux$2313.
+    dead port 2/2 on $mux $procmux$2313.
+    dead port 1/2 on $mux $procmux$2311.
+    dead port 2/2 on $mux $procmux$2311.
+    dead port 1/2 on $mux $procmux$2309.
+    dead port 2/2 on $mux $procmux$2309.
+    dead port 1/2 on $mux $procmux$2306.
+    dead port 2/2 on $mux $procmux$2306.
+    dead port 1/2 on $mux $procmux$2303.
+    dead port 2/2 on $mux $procmux$2303.
+    dead port 1/2 on $mux $procmux$2300.
+    dead port 2/2 on $mux $procmux$2300.
+    dead port 1/2 on $mux $procmux$2285.
+    dead port 2/2 on $mux $procmux$2285.
+    dead port 1/2 on $mux $procmux$2283.
+    dead port 2/2 on $mux $procmux$2283.
+    dead port 1/2 on $mux $procmux$2281.
+    dead port 2/2 on $mux $procmux$2281.
+    dead port 1/2 on $mux $procmux$2278.
+    dead port 2/2 on $mux $procmux$2278.
+    dead port 1/2 on $mux $procmux$2275.
+    dead port 2/2 on $mux $procmux$2275.
+    dead port 1/2 on $mux $procmux$2272.
+    dead port 2/2 on $mux $procmux$2272.
+    dead port 1/2 on $mux $procmux$2257.
+    dead port 2/2 on $mux $procmux$2257.
+    dead port 1/2 on $mux $procmux$2255.
+    dead port 2/2 on $mux $procmux$2255.
+    dead port 1/2 on $mux $procmux$2253.
+    dead port 2/2 on $mux $procmux$2253.
+    dead port 1/2 on $mux $procmux$2250.
+    dead port 2/2 on $mux $procmux$2250.
+    dead port 1/2 on $mux $procmux$2247.
+    dead port 2/2 on $mux $procmux$2247.
+    dead port 1/2 on $mux $procmux$2244.
+    dead port 2/2 on $mux $procmux$2244.
+    dead port 1/2 on $mux $procmux$2241.
+    dead port 2/2 on $mux $procmux$2241.
+    dead port 1/2 on $mux $procmux$2226.
+    dead port 2/2 on $mux $procmux$2226.
+    dead port 1/2 on $mux $procmux$2224.
+    dead port 2/2 on $mux $procmux$2224.
+    dead port 1/2 on $mux $procmux$2222.
+    dead port 2/2 on $mux $procmux$2222.
+    dead port 1/2 on $mux $procmux$2219.
+    dead port 2/2 on $mux $procmux$2219.
+    dead port 1/2 on $mux $procmux$2216.
+    dead port 2/2 on $mux $procmux$2216.
+    dead port 1/2 on $mux $procmux$2213.
+    dead port 2/2 on $mux $procmux$2213.
+    dead port 1/2 on $mux $procmux$2210.
+    dead port 2/2 on $mux $procmux$2210.
+    dead port 1/2 on $mux $procmux$2195.
+    dead port 2/2 on $mux $procmux$2195.
+    dead port 1/2 on $mux $procmux$2193.
+    dead port 2/2 on $mux $procmux$2193.
+    dead port 1/2 on $mux $procmux$2191.
+    dead port 2/2 on $mux $procmux$2191.
+    dead port 1/2 on $mux $procmux$2188.
+    dead port 2/2 on $mux $procmux$2188.
+    dead port 1/2 on $mux $procmux$2185.
+    dead port 2/2 on $mux $procmux$2185.
+    dead port 1/2 on $mux $procmux$2182.
+    dead port 2/2 on $mux $procmux$2182.
+    dead port 1/2 on $mux $procmux$2179.
+    dead port 2/2 on $mux $procmux$2179.
+    dead port 1/2 on $mux $procmux$2164.
+    dead port 2/2 on $mux $procmux$2164.
+    dead port 1/2 on $mux $procmux$2162.
+    dead port 2/2 on $mux $procmux$2162.
+    dead port 1/2 on $mux $procmux$2160.
+    dead port 2/2 on $mux $procmux$2160.
+    dead port 1/2 on $mux $procmux$2157.
+    dead port 2/2 on $mux $procmux$2157.
+    dead port 1/2 on $mux $procmux$2154.
+    dead port 2/2 on $mux $procmux$2154.
+    dead port 1/2 on $mux $procmux$2151.
+    dead port 2/2 on $mux $procmux$2151.
+    dead port 1/2 on $mux $procmux$2148.
+    dead port 2/2 on $mux $procmux$2148.
+    dead port 1/2 on $mux $procmux$2133.
+    dead port 2/2 on $mux $procmux$2133.
+    dead port 1/2 on $mux $procmux$2131.
+    dead port 2/2 on $mux $procmux$2131.
+    dead port 1/2 on $mux $procmux$2129.
+    dead port 2/2 on $mux $procmux$2129.
+    dead port 1/2 on $mux $procmux$2126.
+    dead port 2/2 on $mux $procmux$2126.
+    dead port 1/2 on $mux $procmux$2123.
+    dead port 2/2 on $mux $procmux$2123.
+    dead port 1/2 on $mux $procmux$2120.
+    dead port 2/2 on $mux $procmux$2120.
+    dead port 1/2 on $mux $procmux$2117.
+    dead port 2/2 on $mux $procmux$2117.
+    dead port 1/2 on $mux $procmux$2102.
+    dead port 2/2 on $mux $procmux$2102.
+    dead port 1/2 on $mux $procmux$2100.
+    dead port 2/2 on $mux $procmux$2100.
+    dead port 1/2 on $mux $procmux$2098.
+    dead port 2/2 on $mux $procmux$2098.
+    dead port 1/2 on $mux $procmux$2095.
+    dead port 2/2 on $mux $procmux$2095.
+    dead port 1/2 on $mux $procmux$2092.
+    dead port 2/2 on $mux $procmux$2092.
+    dead port 1/2 on $mux $procmux$2089.
+    dead port 2/2 on $mux $procmux$2089.
+    dead port 1/2 on $mux $procmux$2086.
+    dead port 2/2 on $mux $procmux$2086.
+    dead port 1/2 on $mux $procmux$2071.
+    dead port 2/2 on $mux $procmux$2071.
+    dead port 1/2 on $mux $procmux$2069.
+    dead port 2/2 on $mux $procmux$2069.
+    dead port 1/2 on $mux $procmux$2067.
+    dead port 2/2 on $mux $procmux$2067.
+    dead port 1/2 on $mux $procmux$2064.
+    dead port 2/2 on $mux $procmux$2064.
+    dead port 1/2 on $mux $procmux$2061.
+    dead port 2/2 on $mux $procmux$2061.
+    dead port 1/2 on $mux $procmux$2058.
+    dead port 2/2 on $mux $procmux$2058.
+    dead port 1/2 on $mux $procmux$2055.
+    dead port 2/2 on $mux $procmux$2055.
+    dead port 1/2 on $mux $procmux$2040.
+    dead port 2/2 on $mux $procmux$2040.
+    dead port 1/2 on $mux $procmux$2038.
+    dead port 2/2 on $mux $procmux$2038.
+    dead port 1/2 on $mux $procmux$2036.
+    dead port 2/2 on $mux $procmux$2036.
+    dead port 1/2 on $mux $procmux$2033.
+    dead port 2/2 on $mux $procmux$2033.
+    dead port 1/2 on $mux $procmux$2030.
+    dead port 2/2 on $mux $procmux$2030.
+    dead port 1/2 on $mux $procmux$2027.
+    dead port 2/2 on $mux $procmux$2027.
+    dead port 1/2 on $mux $procmux$2024.
+    dead port 2/2 on $mux $procmux$2024.
+    dead port 1/2 on $mux $procmux$2009.
+    dead port 2/2 on $mux $procmux$2009.
+    dead port 1/2 on $mux $procmux$2007.
+    dead port 2/2 on $mux $procmux$2007.
+    dead port 1/2 on $mux $procmux$2005.
+    dead port 2/2 on $mux $procmux$2005.
+    dead port 1/2 on $mux $procmux$2002.
+    dead port 2/2 on $mux $procmux$2002.
+    dead port 1/2 on $mux $procmux$1999.
+    dead port 2/2 on $mux $procmux$1999.
+    dead port 1/2 on $mux $procmux$1996.
+    dead port 2/2 on $mux $procmux$1996.
+    dead port 1/2 on $mux $procmux$1993.
+    dead port 2/2 on $mux $procmux$1993.
+    dead port 1/2 on $mux $procmux$1978.
+    dead port 2/2 on $mux $procmux$1978.
+    dead port 1/2 on $mux $procmux$1976.
+    dead port 2/2 on $mux $procmux$1976.
+    dead port 1/2 on $mux $procmux$1974.
+    dead port 2/2 on $mux $procmux$1974.
+    dead port 1/2 on $mux $procmux$1971.
+    dead port 2/2 on $mux $procmux$1971.
+    dead port 1/2 on $mux $procmux$1968.
+    dead port 2/2 on $mux $procmux$1968.
+    dead port 1/2 on $mux $procmux$1965.
+    dead port 2/2 on $mux $procmux$1965.
+    dead port 1/2 on $mux $procmux$1962.
+    dead port 2/2 on $mux $procmux$1962.
+    dead port 1/2 on $mux $procmux$1947.
+    dead port 2/2 on $mux $procmux$1947.
+    dead port 1/2 on $mux $procmux$5154.
+    dead port 2/2 on $mux $procmux$5154.
+    dead port 1/2 on $mux $procmux$1945.
+    dead port 2/2 on $mux $procmux$1945.
+    dead port 1/2 on $mux $procmux$1943.
+    dead port 2/2 on $mux $procmux$1943.
+    dead port 1/2 on $mux $procmux$1940.
+    dead port 2/2 on $mux $procmux$1940.
+    dead port 1/2 on $mux $procmux$1937.
+    dead port 2/2 on $mux $procmux$1937.
+    dead port 1/2 on $mux $procmux$1934.
+    dead port 2/2 on $mux $procmux$1934.
+    dead port 1/2 on $mux $procmux$1931.
+    dead port 2/2 on $mux $procmux$1931.
+    dead port 1/2 on $mux $procmux$1916.
+    dead port 2/2 on $mux $procmux$1916.
+    dead port 1/2 on $mux $procmux$1914.
+    dead port 2/2 on $mux $procmux$1914.
+    dead port 1/2 on $mux $procmux$1912.
+    dead port 2/2 on $mux $procmux$1912.
+    dead port 1/2 on $mux $procmux$1909.
+    dead port 2/2 on $mux $procmux$1909.
+    dead port 1/2 on $mux $procmux$1906.
+    dead port 2/2 on $mux $procmux$1906.
+    dead port 1/2 on $mux $procmux$1903.
+    dead port 2/2 on $mux $procmux$1903.
+    dead port 1/2 on $mux $procmux$1900.
+    dead port 2/2 on $mux $procmux$1900.
+    dead port 1/2 on $mux $procmux$1885.
+    dead port 2/2 on $mux $procmux$1885.
+    dead port 1/2 on $mux $procmux$5145.
+    dead port 2/2 on $mux $procmux$5145.
+    dead port 1/2 on $mux $procmux$1883.
+    dead port 2/2 on $mux $procmux$1883.
+    dead port 1/2 on $mux $procmux$1881.
+    dead port 2/2 on $mux $procmux$1881.
+    dead port 1/2 on $mux $procmux$1878.
+    dead port 2/2 on $mux $procmux$1878.
+    dead port 1/2 on $mux $procmux$1875.
+    dead port 2/2 on $mux $procmux$1875.
+    dead port 1/2 on $mux $procmux$1872.
+    dead port 2/2 on $mux $procmux$1872.
+    dead port 1/2 on $mux $procmux$1869.
+    dead port 2/2 on $mux $procmux$1869.
+    dead port 1/2 on $mux $procmux$1854.
+    dead port 2/2 on $mux $procmux$1854.
+    dead port 1/2 on $mux $procmux$1852.
+    dead port 2/2 on $mux $procmux$1852.
+    dead port 1/2 on $mux $procmux$1850.
+    dead port 2/2 on $mux $procmux$1850.
+    dead port 1/2 on $mux $procmux$1847.
+    dead port 2/2 on $mux $procmux$1847.
+    dead port 1/2 on $mux $procmux$1844.
+    dead port 2/2 on $mux $procmux$1844.
+    dead port 1/2 on $mux $procmux$1841.
+    dead port 2/2 on $mux $procmux$1841.
+    dead port 1/2 on $mux $procmux$1838.
+    dead port 2/2 on $mux $procmux$1838.
+    dead port 1/2 on $mux $procmux$1823.
+    dead port 2/2 on $mux $procmux$1823.
+    dead port 1/2 on $mux $procmux$5136.
+    dead port 2/2 on $mux $procmux$5136.
+    dead port 1/2 on $mux $procmux$1821.
+    dead port 2/2 on $mux $procmux$1821.
+    dead port 1/2 on $mux $procmux$1811.
+    dead port 2/2 on $mux $procmux$1811.
+    dead port 1/2 on $mux $procmux$1809.
+    dead port 2/2 on $mux $procmux$1809.
+    dead port 1/2 on $mux $procmux$1799.
+    dead port 2/2 on $mux $procmux$1799.
+    dead port 1/2 on $mux $procmux$5127.
+    dead port 2/2 on $mux $procmux$5127.
+    dead port 1/2 on $mux $procmux$1797.
+    dead port 2/2 on $mux $procmux$1797.
+    dead port 1/2 on $mux $procmux$1787.
+    dead port 2/2 on $mux $procmux$1787.
+    dead port 1/2 on $mux $procmux$1785.
+    dead port 2/2 on $mux $procmux$1785.
+    dead port 1/2 on $mux $procmux$1775.
+    dead port 2/2 on $mux $procmux$1775.
+    dead port 1/2 on $mux $procmux$5118.
+    dead port 2/2 on $mux $procmux$5118.
+    dead port 1/2 on $mux $procmux$1773.
+    dead port 2/2 on $mux $procmux$1773.
+    dead port 1/2 on $mux $procmux$1763.
+    dead port 2/2 on $mux $procmux$1763.
+    dead port 1/2 on $mux $procmux$1761.
+    dead port 2/2 on $mux $procmux$1761.
+    dead port 1/2 on $mux $procmux$1751.
+    dead port 2/2 on $mux $procmux$1751.
+    dead port 1/2 on $mux $procmux$5109.
+    dead port 2/2 on $mux $procmux$5109.
+    dead port 1/2 on $mux $procmux$1749.
+    dead port 2/2 on $mux $procmux$1749.
+    dead port 1/2 on $mux $procmux$1739.
+    dead port 2/2 on $mux $procmux$1739.
+    dead port 1/2 on $mux $procmux$1737.
+    dead port 2/2 on $mux $procmux$1737.
+    dead port 1/2 on $mux $procmux$1727.
+    dead port 2/2 on $mux $procmux$1727.
+    dead port 1/2 on $mux $procmux$5100.
+    dead port 2/2 on $mux $procmux$5100.
+    dead port 1/2 on $mux $procmux$1725.
+    dead port 2/2 on $mux $procmux$1725.
+    dead port 1/2 on $mux $procmux$1715.
+    dead port 2/2 on $mux $procmux$1715.
+    dead port 1/2 on $mux $procmux$1713.
+    dead port 2/2 on $mux $procmux$1713.
+    dead port 1/2 on $mux $procmux$5091.
+    dead port 2/2 on $mux $procmux$5091.
+    dead port 1/2 on $mux $procmux$5082.
+    dead port 2/2 on $mux $procmux$5082.
+    dead port 1/2 on $mux $procmux$5073.
+    dead port 2/2 on $mux $procmux$5073.
+    dead port 2/2 on $mux $procmux$1628.
+    dead port 2/2 on $mux $procmux$1626.
+    dead port 1/2 on $mux $procmux$1613.
+    dead port 2/2 on $mux $procmux$1613.
+    dead port 1/2 on $mux $procmux$5064.
+    dead port 2/2 on $mux $procmux$5064.
+    dead port 1/2 on $mux $procmux$1611.
+    dead port 2/2 on $mux $procmux$1611.
+    dead port 1/2 on $mux $procmux$1608.
+    dead port 2/2 on $mux $procmux$1608.
+    dead port 1/2 on $mux $procmux$1598.
+    dead port 2/2 on $mux $procmux$1598.
+    dead port 1/2 on $mux $procmux$1596.
+    dead port 2/2 on $mux $procmux$1596.
+    dead port 1/2 on $mux $procmux$1593.
+    dead port 2/2 on $mux $procmux$1593.
+    dead port 1/2 on $mux $procmux$1583.
+    dead port 2/2 on $mux $procmux$1583.
+    dead port 1/2 on $mux $procmux$5058.
+    dead port 2/2 on $mux $procmux$5058.
+    dead port 1/2 on $mux $procmux$1581.
+    dead port 2/2 on $mux $procmux$1581.
+    dead port 1/2 on $mux $procmux$1578.
+    dead port 2/2 on $mux $procmux$1578.
+    dead port 1/2 on $mux $procmux$1568.
+    dead port 2/2 on $mux $procmux$1568.
+    dead port 1/2 on $mux $procmux$1566.
+    dead port 2/2 on $mux $procmux$1566.
+    dead port 1/2 on $mux $procmux$1563.
+    dead port 2/2 on $mux $procmux$1563.
+    dead port 1/2 on $mux $procmux$1553.
+    dead port 2/2 on $mux $procmux$1553.
+    dead port 1/2 on $mux $procmux$5052.
+    dead port 2/2 on $mux $procmux$5052.
+    dead port 1/2 on $mux $procmux$1551.
+    dead port 2/2 on $mux $procmux$1551.
+    dead port 1/2 on $mux $procmux$1548.
+    dead port 2/2 on $mux $procmux$1548.
+    dead port 1/2 on $mux $procmux$5046.
+    dead port 2/2 on $mux $procmux$5046.
+    dead port 1/2 on $mux $procmux$5040.
+    dead port 2/2 on $mux $procmux$5040.
+    dead port 2/2 on $mux $procmux$1448.
+    dead port 1/2 on $mux $procmux$5034.
+    dead port 2/2 on $mux $procmux$5034.
+    dead port 1/2 on $mux $procmux$1446.
+    dead port 2/2 on $mux $procmux$1443.
+    dead port 1/2 on $mux $procmux$1430.
+    dead port 2/2 on $mux $procmux$1430.
+    dead port 1/2 on $mux $procmux$1428.
+    dead port 2/2 on $mux $procmux$1428.
+    dead port 1/2 on $mux $procmux$1421.
+    dead port 2/2 on $mux $procmux$1421.
+    dead port 1/2 on $mux $procmux$5028.
+    dead port 2/2 on $mux $procmux$5028.
+    dead port 1/2 on $mux $procmux$1419.
+    dead port 2/2 on $mux $procmux$1419.
+    dead port 1/2 on $mux $procmux$1412.
+    dead port 2/2 on $mux $procmux$1412.
+    dead port 1/2 on $mux $procmux$1410.
+    dead port 2/2 on $mux $procmux$1410.
+    dead port 1/2 on $mux $procmux$1403.
+    dead port 2/2 on $mux $procmux$1403.
+    dead port 1/2 on $mux $procmux$5022.
+    dead port 2/2 on $mux $procmux$5022.
+    dead port 1/2 on $mux $procmux$1401.
+    dead port 2/2 on $mux $procmux$1401.
+    dead port 1/2 on $mux $procmux$1394.
+    dead port 2/2 on $mux $procmux$1394.
+    dead port 1/2 on $mux $procmux$1392.
+    dead port 2/2 on $mux $procmux$1392.
+    dead port 1/2 on $mux $procmux$1385.
+    dead port 2/2 on $mux $procmux$1385.
+    dead port 1/2 on $mux $procmux$5009.
+    dead port 2/2 on $mux $procmux$5009.
+    dead port 1/2 on $mux $procmux$1383.
+    dead port 2/2 on $mux $procmux$1383.
+    dead port 1/2 on $mux $procmux$1376.
+    dead port 2/2 on $mux $procmux$1376.
+    dead port 1/2 on $mux $procmux$1374.
+    dead port 2/2 on $mux $procmux$1374.
+    dead port 1/2 on $mux $procmux$1367.
+    dead port 2/2 on $mux $procmux$1367.
+    dead port 1/2 on $mux $procmux$4996.
+    dead port 2/2 on $mux $procmux$4996.
+    dead port 1/2 on $mux $procmux$1365.
+    dead port 2/2 on $mux $procmux$1365.
+    dead port 1/2 on $mux $procmux$1362.
+    dead port 2/2 on $mux $procmux$1362.
+    dead port 1/2 on $mux $procmux$1355.
+    dead port 2/2 on $mux $procmux$1355.
+    dead port 1/2 on $mux $procmux$1353.
+    dead port 2/2 on $mux $procmux$1353.
+    dead port 1/2 on $mux $procmux$1350.
+    dead port 2/2 on $mux $procmux$1350.
+    dead port 1/2 on $mux $procmux$1343.
+    dead port 2/2 on $mux $procmux$1343.
+    dead port 1/2 on $mux $procmux$4983.
+    dead port 2/2 on $mux $procmux$4983.
+    dead port 1/2 on $mux $procmux$1341.
+    dead port 2/2 on $mux $procmux$1341.
+    dead port 1/2 on $mux $procmux$1338.
+    dead port 2/2 on $mux $procmux$1338.
+    dead port 1/2 on $mux $procmux$1331.
+    dead port 2/2 on $mux $procmux$1331.
+    dead port 1/2 on $mux $procmux$1329.
+    dead port 2/2 on $mux $procmux$1329.
+    dead port 1/2 on $mux $procmux$1326.
+    dead port 2/2 on $mux $procmux$1326.
+    dead port 1/2 on $mux $procmux$1319.
+    dead port 2/2 on $mux $procmux$1319.
+    dead port 1/2 on $mux $procmux$4970.
+    dead port 2/2 on $mux $procmux$4970.
+    dead port 1/2 on $mux $procmux$1317.
+    dead port 2/2 on $mux $procmux$1317.
+    dead port 1/2 on $mux $procmux$1314.
+    dead port 2/2 on $mux $procmux$1314.
+    dead port 1/2 on $mux $procmux$1307.
+    dead port 2/2 on $mux $procmux$1307.
+    dead port 1/2 on $mux $procmux$1305.
+    dead port 2/2 on $mux $procmux$1305.
+    dead port 1/2 on $mux $procmux$1302.
+    dead port 2/2 on $mux $procmux$1302.
+    dead port 1/2 on $mux $procmux$1295.
+    dead port 2/2 on $mux $procmux$1295.
+    dead port 1/2 on $mux $procmux$4957.
+    dead port 2/2 on $mux $procmux$4957.
+    dead port 1/2 on $mux $procmux$1293.
+    dead port 2/2 on $mux $procmux$1293.
+    dead port 1/2 on $mux $procmux$1290.
+    dead port 2/2 on $mux $procmux$1290.
+    dead port 1/2 on $mux $procmux$4944.
+    dead port 2/2 on $mux $procmux$4944.
+    dead port 1/2 on $mux $procmux$4931.
+    dead port 2/2 on $mux $procmux$4931.
+    dead port 2/2 on $mux $procmux$1208.
+    dead port 1/2 on $mux $procmux$4918.
+    dead port 2/2 on $mux $procmux$4918.
+    dead port 1/2 on $mux $procmux$1206.
+    dead port 2/2 on $mux $procmux$1203.
+    dead port 1/2 on $mux $procmux$1193.
+    dead port 2/2 on $mux $procmux$1193.
+    dead port 1/2 on $mux $procmux$1191.
+    dead port 2/2 on $mux $procmux$1191.
+    dead port 1/2 on $mux $procmux$1188.
+    dead port 2/2 on $mux $procmux$1188.
+    dead port 1/2 on $mux $procmux$1185.
+    dead port 2/2 on $mux $procmux$1185.
+    dead port 1/2 on $mux $procmux$4905.
+    dead port 2/2 on $mux $procmux$4905.
+    dead port 1/2 on $mux $procmux$4892.
+    dead port 2/2 on $mux $procmux$4892.
+    dead port 1/2 on $mux $procmux$4879.
+    dead port 2/2 on $mux $procmux$4879.
+    dead port 1/2 on $mux $procmux$4866.
+    dead port 2/2 on $mux $procmux$4866.
+    dead port 1/2 on $mux $procmux$4853.
+    dead port 2/2 on $mux $procmux$4853.
+    dead port 1/2 on $mux $procmux$4840.
+    dead port 2/2 on $mux $procmux$4840.
+    dead port 1/2 on $mux $procmux$4827.
+    dead port 2/2 on $mux $procmux$4827.
+    dead port 1/2 on $mux $procmux$4814.
+    dead port 2/2 on $mux $procmux$4814.
+    dead port 1/2 on $mux $procmux$4801.
+    dead port 2/2 on $mux $procmux$4801.
+    dead port 1/2 on $mux $procmux$5570.
+    dead port 2/2 on $mux $procmux$5570.
+    dead port 1/2 on $mux $procmux$4788.
+    dead port 2/2 on $mux $procmux$4788.
+    dead port 1/2 on $mux $procmux$4775.
+    dead port 2/2 on $mux $procmux$4775.
+    dead port 1/2 on $mux $procmux$5568.
+    dead port 2/2 on $mux $procmux$5568.
+    dead port 1/2 on $mux $procmux$4762.
+    dead port 2/2 on $mux $procmux$4762.
+    dead port 1/2 on $mux $procmux$5566.
+    dead port 2/2 on $mux $procmux$5566.
+    dead port 1/2 on $mux $procmux$4749.
+    dead port 2/2 on $mux $procmux$4749.
+    dead port 1/2 on $mux $procmux$4736.
+    dead port 2/2 on $mux $procmux$4736.
+    dead port 1/2 on $mux $procmux$4723.
+    dead port 2/2 on $mux $procmux$4723.
+    dead port 1/2 on $mux $procmux$4710.
+    dead port 2/2 on $mux $procmux$4710.
+    dead port 1/2 on $mux $procmux$4697.
+    dead port 2/2 on $mux $procmux$4697.
+    dead port 1/2 on $mux $procmux$4352.
+    dead port 2/2 on $mux $procmux$4352.
+    dead port 1/2 on $mux $procmux$4684.
+    dead port 2/2 on $mux $procmux$4684.
+    dead port 1/2 on $mux $procmux$4338.
+    dead port 2/2 on $mux $procmux$4338.
+    dead port 1/2 on $mux $procmux$4671.
+    dead port 2/2 on $mux $procmux$4671.
+    dead port 1/2 on $mux $procmux$4336.
+    dead port 2/2 on $mux $procmux$4336.
+    dead port 1/2 on $mux $procmux$4658.
+    dead port 2/2 on $mux $procmux$4658.
+    dead port 1/2 on $mux $procmux$4322.
+    dead port 2/2 on $mux $procmux$4322.
+    dead port 1/2 on $mux $procmux$4656.
+    dead port 2/2 on $mux $procmux$4656.
+    dead port 1/2 on $mux $procmux$4288.
+    dead port 2/2 on $mux $procmux$4288.
+    dead port 1/2 on $mux $procmux$4642.
+    dead port 2/2 on $mux $procmux$4642.
+    dead port 1/2 on $mux $procmux$4640.
+    dead port 2/2 on $mux $procmux$4640.
+    dead port 1/2 on $mux $procmux$4626.
+    dead port 2/2 on $mux $procmux$4626.
+    dead port 1/2 on $mux $procmux$4624.
+    dead port 2/2 on $mux $procmux$4624.
+    dead port 1/2 on $mux $procmux$4610.
+    dead port 2/2 on $mux $procmux$4610.
+    dead port 1/2 on $mux $procmux$4608.
+    dead port 2/2 on $mux $procmux$4608.
+    dead port 1/2 on $mux $procmux$4594.
+    dead port 2/2 on $mux $procmux$4594.
+    dead port 1/2 on $mux $procmux$4592.
+    dead port 2/2 on $mux $procmux$4592.
+    dead port 1/2 on $mux $procmux$4578.
+    dead port 2/2 on $mux $procmux$4578.
+    dead port 1/2 on $mux $procmux$4576.
+    dead port 2/2 on $mux $procmux$4576.
+    dead port 1/2 on $mux $procmux$4562.
+    dead port 2/2 on $mux $procmux$4562.
+    dead port 1/2 on $mux $procmux$4560.
+    dead port 2/2 on $mux $procmux$4560.
+    dead port 1/2 on $mux $procmux$4546.
+    dead port 2/2 on $mux $procmux$4546.
+    dead port 1/2 on $mux $procmux$4544.
+    dead port 2/2 on $mux $procmux$4544.
+    dead port 1/2 on $mux $procmux$4530.
+    dead port 2/2 on $mux $procmux$4530.
+    dead port 1/2 on $mux $procmux$4528.
+    dead port 2/2 on $mux $procmux$4528.
+    dead port 1/2 on $mux $procmux$4514.
+    dead port 2/2 on $mux $procmux$4514.
+    dead port 1/2 on $mux $procmux$4512.
+    dead port 2/2 on $mux $procmux$4512.
+    dead port 1/2 on $mux $procmux$4498.
+    dead port 2/2 on $mux $procmux$4498.
+    dead port 1/2 on $mux $procmux$4496.
+    dead port 2/2 on $mux $procmux$4496.
+    dead port 1/2 on $mux $procmux$4482.
+    dead port 2/2 on $mux $procmux$4482.
+    dead port 1/2 on $mux $procmux$4480.
+    dead port 2/2 on $mux $procmux$4480.
+    dead port 1/2 on $mux $procmux$4466.
+    dead port 2/2 on $mux $procmux$4466.
+    dead port 1/2 on $mux $procmux$4464.
+    dead port 2/2 on $mux $procmux$4464.
+    dead port 1/2 on $mux $procmux$4450.
+    dead port 2/2 on $mux $procmux$4450.
+    dead port 1/2 on $mux $procmux$4448.
+    dead port 2/2 on $mux $procmux$4448.
+    dead port 1/2 on $mux $procmux$4434.
+    dead port 2/2 on $mux $procmux$4434.
+    dead port 1/2 on $mux $procmux$4432.
+    dead port 2/2 on $mux $procmux$4432.
+    dead port 1/2 on $mux $procmux$4418.
+    dead port 2/2 on $mux $procmux$4418.
+    dead port 1/2 on $mux $procmux$4320.
+    dead port 2/2 on $mux $procmux$4320.
+    dead port 1/2 on $mux $procmux$4416.
+    dead port 2/2 on $mux $procmux$4416.
+    dead port 1/2 on $mux $procmux$4306.
+    dead port 2/2 on $mux $procmux$4306.
+    dead port 1/2 on $mux $procmux$4402.
+    dead port 2/2 on $mux $procmux$4402.
+    dead port 1/2 on $mux $procmux$4400.
+    dead port 2/2 on $mux $procmux$4400.
+    dead port 1/2 on $mux $procmux$4386.
+    dead port 2/2 on $mux $procmux$4386.
+    dead port 1/2 on $mux $procmux$4384.
+    dead port 2/2 on $mux $procmux$4384.
+    dead port 1/2 on $mux $procmux$4304.
+    dead port 2/2 on $mux $procmux$4304.
+    dead port 1/2 on $mux $procmux$4370.
+    dead port 2/2 on $mux $procmux$4370.
+    dead port 1/2 on $mux $procmux$4368.
+    dead port 2/2 on $mux $procmux$4368.
+    dead port 1/2 on $mux $procmux$4274.
+    dead port 2/2 on $mux $procmux$4274.
+    dead port 1/2 on $mux $procmux$4290.
+    dead port 2/2 on $mux $procmux$4290.
+    dead port 1/2 on $mux $procmux$4354.
+    dead port 2/2 on $mux $procmux$4354.
+Removed 1294 multiplexer ports.
+<suppressed ~80 debug messages>
+
+4.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_mac.
+    New input vector for $reduce_or cell $reduce_or$fp32_mac.sv:176$431: $procmux$1703_Y [1:0]
+    New input vector for $reduce_or cell $reduce_or$fp32_mac.sv:176$436: $procmux$1688_Y [3:0]
+    New input vector for $reduce_or cell $reduce_or$fp32_mac.sv:176$441: $procmux$1673_Y [7:0]
+    New input vector for $reduce_or cell $reduce_or$fp32_mac.sv:176$446: $procmux$1658_Y [15:0]
+    New input vector for $reduce_or cell $reduce_or$fp32_mac.sv:176$451: $procmux$1643_Y [31:0]
+    New input vector for $reduce_or cell $reduce_or$fp32_mac.sv:176$471: $procmux$1538_Y [1:0]
+    New input vector for $reduce_or cell $reduce_or$fp32_mac.sv:176$476: $procmux$1520_Y [3:0]
+    New input vector for $reduce_or cell $reduce_or$fp32_mac.sv:176$481: $procmux$1502_Y [7:0]
+    New input vector for $reduce_or cell $reduce_or$fp32_mac.sv:176$486: $procmux$1484_Y [15:0]
+    New input vector for $reduce_or cell $reduce_or$fp32_mac.sv:176$491: $procmux$1466_Y [31:0]
+    New input vector for $reduce_or cell $reduce_or$fp32_mac.sv:176$522: $procmux$1283_Y [1:0]
+    New input vector for $reduce_or cell $reduce_or$fp32_mac.sv:176$527: $procmux$1268_Y [3:0]
+    New input vector for $reduce_or cell $reduce_or$fp32_mac.sv:176$532: $procmux$1253_Y [7:0]
+    New input vector for $reduce_or cell $reduce_or$fp32_mac.sv:176$537: $procmux$1238_Y [15:0]
+    New input vector for $reduce_or cell $reduce_or$fp32_mac.sv:176$542: $procmux$1223_Y [31:0]
+    New ctrl vector for $pmux cell $procmux$5305: { $procmux$5636_CMP $procmux$5633_CMP $procmux$5628_CMP $auto$opt_reduce.cc:137:opt_pmux$6019 $procmux$5622_CMP }
+  Optimizing cells in module \fp32_mac.
+Performed a total of 16 changes.
+
+4.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_mac'.
+<suppressed ~3 debug messages>
+Removed a total of 1 cells.
+
+4.6. Executing OPT_DFF pass (perform DFF optimizations).
+Adding EN signal on $procdff$5762 ($adff) from module fp32_mac (D = $procmux$5305_Y [49:0], Q = \product_mag [49:0]).
+Adding EN signal on $procdff$5762 ($adff) from module fp32_mac (D = $procmux$5305_Y [51:50], Q = \product_mag [51:50]).
+Adding EN signal on $procdff$5692 ($adff) from module fp32_mac (D = \next_value, Q = \result).
+Adding EN signal on $procdff$5772 ($adff) from module fp32_mac (D = $procmux$5226_Y, Q = \product_exp).
+Adding EN signal on $procdff$5792 ($adff) from module fp32_mac (D = $add$fp32_mac.sv:334$555_Y, Q = \biased_exp).
+Adding EN signal on $procdff$5737 ($adff) from module fp32_mac (D = { $ne$fp32_mac.sv:75$401_Y \a [22:0] }, Q = \multiplicand).
+Adding EN signal on $procdff$5787 ($adff) from module fp32_mac (D = $reduce_or$fp32_mac.sv:333$554_Y, Q = \discarded).
+Adding EN signal on $procdff$5697 ($adff) from module fp32_mac (D = \flags, Q = \exception_flags).
+Adding EN signal on $procdff$5782 ($adff) from module fp32_mac (D = $xor$fp32_mac.sv:119$85_Y [24:0], Q = \rounded).
+Adding EN signal on $procdff$5727 ($adff) from module fp32_mac (D = $xor$fp32_mac.sv:240$388_Y, Q = \product_sign).
+Adding EN signal on $procdff$5767 ($adff) from module fp32_mac (D = $procmux$5265_Y, Q = \acc_mag).
+Adding EN signal on $procdff$5757 ($adff) from module fp32_mac (D = $procmux$5327_Y, Q = \booth_lower).
+Adding EN signal on $procdff$5702 ($adff) from module fp32_mac (D = $procmux$5616_Y, Q = \state).
+Adding EN signal on $procdff$5742 ($adff) from module fp32_mac (D = $procmux$5420_Y, Q = \multiply_step).
+Adding EN signal on $procdff$5732 ($adff) from module fp32_mac (D = $procmux$5481_Y, Q = \sum_sign).
+Adding EN signal on $procdff$5777 ($adff) from module fp32_mac (D = $procmux$5190_Y, Q = \acc_exp).
+Adding EN signal on $procdff$5707 ($adff) from module fp32_mac (D = $procmux$5609_Y, Q = \accumulator).
+Adding EN signal on $procdff$5752 ($adff) from module fp32_mac (D = $procmux$5358_Y, Q = \booth_upper).
+Adding EN signal on $procdff$5717 ($adff) from module fp32_mac (D = 1'0, Q = \flags [3]).
+Adding EN signal on $procdff$5717 ($adff) from module fp32_mac (D = $procmux$3716_Y, Q = \flags [4]).
+Adding EN signal on $procdff$5717 ($adff) from module fp32_mac (D = $procmux$1143_Y, Q = \flags [1]).
+Adding EN signal on $procdff$5717 ($adff) from module fp32_mac (D = $procmux$1126_Y, Q = \flags [2]).
+Adding EN signal on $procdff$5717 ($adff) from module fp32_mac (D = $procmux$1158_Y, Q = \flags [0]).
+Adding EN signal on $procdff$5747 ($adff) from module fp32_mac (D = $procmux$5389_Y, Q = \digits).
+Adding EN signal on $procdff$5722 ($adff) from module fp32_mac (D = \last, Q = \publish).
+Adding EN signal on $procdff$5712 ($adff) from module fp32_mac (D = $procmux$5583_Y, Q = \next_value).
+Setting constant 0-bit at position 0 on $auto$ff.cc:266:slice$6224 ($adffe) from module fp32_mac.
+Setting constant 1-bit at position 0 on $procdff$5887 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 1 on $procdff$5887 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 2 on $procdff$5887 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 3 on $procdff$5887 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 4 on $procdff$5887 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 5 on $procdff$5887 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 6 on $procdff$5887 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 7 on $procdff$5887 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 8 on $procdff$5887 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 9 on $procdff$5887 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 0 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 1 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 2 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 3 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 4 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 5 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 6 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 7 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 8 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 9 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 10 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 11 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 12 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 13 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 14 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 15 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 16 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 17 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 18 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 19 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 20 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 21 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 22 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 23 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 24 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 25 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 26 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 27 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 28 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 29 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 30 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 31 on $procdff$5812 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 0 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 1 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 2 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 3 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 4 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 5 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 6 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 7 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 8 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 9 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 10 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 11 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 12 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 13 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 14 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 15 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 16 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 17 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 18 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 19 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 20 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 21 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 22 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 23 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 24 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 25 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 26 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 27 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 28 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 29 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 30 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 31 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 32 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 33 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 34 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 35 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 36 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 37 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 38 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 39 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 40 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 41 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 42 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 43 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 44 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 45 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 46 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 47 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 48 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 49 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 50 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 51 on $procdff$6002 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 0 on $procdff$5817 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 0 on $procdff$5947 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 1 on $procdff$5947 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 2 on $procdff$5947 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 3 on $procdff$5947 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 4 on $procdff$5947 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 5 on $procdff$5947 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 6 on $procdff$5947 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 7 on $procdff$5947 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 8 on $procdff$5947 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 9 on $procdff$5947 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 10 on $procdff$5947 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 0 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 1 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 2 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 3 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 4 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 5 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 6 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 7 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 8 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 9 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 10 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 11 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 12 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 13 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 14 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 15 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 16 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 17 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 18 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 19 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 20 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 21 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 22 on $procdff$5907 ($adff) from module fp32_mac.
+Setting constant 1-bit at position 23 on $procdff$5907 ($adff) from module fp32_mac.
+
+4.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_mac..
+Removed 64 unused cells and 2481 unused wires.
+<suppressed ~65 debug messages>
+
+4.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+<suppressed ~15 debug messages>
+
+4.9. Rerunning OPT passes. (Maybe there is more to do..)
+
+4.10. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_mac..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~65 debug messages>
+
+4.11. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_mac.
+Performed a total of 0 changes.
+
+4.12. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_mac'.
+<suppressed ~219 debug messages>
+Removed a total of 73 cells.
+
+4.13. Executing OPT_DFF pass (perform DFF optimizations).
+Setting constant 0-bit at position 3 on $auto$ff.cc:266:slice$6085 ($adffe) from module fp32_mac.
+
+4.14. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_mac..
+Removed 0 unused cells and 73 unused wires.
+<suppressed ~1 debug messages>
+
+4.15. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+
+4.16. Rerunning OPT passes. (Maybe there is more to do..)
+
+4.17. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_mac..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~66 debug messages>
+
+4.18. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_mac.
+Performed a total of 0 changes.
+
+4.19. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_mac'.
+Removed a total of 0 cells.
+
+4.20. Executing OPT_DFF pass (perform DFF optimizations).
+
+4.21. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_mac..
+
+4.22. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+
+4.23. Finished OPT passes. (There is nothing left to do.)
+
+5. Executing CHECK pass (checking for obvious problems).
+Checking module fp32_mac...
+Found and reported 0 problems.
+
+6. Executing SYNTH pass.
+
+6.1. Executing HIERARCHY pass (managing design hierarchy).
+
+6.1.1. Analyzing design hierarchy..
+Top module:  \fp32_mac
+
+6.1.2. Analyzing design hierarchy..
+Top module:  \fp32_mac
+Removed 0 unused modules.
+
+6.2. Executing PROC pass (convert processes to netlists).
+
+6.2.1. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Cleaned up 0 empty switches.
+
+6.2.2. Executing PROC_RMDEAD pass (remove dead branches from decision trees).
+Removed a total of 0 dead cases.
+
+6.2.3. Executing PROC_PRUNE pass (remove redundant assignments in processes).
+Removed 0 redundant assignments.
+Promoted 0 assignments to connections.
+
+6.2.4. Executing PROC_INIT pass (extract init attributes).
+
+6.2.5. Executing PROC_ARST pass (detect async resets in processes).
+
+6.2.6. Executing PROC_ROM pass (convert switches to ROMs).
+Converted 0 switches.
+
+6.2.7. Executing PROC_MUX pass (convert decision trees to multiplexers).
+
+6.2.8. Executing PROC_DLATCH pass (convert process syncs to latches).
+
+6.2.9. Executing PROC_DFF pass (convert process syncs to FFs).
+
+6.2.10. Executing PROC_MEMWR pass (convert process memory writes to cells).
+
+6.2.11. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Cleaned up 0 empty switches.
+
+6.2.12. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+
+6.3. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+
+6.4. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_mac..
+
+6.5. Executing CHECK pass (checking for obvious problems).
+Checking module fp32_mac...
+Found and reported 0 problems.
+
+6.6. Executing OPT pass (performing simple optimizations).
+
+6.6.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+
+6.6.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_mac'.
+Removed a total of 0 cells.
+
+6.6.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_mac..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~66 debug messages>
+
+6.6.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_mac.
+Performed a total of 0 changes.
+
+6.6.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_mac'.
+Removed a total of 0 cells.
+
+6.6.6. Executing OPT_DFF pass (perform DFF optimizations).
+
+6.6.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_mac..
+
+6.6.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+
+6.6.9. Finished OPT passes. (There is nothing left to do.)
+
+6.7. Executing FSM pass (extract and optimize FSM).
+
+6.7.1. Executing FSM_DETECT pass (finding FSMs in design).
+
+6.7.2. Executing FSM_EXTRACT pass (extracting FSM from design).
+
+6.7.3. Executing FSM_OPT pass (simple optimizations of FSMs).
+
+6.7.4. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_mac..
+
+6.7.5. Executing FSM_OPT pass (simple optimizations of FSMs).
+
+6.7.6. Executing FSM_RECODE pass (re-assigning FSM state encoding).
+
+6.7.7. Executing FSM_INFO pass (dumping all available information on FSM cells).
+
+6.7.8. Executing FSM_MAP pass (mapping FSMs to basic logic).
+
+6.8. Executing OPT pass (performing simple optimizations).
+
+6.8.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+
+6.8.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_mac'.
+Removed a total of 0 cells.
+
+6.8.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_mac..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~66 debug messages>
+
+6.8.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_mac.
+Performed a total of 0 changes.
+
+6.8.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_mac'.
+Removed a total of 0 cells.
+
+6.8.6. Executing OPT_DFF pass (perform DFF optimizations).
+
+6.8.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_mac..
+
+6.8.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+
+6.8.9. Finished OPT passes. (There is nothing left to do.)
+
+6.9. Executing WREDUCE pass (reducing word size of cells).
+Removed top 1 bits (of 3) from mux cell fp32_mac.$ternary$fp32_mac.sv:40$53 ($mux).
+Removed top 2 bits (of 3) from port A of cell fp32_mac.$add$fp32_mac.sv:41$54 ($add).
+Removed top 2 bits (of 3) from port B of cell fp32_mac.$add$fp32_mac.sv:41$54 ($add).
+Removed top 1 bits (of 3) from port Y of cell fp32_mac.$add$fp32_mac.sv:41$54 ($add).
+Removed top 1 bits (of 3) from port A of cell fp32_mac.$eq$fp32_mac.sv:42$55 ($eq).
+Removed top 2 bits (of 3) from port B of cell fp32_mac.$eq$fp32_mac.sv:42$55 ($eq).
+Removed top 1 bits (of 3) from port A of cell fp32_mac.$eq$fp32_mac.sv:43$56 ($eq).
+Removed top 1 bits (of 3) from port B of cell fp32_mac.$eq$fp32_mac.sv:43$56 ($eq).
+Removed top 3 bits (of 28) from mux cell fp32_mac.$ternary$fp32_mac.sv:43$57 ($mux).
+Removed top 3 bits (of 28) from mux cell fp32_mac.$ternary$fp32_mac.sv:42$58 ($mux).
+Removed top 3 bits (of 28) from port A of cell fp32_mac.$xor$fp32_mac.sv:44$59 ($xor).
+Removed top 1 bits (of 52) from port Y of cell fp32_mac.$and$fp32_mac.sv:115$84 ($and).
+Removed top 1 bits (of 52) from port A of cell fp32_mac.$and$fp32_mac.sv:115$84 ($and).
+Removed top 1 bits (of 52) from port B of cell fp32_mac.$and$fp32_mac.sv:115$84 ($and).
+Converting cell fp32_mac.$add$fp32_mac.sv:185$86 ($add) from unsigned to signed.
+Removed top 1 bits (of 11) from port A of cell fp32_mac.$add$fp32_mac.sv:185$86 ($add).
+Removed top 3 bits (of 11) from port B of cell fp32_mac.$add$fp32_mac.sv:185$86 ($add).
+Removed top 4 bits (of 11) from port B of cell fp32_mac.$ge$fp32_mac.sv:186$87 ($ge).
+Removed top 2 bits (of 10) from mux cell fp32_mac.$ternary$fp32_mac.sv:70$390 ($mux).
+Removed top 1 bits (of 10) from port A of cell fp32_mac.$sub$fp32_mac.sv:70$391 ($sub).
+Removed top 2 bits (of 10) from port B of cell fp32_mac.$sub$fp32_mac.sv:70$391 ($sub).
+Converting cell fp32_mac.$sub$fp32_mac.sv:70$391 ($sub) from signed to unsigned.
+Removed top 1 bits (of 9) from port A of cell fp32_mac.$sub$fp32_mac.sv:70$391 ($sub).
+Removed top 1 bits (of 8) from port B of cell fp32_mac.$sub$fp32_mac.sv:70$391 ($sub).
+Removed top 1 bits (of 10) from port Y of cell fp32_mac.$sub$fp32_mac.sv:70$391 ($sub).
+Removed top 2 bits (of 10) from mux cell fp32_mac.$ternary$fp32_mac.sv:70$393 ($mux).
+Removed top 1 bits (of 10) from port A of cell fp32_mac.$sub$fp32_mac.sv:70$394 ($sub).
+Removed top 2 bits (of 10) from port B of cell fp32_mac.$sub$fp32_mac.sv:70$394 ($sub).
+Converting cell fp32_mac.$sub$fp32_mac.sv:70$394 ($sub) from signed to unsigned.
+Removed top 1 bits (of 9) from port A of cell fp32_mac.$sub$fp32_mac.sv:70$394 ($sub).
+Removed top 1 bits (of 8) from port B of cell fp32_mac.$sub$fp32_mac.sv:70$394 ($sub).
+Removed top 1 bits (of 10) from port Y of cell fp32_mac.$sub$fp32_mac.sv:70$394 ($sub).
+Converting cell fp32_mac.$add$fp32_mac.sv:242$395 ($add) from unsigned to signed.
+Removed top 1 bits (of 10) from port A of cell fp32_mac.$add$fp32_mac.sv:242$395 ($add).
+Removed top 1 bits (of 10) from port B of cell fp32_mac.$add$fp32_mac.sv:242$395 ($add).
+Removed top 8 bits (of 10) from port B of cell fp32_mac.$add$fp32_mac.sv:242$396 ($add).
+Removed top 2 bits (of 10) from mux cell fp32_mac.$ternary$fp32_mac.sv:70$398 ($mux).
+Removed top 1 bits (of 10) from port A of cell fp32_mac.$sub$fp32_mac.sv:70$399 ($sub).
+Removed top 2 bits (of 10) from port B of cell fp32_mac.$sub$fp32_mac.sv:70$399 ($sub).
+Converting cell fp32_mac.$sub$fp32_mac.sv:70$399 ($sub) from signed to unsigned.
+Removed top 1 bits (of 9) from port A of cell fp32_mac.$sub$fp32_mac.sv:70$399 ($sub).
+Removed top 1 bits (of 8) from port B of cell fp32_mac.$sub$fp32_mac.sv:70$399 ($sub).
+Removed top 1 bits (of 10) from port Y of cell fp32_mac.$sub$fp32_mac.sv:70$399 ($sub).
+Removed top 1 bits (of 5) from port B of cell fp32_mac.$eq$fp32_mac.sv:260$405 ($eq).
+Removed top 3 bits (of 10) from port B of cell fp32_mac.$sub$fp32_mac.sv:270$407 ($sub).
+Removed top 3 bits (of 10) from port B of cell fp32_mac.$sub$fp32_mac.sv:280$410 ($sub).
+Converting cell fp32_mac.$sub$fp32_mac.sv:287$422 ($sub) from unsigned to signed.
+Removed top 1 bits (of 11) from port A of cell fp32_mac.$sub$fp32_mac.sv:287$422 ($sub).
+Removed top 1 bits (of 11) from port B of cell fp32_mac.$sub$fp32_mac.sv:287$422 ($sub).
+Removed top 2 bits (of 52) from port A of cell fp32_mac.$or$fp32_mac.sv:175$432 ($or).
+Removed top 51 bits (of 52) from port B of cell fp32_mac.$or$fp32_mac.sv:175$432 ($or).
+Removed top 2 bits (of 52) from port Y of cell fp32_mac.$or$fp32_mac.sv:175$432 ($or).
+Removed top 4 bits (of 52) from port A of cell fp32_mac.$or$fp32_mac.sv:175$437 ($or).
+Removed top 51 bits (of 52) from port B of cell fp32_mac.$or$fp32_mac.sv:175$437 ($or).
+Removed top 4 bits (of 52) from port Y of cell fp32_mac.$or$fp32_mac.sv:175$437 ($or).
+Removed top 8 bits (of 52) from port A of cell fp32_mac.$or$fp32_mac.sv:175$442 ($or).
+Removed top 51 bits (of 52) from port B of cell fp32_mac.$or$fp32_mac.sv:175$442 ($or).
+Removed top 8 bits (of 52) from port Y of cell fp32_mac.$or$fp32_mac.sv:175$442 ($or).
+Removed top 16 bits (of 52) from port A of cell fp32_mac.$or$fp32_mac.sv:175$447 ($or).
+Removed top 51 bits (of 52) from port B of cell fp32_mac.$or$fp32_mac.sv:175$447 ($or).
+Removed top 16 bits (of 52) from port Y of cell fp32_mac.$or$fp32_mac.sv:175$447 ($or).
+Removed top 32 bits (of 52) from port A of cell fp32_mac.$or$fp32_mac.sv:175$452 ($or).
+Removed top 51 bits (of 52) from port B of cell fp32_mac.$or$fp32_mac.sv:175$452 ($or).
+Removed top 32 bits (of 52) from port Y of cell fp32_mac.$or$fp32_mac.sv:175$452 ($or).
+Removed top 26 bits (of 32) from port B of cell fp32_mac.$ge$fp32_mac.sv:177$453 ($ge).
+Converting cell fp32_mac.$sub$fp32_mac.sv:290$462 ($sub) from unsigned to signed.
+Removed top 1 bits (of 11) from port A of cell fp32_mac.$sub$fp32_mac.sv:290$462 ($sub).
+Removed top 1 bits (of 11) from port B of cell fp32_mac.$sub$fp32_mac.sv:290$462 ($sub).
+Removed top 1 bits (of 52) from port A of cell fp32_mac.$or$fp32_mac.sv:175$467 ($or).
+Removed top 51 bits (of 52) from port B of cell fp32_mac.$or$fp32_mac.sv:175$467 ($or).
+Removed top 1 bits (of 52) from port Y of cell fp32_mac.$or$fp32_mac.sv:175$467 ($or).
+Removed top 2 bits (of 52) from port A of cell fp32_mac.$or$fp32_mac.sv:175$472 ($or).
+Removed top 51 bits (of 52) from port B of cell fp32_mac.$or$fp32_mac.sv:175$472 ($or).
+Removed top 2 bits (of 52) from port Y of cell fp32_mac.$or$fp32_mac.sv:175$472 ($or).
+Removed top 4 bits (of 52) from port A of cell fp32_mac.$or$fp32_mac.sv:175$477 ($or).
+Removed top 51 bits (of 52) from port B of cell fp32_mac.$or$fp32_mac.sv:175$477 ($or).
+Removed top 4 bits (of 52) from port Y of cell fp32_mac.$or$fp32_mac.sv:175$477 ($or).
+Removed top 8 bits (of 52) from port A of cell fp32_mac.$or$fp32_mac.sv:175$482 ($or).
+Removed top 51 bits (of 52) from port B of cell fp32_mac.$or$fp32_mac.sv:175$482 ($or).
+Removed top 8 bits (of 52) from port Y of cell fp32_mac.$or$fp32_mac.sv:175$482 ($or).
+Removed top 16 bits (of 52) from port A of cell fp32_mac.$or$fp32_mac.sv:175$487 ($or).
+Removed top 51 bits (of 52) from port B of cell fp32_mac.$or$fp32_mac.sv:175$487 ($or).
+Removed top 16 bits (of 52) from port Y of cell fp32_mac.$or$fp32_mac.sv:175$487 ($or).
+Removed top 32 bits (of 52) from port A of cell fp32_mac.$or$fp32_mac.sv:175$492 ($or).
+Removed top 51 bits (of 52) from port B of cell fp32_mac.$or$fp32_mac.sv:175$492 ($or).
+Removed top 32 bits (of 52) from port Y of cell fp32_mac.$or$fp32_mac.sv:175$492 ($or).
+Removed top 26 bits (of 32) from port B of cell fp32_mac.$ge$fp32_mac.sv:177$493 ($ge).
+Removed top 2 bits (of 10) from port B of cell fp32_mac.$lt$fp32_mac.sv:317$505 ($lt).
+Removed top 1 bits (of 52) from port A of cell fp32_mac.$or$fp32_mac.sv:175$518 ($or).
+Removed top 51 bits (of 52) from port B of cell fp32_mac.$or$fp32_mac.sv:175$518 ($or).
+Removed top 1 bits (of 52) from port Y of cell fp32_mac.$or$fp32_mac.sv:175$518 ($or).
+Removed top 2 bits (of 52) from port A of cell fp32_mac.$or$fp32_mac.sv:175$523 ($or).
+Removed top 51 bits (of 52) from port B of cell fp32_mac.$or$fp32_mac.sv:175$523 ($or).
+Removed top 2 bits (of 52) from port Y of cell fp32_mac.$or$fp32_mac.sv:175$523 ($or).
+Removed top 4 bits (of 52) from port A of cell fp32_mac.$or$fp32_mac.sv:175$528 ($or).
+Removed top 51 bits (of 52) from port B of cell fp32_mac.$or$fp32_mac.sv:175$528 ($or).
+Removed top 4 bits (of 52) from port Y of cell fp32_mac.$or$fp32_mac.sv:175$528 ($or).
+Removed top 8 bits (of 52) from port A of cell fp32_mac.$or$fp32_mac.sv:175$533 ($or).
+Removed top 51 bits (of 52) from port B of cell fp32_mac.$or$fp32_mac.sv:175$533 ($or).
+Removed top 8 bits (of 52) from port Y of cell fp32_mac.$or$fp32_mac.sv:175$533 ($or).
+Removed top 16 bits (of 52) from port A of cell fp32_mac.$or$fp32_mac.sv:175$538 ($or).
+Removed top 51 bits (of 52) from port B of cell fp32_mac.$or$fp32_mac.sv:175$538 ($or).
+Removed top 16 bits (of 52) from port Y of cell fp32_mac.$or$fp32_mac.sv:175$538 ($or).
+Removed top 32 bits (of 52) from port A of cell fp32_mac.$or$fp32_mac.sv:175$543 ($or).
+Removed top 51 bits (of 52) from port B of cell fp32_mac.$or$fp32_mac.sv:175$543 ($or).
+Removed top 32 bits (of 52) from port Y of cell fp32_mac.$or$fp32_mac.sv:175$543 ($or).
+Removed top 26 bits (of 32) from port B of cell fp32_mac.$ge$fp32_mac.sv:177$544 ($ge).
+Removed top 8 bits (of 10) from port B of cell fp32_mac.$add$fp32_mac.sv:322$550 ($add).
+Removed top 3 bits (of 10) from port B of cell fp32_mac.$sub$fp32_mac.sv:325$553 ($sub).
+Removed top 1 bits (of 8) from port B of cell fp32_mac.$add$fp32_mac.sv:334$555 ($add).
+Removed top 2 bits (of 10) from port B of cell fp32_mac.$gt$fp32_mac.sv:339$556 ($gt).
+Removed top 2 bits (of 10) from port B of cell fp32_mac.$eq$fp32_mac.sv:339$557 ($eq).
+Removed top 7 bits (of 8) from port B of cell fp32_mac.$add$fp32_mac.sv:343$560 ($add).
+Removed top 1 bits (of 32) from mux cell fp32_mac.$procmux$5575 ($mux).
+Removed top 1 bits (of 32) from mux cell fp32_mac.$procmux$5578 ($mux).
+Removed top 1 bits (of 32) from mux cell fp32_mac.$procmux$5581 ($mux).
+Removed top 2 bits (of 4) from mux cell fp32_mac.$procmux$5620 ($mux).
+Removed top 1 bits (of 4) from port B of cell fp32_mac.$procmux$5622_CMP0 ($eq).
+Removed top 3 bits (of 4) from mux cell fp32_mac.$procmux$5625 ($mux).
+Removed top 1 bits (of 4) from port B of cell fp32_mac.$procmux$5628_CMP0 ($eq).
+Removed top 2 bits (of 4) from mux cell fp32_mac.$procmux$5630 ($mux).
+Removed top 2 bits (of 4) from port B of cell fp32_mac.$procmux$5632_CMP0 ($eq).
+Removed top 2 bits (of 4) from port B of cell fp32_mac.$procmux$5633_CMP0 ($eq).
+Removed top 3 bits (of 4) from port B of cell fp32_mac.$procmux$5636_CMP0 ($eq).
+Removed top 1 bits (of 4) from port B of cell fp32_mac.$procmux$5676_CMP0 ($eq).
+Removed top 1 bits (of 4) from port B of cell fp32_mac.$procmux$5677_CMP0 ($eq).
+Removed top 1 bits (of 3) from port Y of cell fp32_mac.$not$fp32_mac.sv:40$52 ($not).
+Removed top 1 bits (of 3) from port A of cell fp32_mac.$not$fp32_mac.sv:40$52 ($not).
+Removed top 2 bits (of 5) from wire fp32_mac.$0\flags[4:0].
+Removed top 1 bits (of 3) from wire fp32_mac.$not$fp32_mac.sv:40$52_Y.
+Removed top 1 bits (of 52) from wire fp32_mac.$or$fp32_mac.sv:175$427_Y.
+Removed top 2 bits (of 52) from wire fp32_mac.$or$fp32_mac.sv:175$432_Y.
+Removed top 4 bits (of 52) from wire fp32_mac.$or$fp32_mac.sv:175$437_Y.
+Removed top 8 bits (of 52) from wire fp32_mac.$or$fp32_mac.sv:175$442_Y.
+Removed top 16 bits (of 52) from wire fp32_mac.$or$fp32_mac.sv:175$447_Y.
+Removed top 32 bits (of 52) from wire fp32_mac.$or$fp32_mac.sv:175$452_Y.
+Removed top 1 bits (of 52) from wire fp32_mac.$or$fp32_mac.sv:175$467_Y.
+Removed top 2 bits (of 52) from wire fp32_mac.$or$fp32_mac.sv:175$472_Y.
+Removed top 4 bits (of 52) from wire fp32_mac.$or$fp32_mac.sv:175$477_Y.
+Removed top 8 bits (of 52) from wire fp32_mac.$or$fp32_mac.sv:175$482_Y.
+Removed top 16 bits (of 52) from wire fp32_mac.$or$fp32_mac.sv:175$487_Y.
+Removed top 32 bits (of 52) from wire fp32_mac.$or$fp32_mac.sv:175$492_Y.
+Removed top 2 bits (of 52) from wire fp32_mac.$or$fp32_mac.sv:175$523_Y.
+Removed top 4 bits (of 52) from wire fp32_mac.$or$fp32_mac.sv:175$528_Y.
+Removed top 8 bits (of 52) from wire fp32_mac.$or$fp32_mac.sv:175$533_Y.
+Removed top 16 bits (of 52) from wire fp32_mac.$or$fp32_mac.sv:175$538_Y.
+Removed top 32 bits (of 52) from wire fp32_mac.$or$fp32_mac.sv:175$543_Y.
+Removed top 2 bits (of 4) from wire fp32_mac.$procmux$5620_Y.
+Removed top 3 bits (of 4) from wire fp32_mac.$procmux$5625_Y.
+Removed top 2 bits (of 4) from wire fp32_mac.$procmux$5630_Y.
+Removed top 3 bits (of 28) from wire fp32_mac.$ternary$fp32_mac.sv:43$57_Y.
+Removed top 2 bits (of 10) from wire fp32_mac.$ternary$fp32_mac.sv:70$390_Y.
+Removed top 2 bits (of 10) from wire fp32_mac.$ternary$fp32_mac.sv:70$393_Y.
+Removed top 2 bits (of 10) from wire fp32_mac.$ternary$fp32_mac.sv:70$398_Y.
+Removed top 1 bits (of 13) from wire fp32_mac.block_g.
+Removed top 1 bits (of 13) from wire fp32_mac.block_p.
+Removed top 1 bits (of 52) from wire fp32_mac.g.
+Removed top 1 bits (of 3) from wire fp32_mac.magnitude.
+Removed top 1 bits (of 3) from wire fp32_mac.recode.
+Removed top 3 bits (of 28) from wire fp32_mac.term.
+
+6.10. Executing PEEPOPT pass (run peephole optimizers).
+
+6.11. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_mac..
+Removed 0 unused cells and 32 unused wires.
+<suppressed ~1 debug messages>
+
+6.12. Executing ALUMACC pass (create $alu and $macc cells).
+Extracting $alu and $macc cells in module fp32_mac:
+  creating $macc model for $add$fp32_mac.sv:185$86 ($add).
+  creating $macc model for $add$fp32_mac.sv:242$395 ($add).
+  creating $macc model for $add$fp32_mac.sv:242$396 ($add).
+  creating $macc model for $add$fp32_mac.sv:256$403 ($add).
+  creating $macc model for $add$fp32_mac.sv:322$550 ($add).
+  creating $macc model for $add$fp32_mac.sv:334$555 ($add).
+  creating $macc model for $add$fp32_mac.sv:343$560 ($add).
+  creating $macc model for $add$fp32_mac.sv:41$54 ($add).
+  creating $macc model for $add$fp32_mac.sv:44$60 ($add).
+  creating $macc model for $neg$fp32_mac.sv:318$513 ($neg).
+  creating $macc model for $sub$fp32_mac.sv:270$407 ($sub).
+  creating $macc model for $sub$fp32_mac.sv:280$410 ($sub).
+  creating $macc model for $sub$fp32_mac.sv:287$422 ($sub).
+  creating $macc model for $sub$fp32_mac.sv:290$462 ($sub).
+  creating $macc model for $sub$fp32_mac.sv:325$553 ($sub).
+  creating $macc model for $sub$fp32_mac.sv:70$391 ($sub).
+  creating $macc model for $sub$fp32_mac.sv:70$394 ($sub).
+  creating $macc model for $sub$fp32_mac.sv:70$399 ($sub).
+  merging $macc model for $add$fp32_mac.sv:242$395 into $add$fp32_mac.sv:242$396.
+  creating $alu model for $macc $sub$fp32_mac.sv:70$394.
+  creating $alu model for $macc $sub$fp32_mac.sv:70$391.
+  creating $alu model for $macc $sub$fp32_mac.sv:325$553.
+  creating $alu model for $macc $sub$fp32_mac.sv:290$462.
+  creating $alu model for $macc $sub$fp32_mac.sv:287$422.
+  creating $alu model for $macc $sub$fp32_mac.sv:280$410.
+  creating $alu model for $macc $sub$fp32_mac.sv:270$407.
+  creating $alu model for $macc $neg$fp32_mac.sv:318$513.
+  creating $alu model for $macc $add$fp32_mac.sv:44$60.
+  creating $alu model for $macc $add$fp32_mac.sv:41$54.
+  creating $alu model for $macc $add$fp32_mac.sv:343$560.
+  creating $alu model for $macc $add$fp32_mac.sv:334$555.
+  creating $alu model for $macc $add$fp32_mac.sv:322$550.
+  creating $alu model for $macc $add$fp32_mac.sv:256$403.
+  creating $alu model for $macc $sub$fp32_mac.sv:70$399.
+  creating $alu model for $macc $add$fp32_mac.sv:185$86.
+  creating $macc cell for $add$fp32_mac.sv:242$396: $auto$alumacc.cc:365:replace_macc$6321
+  creating $alu model for $ge$fp32_mac.sv:177$453 ($ge): new $alu
+  creating $alu model for $ge$fp32_mac.sv:177$493 ($ge): new $alu
+  creating $alu model for $ge$fp32_mac.sv:177$544 ($ge): new $alu
+  creating $alu model for $ge$fp32_mac.sv:186$87 ($ge): new $alu
+  creating $alu model for $gt$fp32_mac.sv:339$556 ($gt): new $alu
+  creating $alu model for $lt$fp32_mac.sv:286$411 ($lt): merged with $sub$fp32_mac.sv:290$462.
+  creating $alu model for $lt$fp32_mac.sv:289$456 ($lt): merged with $sub$fp32_mac.sv:287$422.
+  creating $alu model for $lt$fp32_mac.sv:317$505 ($lt): new $alu
+  creating $alu model for $eq$fp32_mac.sv:339$557 ($eq): merged with $gt$fp32_mac.sv:339$556.
+  creating $alu cell for $lt$fp32_mac.sv:317$505: $auto$alumacc.cc:495:replace_alu$6328
+  creating $alu cell for $gt$fp32_mac.sv:339$556, $eq$fp32_mac.sv:339$557: $auto$alumacc.cc:495:replace_alu$6335
+  creating $alu cell for $ge$fp32_mac.sv:186$87: $auto$alumacc.cc:495:replace_alu$6348
+  creating $alu cell for $ge$fp32_mac.sv:177$544: $auto$alumacc.cc:495:replace_alu$6363
+  creating $alu cell for $ge$fp32_mac.sv:177$493: $auto$alumacc.cc:495:replace_alu$6376
+  creating $alu cell for $ge$fp32_mac.sv:177$453: $auto$alumacc.cc:495:replace_alu$6389
+  creating $alu cell for $add$fp32_mac.sv:185$86: $auto$alumacc.cc:495:replace_alu$6402
+  creating $alu cell for $sub$fp32_mac.sv:70$399: $auto$alumacc.cc:495:replace_alu$6405
+  creating $alu cell for $add$fp32_mac.sv:256$403: $auto$alumacc.cc:495:replace_alu$6408
+  creating $alu cell for $add$fp32_mac.sv:322$550: $auto$alumacc.cc:495:replace_alu$6411
+  creating $alu cell for $add$fp32_mac.sv:334$555: $auto$alumacc.cc:495:replace_alu$6414
+  creating $alu cell for $add$fp32_mac.sv:343$560: $auto$alumacc.cc:495:replace_alu$6417
+  creating $alu cell for $add$fp32_mac.sv:41$54: $auto$alumacc.cc:495:replace_alu$6420
+  creating $alu cell for $add$fp32_mac.sv:44$60: $auto$alumacc.cc:495:replace_alu$6423
+  creating $alu cell for $neg$fp32_mac.sv:318$513: $auto$alumacc.cc:495:replace_alu$6426
+  creating $alu cell for $sub$fp32_mac.sv:270$407: $auto$alumacc.cc:495:replace_alu$6429
+  creating $alu cell for $sub$fp32_mac.sv:280$410: $auto$alumacc.cc:495:replace_alu$6432
+  creating $alu cell for $sub$fp32_mac.sv:287$422, $lt$fp32_mac.sv:289$456: $auto$alumacc.cc:495:replace_alu$6435
+  creating $alu cell for $sub$fp32_mac.sv:290$462, $lt$fp32_mac.sv:286$411: $auto$alumacc.cc:495:replace_alu$6442
+  creating $alu cell for $sub$fp32_mac.sv:325$553: $auto$alumacc.cc:495:replace_alu$6449
+  creating $alu cell for $sub$fp32_mac.sv:70$391: $auto$alumacc.cc:495:replace_alu$6452
+  creating $alu cell for $sub$fp32_mac.sv:70$394: $auto$alumacc.cc:495:replace_alu$6455
+  created 22 $alu and 1 $macc cells.
+
+6.13. Executing SHARE pass (SAT-based resource sharing).
+Found 3 cells in module fp32_mac that may be considered for resource sharing.
+  Analyzing resource sharing options for $shl$fp32_mac.sv:324$552 ($shl):
+    Found 1 activation_patterns using ctrl signal { $procmux$1194_CMP $eq$fp32_mac.sv:313$497_Y $auto$rtlil.cc:2828:Xor$6334 \product_mag [51:50] }.
+    Found 2 candidates: $shl$fp32_mac.sv:279$409 $shl$fp32_mac.sv:269$406
+    Analyzing resource sharing with $shl$fp32_mac.sv:279$409 ($shl):
+      Found 1 activation_patterns using ctrl signal { $procmux$5191_CMP $eq$fp32_mac.sv:275$408_Y }.
+      Activation pattern for cell $shl$fp32_mac.sv:324$552: { $procmux$1194_CMP $eq$fp32_mac.sv:313$497_Y $auto$rtlil.cc:2828:Xor$6334 \product_mag [51:50] } = 5'10000
+      Activation pattern for cell $shl$fp32_mac.sv:279$409: { $procmux$5191_CMP $eq$fp32_mac.sv:275$408_Y } = 2'10
+      Size of SAT problem: 7 cells, 360 variables, 771 clauses
+      According to the SAT solver this pair of cells can be shared.
+      Activation signal for $shl$fp32_mac.sv:279$409: $auto$share.cc:1005:make_cell_activation_logic$6458
+      New cell: $auto$share.cc:669:make_supercell$6465 ($shl)
+  Analyzing resource sharing options for $auto$share.cc:669:make_supercell$6465 ($shl):
+    Found 2 activation_patterns using ctrl signal { $procmux$5191_CMP $procmux$1194_CMP $eq$fp32_mac.sv:313$497_Y $auto$rtlil.cc:2828:Xor$6334 $eq$fp32_mac.sv:275$408_Y \product_mag [51:50] }.
+    Found 1 candidates: $shl$fp32_mac.sv:269$406
+    Analyzing resource sharing with $shl$fp32_mac.sv:269$406 ($shl):
+      Found 1 activation_patterns using ctrl signal $procmux$5232_CMP.
+      Activation pattern for cell $auto$share.cc:669:make_supercell$6465: { $procmux$1194_CMP $eq$fp32_mac.sv:313$497_Y $auto$rtlil.cc:2828:Xor$6334 \product_mag [51:50] } = 5'10000
+      Activation pattern for cell $auto$share.cc:669:make_supercell$6465: { $procmux$5191_CMP $eq$fp32_mac.sv:275$408_Y } = 2'10
+      Activation pattern for cell $shl$fp32_mac.sv:269$406: $procmux$5232_CMP = 1'1
+      Size of SAT problem: 8 cells, 374 variables, 813 clauses
+      According to the SAT solver this pair of cells can be shared.
+      Activation signal for $shl$fp32_mac.sv:269$406: $auto$share.cc:1005:make_cell_activation_logic$6468
+      New cell: $auto$share.cc:669:make_supercell$6475 ($shl)
+  Analyzing resource sharing options for $auto$share.cc:669:make_supercell$6475 ($shl):
+    Found 3 activation_patterns using ctrl signal { $procmux$5232_CMP $procmux$5191_CMP $procmux$1194_CMP $eq$fp32_mac.sv:313$497_Y $auto$rtlil.cc:2828:Xor$6334 $eq$fp32_mac.sv:275$408_Y \product_mag [51:50] }.
+    No candidates found.
+Removing 4 cells in module fp32_mac:
+  Removing cell $shl$fp32_mac.sv:269$406 ($shl).
+  Removing cell $auto$share.cc:669:make_supercell$6465 ($shl).
+  Removing cell $shl$fp32_mac.sv:279$409 ($shl).
+  Removing cell $shl$fp32_mac.sv:324$552 ($shl).
+
+6.14. Executing OPT pass (performing simple optimizations).
+
+6.14.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+<suppressed ~1 debug messages>
+
+6.14.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_mac'.
+<suppressed ~6 debug messages>
+Removed a total of 2 cells.
+
+6.14.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_mac..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~68 debug messages>
+
+6.14.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_mac.
+Performed a total of 0 changes.
+
+6.14.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_mac'.
+Removed a total of 0 cells.
+
+6.14.6. Executing OPT_DFF pass (perform DFF optimizations).
+
+6.14.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_mac..
+Removed 1 unused cells and 15 unused wires.
+<suppressed ~4 debug messages>
+
+6.14.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+
+6.14.9. Rerunning OPT passes. (Maybe there is more to do..)
+
+6.14.10. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_mac..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~68 debug messages>
+
+6.14.11. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_mac.
+Performed a total of 0 changes.
+
+6.14.12. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_mac'.
+Removed a total of 0 cells.
+
+6.14.13. Executing OPT_DFF pass (perform DFF optimizations).
+
+6.14.14. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_mac..
+
+6.14.15. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+
+6.14.16. Finished OPT passes. (There is nothing left to do.)
+
+6.15. Executing MEMORY pass.
+
+6.15.1. Executing OPT_MEM pass (optimize memories).
+Performed a total of 0 transformations.
+
+6.15.2. Executing OPT_MEM_PRIORITY pass (removing unnecessary memory write priority relations).
+Performed a total of 0 transformations.
+
+6.15.3. Executing OPT_MEM_FEEDBACK pass (finding memory read-to-write feedback paths).
+
+6.15.4. Executing MEMORY_BMUX2ROM pass (converting muxes to ROMs).
+
+6.15.5. Executing MEMORY_DFF pass (merging $dff cells to $memrd).
+
+6.15.6. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_mac..
+
+6.15.7. Executing MEMORY_SHARE pass (consolidating $memrd/$memwr cells).
+
+6.15.8. Executing OPT_MEM_WIDEN pass (optimize memories where all ports are wide).
+Performed a total of 0 transformations.
+
+6.15.9. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_mac..
+
+6.15.10. Executing MEMORY_COLLECT pass (generating $mem cells).
+
+6.16. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_mac..
+
+6.17. Executing OPT pass (performing simple optimizations).
+
+6.17.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+<suppressed ~247 debug messages>
+
+6.17.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_mac'.
+<suppressed ~3 debug messages>
+Removed a total of 1 cells.
+
+6.17.3. Executing OPT_DFF pass (perform DFF optimizations).
+
+6.17.4. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_mac..
+Removed 1 unused cells and 160 unused wires.
+<suppressed ~2 debug messages>
+
+6.17.5. Finished fast OPT passes.
+
+6.18. Executing MEMORY_MAP pass (converting memories to logic and flip-flops).
+
+6.19. Executing OPT pass (performing simple optimizations).
+
+6.19.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+<suppressed ~3 debug messages>
+
+6.19.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_mac'.
+Removed a total of 0 cells.
+
+6.19.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_mac..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~50 debug messages>
+
+6.19.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_mac.
+    Consolidated identical input bits for $mux cell $procmux$1086:
+      Old ports: A={ \acc_mag [18:0] 45'000000000000000000000000000000000000000000000 }, B={ \acc_mag [50:0] 13'0000000000000 }, Y=$1\left_count$func$fp32_mac.sv:182$51.x[63:0]$918
+      New ports: A={ \acc_mag [18:0] 32'00000000000000000000000000000000 }, B=\acc_mag [50:0], Y=$1\left_count$func$fp32_mac.sv:182$51.x[63:0]$918 [63:13]
+      New connections: $1\left_count$func$fp32_mac.sv:182$51.x[63:0]$918 [12:0] = 13'0000000000000
+    Consolidated identical input bits for $mux cell $procmux$1119:
+      Old ports: A={ \product_mag [18:0] 45'000000000000000000000000000000000000000000000 }, B={ \product_mag [50:0] 13'0000000000000 }, Y=$1\left_count$func$fp32_mac.sv:181$50.x[63:0]$885
+      New ports: A={ \product_mag [18:0] 32'00000000000000000000000000000000 }, B=\product_mag [50:0], Y=$1\left_count$func$fp32_mac.sv:181$50.x[63:0]$885 [63:13]
+      New connections: $1\left_count$func$fp32_mac.sv:181$50.x[63:0]$885 [12:0] = 13'0000000000000
+    Consolidated identical input bits for $mux cell $procmux$5358:
+      Old ports: A=28'0000000000000000000000000000, B={ \extended [28] \extended [28] \extended [28:3] }, Y=$0\booth_upper[27:0]
+      New ports: A=26'00000000000000000000000000, B=\extended [28:3], Y=$0\booth_upper[27:0] [25:0]
+      New connections: $0\booth_upper[27:0] [27:26] = { $0\booth_upper[27:0] [25] $0\booth_upper[27:0] [25] }
+    Consolidated identical input bits for $mux cell $procmux$5389:
+      Old ports: A={ 2'00 $ne$fp32_mac.sv:75$402_Y \b [22:0] 1'0 }, B={ 2'00 \digits [26:2] }, Y=$0\digits[26:0]
+      New ports: A={ $ne$fp32_mac.sv:75$402_Y \b [22:0] 1'0 }, B=\digits [26:2], Y=$0\digits[26:0] [24:0]
+      New connections: $0\digits[26:0] [26:25] = 2'00
+    New ctrl vector for $pmux cell $procmux$5481: $auto$opt_reduce.cc:137:opt_pmux$6547
+    Consolidated identical input bits for $mux cell $procmux$5575:
+      Old ports: A={ 8'00000000 \rounded [22:0] }, B={ \biased_exp \rounded [22:0] }, Y=$procmux$5575_Y [30:0]
+      New ports: A=8'00000000, B=\biased_exp, Y=$procmux$5575_Y [30:23]
+      New connections: $procmux$5575_Y [22:0] = \rounded [22:0]
+    Consolidated identical input bits for $mux cell $procmux$5620:
+      Old ports: A=2'00, B=2'10, Y=$auto$wreduce.cc:514:run$6308 [1:0]
+      New ports: A=1'0, B=1'1, Y=$auto$wreduce.cc:514:run$6308 [1]
+      New connections: $auto$wreduce.cc:514:run$6308 [0] = 1'0
+    Consolidated identical input bits for $mux cell $procmux$5630:
+      Old ports: A=2'00, B=2'11, Y=$auto$wreduce.cc:514:run$6310 [1:0]
+      New ports: A=1'0, B=1'1, Y=$auto$wreduce.cc:514:run$6310 [0]
+      New connections: $auto$wreduce.cc:514:run$6310 [1] = $auto$wreduce.cc:514:run$6310 [0]
+    Consolidated identical input bits for $mux cell $procmux$5639:
+      Old ports: A=4'0001, B=4'1010, Y=$procmux$5639_Y
+      New ports: A=2'01, B=2'10, Y=$procmux$5639_Y [1:0]
+      New connections: $procmux$5639_Y [3:2] = { $procmux$5639_Y [1] 1'0 }
+    Consolidated identical input bits for $mux cell $ternary$fp32_mac.sv:43$57:
+      Old ports: A=25'0000000000000000000000000, B={ \multiplicand 1'0 }, Y=$auto$wreduce.cc:514:run$6311 [24:0]
+      New ports: A=24'000000000000000000000000, B=\multiplicand, Y=$auto$wreduce.cc:514:run$6311 [24:1]
+      New connections: $auto$wreduce.cc:514:run$6311 [0] = 1'0
+  Optimizing cells in module \fp32_mac.
+    Consolidated identical input bits for $mux cell $procmux$1080:
+      Old ports: A={ $1\left_count$func$fp32_mac.sv:182$51.x[63:0]$918 [47:0] 16'0000000000000000 }, B=$1\left_count$func$fp32_mac.sv:182$51.x[63:0]$918, Y=$2\left_count$func$fp32_mac.sv:182$51.x[63:0]$923
+      New ports: A={ $1\left_count$func$fp32_mac.sv:182$51.x[63:0]$918 [47:13] 16'0000000000000000 }, B=$1\left_count$func$fp32_mac.sv:182$51.x[63:0]$918 [63:13], Y=$2\left_count$func$fp32_mac.sv:182$51.x[63:0]$923 [63:13]
+      New connections: $2\left_count$func$fp32_mac.sv:182$51.x[63:0]$923 [12:0] = 13'0000000000000
+    Consolidated identical input bits for $mux cell $procmux$1113:
+      Old ports: A={ $1\left_count$func$fp32_mac.sv:181$50.x[63:0]$885 [47:0] 16'0000000000000000 }, B=$1\left_count$func$fp32_mac.sv:181$50.x[63:0]$885, Y=$2\left_count$func$fp32_mac.sv:181$50.x[63:0]$890
+      New ports: A={ $1\left_count$func$fp32_mac.sv:181$50.x[63:0]$885 [47:13] 16'0000000000000000 }, B=$1\left_count$func$fp32_mac.sv:181$50.x[63:0]$885 [63:13], Y=$2\left_count$func$fp32_mac.sv:181$50.x[63:0]$890 [63:13]
+      New connections: $2\left_count$func$fp32_mac.sv:181$50.x[63:0]$890 [12:0] = 13'0000000000000
+    Consolidated identical input bits for $mux cell $procmux$5642:
+      Old ports: A=$procmux$5639_Y, B=4'1010, Y=$procmux$5642_Y
+      New ports: A=$procmux$5639_Y [1:0], B=2'10, Y=$procmux$5642_Y [1:0]
+      New connections: $procmux$5642_Y [3:2] = { $procmux$5642_Y [1] 1'0 }
+  Optimizing cells in module \fp32_mac.
+    Consolidated identical input bits for $mux cell $procmux$1074:
+      Old ports: A={ $2\left_count$func$fp32_mac.sv:182$51.x[63:0]$923 [55:0] 8'00000000 }, B=$2\left_count$func$fp32_mac.sv:182$51.x[63:0]$923, Y=$3\left_count$func$fp32_mac.sv:182$51.x[63:0]$928
+      New ports: A={ $2\left_count$func$fp32_mac.sv:182$51.x[63:0]$923 [55:13] 8'00000000 }, B=$2\left_count$func$fp32_mac.sv:182$51.x[63:0]$923 [63:13], Y=$3\left_count$func$fp32_mac.sv:182$51.x[63:0]$928 [63:13]
+      New connections: $3\left_count$func$fp32_mac.sv:182$51.x[63:0]$928 [12:0] = 13'0000000000000
+    Consolidated identical input bits for $mux cell $procmux$1107:
+      Old ports: A={ $2\left_count$func$fp32_mac.sv:181$50.x[63:0]$890 [55:0] 8'00000000 }, B=$2\left_count$func$fp32_mac.sv:181$50.x[63:0]$890, Y=$3\left_count$func$fp32_mac.sv:181$50.x[63:0]$895
+      New ports: A={ $2\left_count$func$fp32_mac.sv:181$50.x[63:0]$890 [55:13] 8'00000000 }, B=$2\left_count$func$fp32_mac.sv:181$50.x[63:0]$890 [63:13], Y=$3\left_count$func$fp32_mac.sv:181$50.x[63:0]$895 [63:13]
+      New connections: $3\left_count$func$fp32_mac.sv:181$50.x[63:0]$895 [12:0] = 13'0000000000000
+    Consolidated identical input bits for $mux cell $procmux$5645:
+      Old ports: A=$procmux$5642_Y, B=4'1010, Y=$procmux$5645_Y
+      New ports: A=$procmux$5642_Y [1:0], B=2'10, Y=$procmux$5645_Y [1:0]
+      New connections: $procmux$5645_Y [3:2] = { $procmux$5645_Y [1] 1'0 }
+  Optimizing cells in module \fp32_mac.
+    Consolidated identical input bits for $mux cell $procmux$1068:
+      Old ports: A={ $3\left_count$func$fp32_mac.sv:182$51.x[63:0]$928 [59:0] 4'0000 }, B=$3\left_count$func$fp32_mac.sv:182$51.x[63:0]$928, Y=$4\left_count$func$fp32_mac.sv:182$51.x[63:0]$933
+      New ports: A={ $3\left_count$func$fp32_mac.sv:182$51.x[63:0]$928 [59:13] 4'0000 }, B=$3\left_count$func$fp32_mac.sv:182$51.x[63:0]$928 [63:13], Y=$4\left_count$func$fp32_mac.sv:182$51.x[63:0]$933 [63:13]
+      New connections: $4\left_count$func$fp32_mac.sv:182$51.x[63:0]$933 [12:0] = 13'0000000000000
+    Consolidated identical input bits for $mux cell $procmux$1101:
+      Old ports: A={ $3\left_count$func$fp32_mac.sv:181$50.x[63:0]$895 [59:0] 4'0000 }, B=$3\left_count$func$fp32_mac.sv:181$50.x[63:0]$895, Y=$4\left_count$func$fp32_mac.sv:181$50.x[63:0]$900
+      New ports: A={ $3\left_count$func$fp32_mac.sv:181$50.x[63:0]$895 [59:13] 4'0000 }, B=$3\left_count$func$fp32_mac.sv:181$50.x[63:0]$895 [63:13], Y=$4\left_count$func$fp32_mac.sv:181$50.x[63:0]$900 [63:13]
+      New connections: $4\left_count$func$fp32_mac.sv:181$50.x[63:0]$900 [12:0] = 13'0000000000000
+    Consolidated identical input bits for $mux cell $procmux$5648:
+      Old ports: A=$procmux$5645_Y, B=4'1010, Y=$procmux$5648_Y
+      New ports: A=$procmux$5645_Y [1:0], B=2'10, Y=$procmux$5648_Y [1:0]
+      New connections: $procmux$5648_Y [3:2] = { $procmux$5648_Y [1] 1'0 }
+  Optimizing cells in module \fp32_mac.
+    Consolidated identical input bits for $mux cell $procmux$1062:
+      Old ports: A={ $4\left_count$func$fp32_mac.sv:182$51.x[63:0]$933 [61:0] 2'00 }, B=$4\left_count$func$fp32_mac.sv:182$51.x[63:0]$933, Y=$0\left_count$func$fp32_mac.sv:182$51.x[63:0]$914
+      New ports: A={ $4\left_count$func$fp32_mac.sv:182$51.x[63:0]$933 [61:13] 2'00 }, B=$4\left_count$func$fp32_mac.sv:182$51.x[63:0]$933 [63:13], Y=$0\left_count$func$fp32_mac.sv:182$51.x[63:0]$914 [63:13]
+      New connections: $0\left_count$func$fp32_mac.sv:182$51.x[63:0]$914 [12:0] = 13'0000000000000
+    Consolidated identical input bits for $mux cell $procmux$1095:
+      Old ports: A={ $4\left_count$func$fp32_mac.sv:181$50.x[63:0]$900 [61:0] 2'00 }, B=$4\left_count$func$fp32_mac.sv:181$50.x[63:0]$900, Y=$0\left_count$func$fp32_mac.sv:181$50.x[63:0]$881
+      New ports: A={ $4\left_count$func$fp32_mac.sv:181$50.x[63:0]$900 [61:13] 2'00 }, B=$4\left_count$func$fp32_mac.sv:181$50.x[63:0]$900 [63:13], Y=$0\left_count$func$fp32_mac.sv:181$50.x[63:0]$881 [63:13]
+      New connections: $0\left_count$func$fp32_mac.sv:181$50.x[63:0]$881 [12:0] = 13'0000000000000
+    Consolidated identical input bits for $mux cell $procmux$5651:
+      Old ports: A=$procmux$5648_Y, B=4'1010, Y=$procmux$5651_Y
+      New ports: A=$procmux$5648_Y [1:0], B=2'10, Y=$procmux$5651_Y [1:0]
+      New connections: $procmux$5651_Y [3:2] = { $procmux$5651_Y [1] 1'0 }
+  Optimizing cells in module \fp32_mac.
+Performed a total of 22 changes.
+
+6.19.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_mac'.
+Removed a total of 0 cells.
+
+6.19.6. Executing OPT_SHARE pass.
+    Found cells that share an operand and can be merged by moving the $mux $procmux$5218 in front of them:
+        $auto$alumacc.cc:495:replace_alu$6411
+        $auto$alumacc.cc:495:replace_alu$6449
+
+6.19.7. Executing OPT_DFF pass (perform DFF optimizations).
+
+6.19.8. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_mac..
+Removed 0 unused cells and 7 unused wires.
+<suppressed ~1 debug messages>
+
+6.19.9. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+<suppressed ~3 debug messages>
+
+6.19.10. Rerunning OPT passes. (Maybe there is more to do..)
+
+6.19.11. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_mac..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~51 debug messages>
+
+6.19.12. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_mac.
+Performed a total of 0 changes.
+
+6.19.13. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_mac'.
+Removed a total of 0 cells.
+
+6.19.14. Executing OPT_SHARE pass.
+
+6.19.15. Executing OPT_DFF pass (perform DFF optimizations).
+Setting constant 0-bit at position 25 on $auto$ff.cc:266:slice$6257 ($adffe) from module fp32_mac.
+Setting constant 0-bit at position 26 on $auto$ff.cc:266:slice$6257 ($adffe) from module fp32_mac.
+
+6.19.16. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_mac..
+Removed 0 unused cells and 3 unused wires.
+<suppressed ~1 debug messages>
+
+6.19.17. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+
+6.19.18. Rerunning OPT passes. (Maybe there is more to do..)
+
+6.19.19. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \fp32_mac..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~51 debug messages>
+
+6.19.20. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \fp32_mac.
+Performed a total of 0 changes.
+
+6.19.21. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_mac'.
+Removed a total of 0 cells.
+
+6.19.22. Executing OPT_SHARE pass.
+
+6.19.23. Executing OPT_DFF pass (perform DFF optimizations).
+
+6.19.24. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_mac..
+
+6.19.25. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+
+6.19.26. Finished OPT passes. (There is nothing left to do.)
+
+6.20. Executing TECHMAP pass (map to technology primitives).
+
+6.20.1. Executing Verilog-2005 frontend: /usr/bin/../share/yosys/techmap.v
+Parsing Verilog input from `/usr/bin/../share/yosys/techmap.v' to AST representation.
+Generating RTLIL representation for module `\_90_simplemap_bool_ops'.
+Generating RTLIL representation for module `\_90_simplemap_reduce_ops'.
+Generating RTLIL representation for module `\_90_simplemap_logic_ops'.
+Generating RTLIL representation for module `\_90_simplemap_compare_ops'.
+Generating RTLIL representation for module `\_90_simplemap_various'.
+Generating RTLIL representation for module `\_90_simplemap_registers'.
+Generating RTLIL representation for module `\_90_shift_ops_shr_shl_sshl_sshr'.
+Generating RTLIL representation for module `\_90_shift_shiftx'.
+Generating RTLIL representation for module `\_90_fa'.
+Generating RTLIL representation for module `\_90_lcu_brent_kung'.
+Generating RTLIL representation for module `\_90_alu'.
+Generating RTLIL representation for module `\_90_macc'.
+Generating RTLIL representation for module `\_90_alumacc'.
+Generating RTLIL representation for module `\$__div_mod_u'.
+Generating RTLIL representation for module `\$__div_mod_trunc'.
+Generating RTLIL representation for module `\_90_div'.
+Generating RTLIL representation for module `\_90_mod'.
+Generating RTLIL representation for module `\$__div_mod_floor'.
+Generating RTLIL representation for module `\_90_divfloor'.
+Generating RTLIL representation for module `\_90_modfloor'.
+Generating RTLIL representation for module `\_90_pow'.
+Generating RTLIL representation for module `\_90_pmux'.
+Generating RTLIL representation for module `\_90_demux'.
+Generating RTLIL representation for module `\_90_lut'.
+Successfully finished Verilog frontend.
+
+6.20.2. Continuing TECHMAP pass.
+Using extmapper simplemap for cells of type $not.
+Using extmapper simplemap for cells of type $mux.
+Using template $paramod$88ebedc0964674c5b2e447c66b33a42fc7e7abe0\_90_alu for cells of type $alu.
+Using extmapper simplemap for cells of type $eq.
+Using extmapper simplemap for cells of type $xor.
+Using template $paramod$af3f4c812abaf2dfafdf0ed5cfc0047db1491143\_90_alu for cells of type $alu.
+Using template $paramod$b88c814db3182f0c444e9827cc183ec51bbd865d\_90_alu for cells of type $alu.
+Using extmapper simplemap for cells of type $reduce_bool.
+Using extmapper simplemap for cells of type $adffe.
+Using extmapper simplemap for cells of type $reduce_or.
+Using extmapper simplemap for cells of type $logic_or.
+Using extmapper simplemap for cells of type $logic_and.
+Using extmapper simplemap for cells of type $logic_not.
+Using extmapper simplemap for cells of type $ne.
+Using extmapper simplemap for cells of type $and.
+Using template $paramod$7d345e38ed17d1b9b7ad574498fe053cc5e778a7\_90_alu for cells of type $alu.
+Using template $paramod$8f00ca5ffae7aacb4fd127c662dabcdb3ad72531\_90_alu for cells of type $alu.
+Using extmapper simplemap for cells of type $reduce_and.
+Using extmapper simplemap for cells of type $or.
+Using template $paramod$672a140277c71df8314410f22acc08d55222c3c7\_90_alu for cells of type $alu.
+Using template $paramod$3d4d857737ce5ee764ebe220e87ff73b66d6d0ad\_90_alu for cells of type $alu.
+Using template $paramod$486d4246188ac94b4244861112f8beffcfe3130f\_90_alu for cells of type $alu.
+Using template $paramod$d7bce073994a2e72d43625386f50f475e47fb258\_90_alu for cells of type $alu.
+Using template $paramod$c6d197d8767d5e7f567fab59c9b3b537bafbfd3f\_90_alu for cells of type $alu.
+Using template $paramod$dfca81329cbbac01700318224209a5f2318c7128\_90_alu for cells of type $alu.
+Using template $paramod$c3cd1564c35d873179656addd6052d7ea8b6d991\_90_alu for cells of type $alu.
+Using template $paramod$75513eb77e29613e120cf5a3c4c5758cc03b09c6\_90_alu for cells of type $alu.
+Using template $paramod$1d1e68f77481583066c6d429218f48ea9d5739b3\_90_alu for cells of type $alu.
+Running "alumacc" on wrapper $extern:wrap:$neg:A_SIGNED=1:A_WIDTH=10:Y_WIDTH=10:394426c56d1a028ba8fdd5469b163e04011def47.
+Using template $extern:wrap:$neg:A_SIGNED=1:A_WIDTH=10:Y_WIDTH=10:394426c56d1a028ba8fdd5469b163e04011def47 for cells of type $extern:wrap:$neg:A_SIGNED=1:A_WIDTH=10:Y_WIDTH=10:394426c56d1a028ba8fdd5469b163e04011def47.
+Using extmapper maccmap for cells of type $macc_v2.
+  add { $sub$fp32_mac.sv:70$391_Y [9] $sub$fp32_mac.sv:70$391_Y [7:0] } (9 bits, signed)
+  add { $sub$fp32_mac.sv:70$394_Y [9] $sub$fp32_mac.sv:70$394_Y [7:0] } (9 bits, signed)
+  add 10'0000000001 (10 bits, unsigned)
+  packed 1 (1) bits / 1 words into adder tree
+Using template $paramod$adc6382435ba7fe50315523b10aedb8e224c8208\_90_alu for cells of type $alu.
+Using template $paramod$constmap:7fcb0b0e307d3b0f8faca43f67c9d3002ac7fff2$paramod$69431fc58c36fb3034a314a5b044931de5d717c5\_90_shift_ops_shr_shl_sshl_sshr for cells of type $shl.
+Using template $paramod$effaf36432c334223db2ff0ecd7fefb10188d957\_90_pmux for cells of type $pmux.
+Using template $paramod$33ff5ff320950c75a70f0ccce26d2b6265c06440\_90_pmux for cells of type $pmux.
+Using template $paramod$600cc41df39b3e6f3f6c2a4f2a63b342a4593187\_90_pmux for cells of type $pmux.
+Using template $paramod$8fabc56b80a569262acfc42757a02ca0b8e91278\_90_pmux for cells of type $pmux.
+Using template $paramod$274c8d34472ef950383656115be6e1c8ace5024c\_90_pmux for cells of type $pmux.
+Using template $paramod$7ac9efd35edb6c2978c203f01c00a202ec61111b\_90_pmux for cells of type $pmux.
+Using template $paramod$c5c783b17ab1d780abfad8cfe6563a0a7b47a3b0\_90_pmux for cells of type $pmux.
+Using extmapper simplemap for cells of type $adff.
+Using template $paramod\_90_lcu_brent_kung\WIDTH=32'00000000000000000000000000011101 for cells of type $lcu.
+Using extmapper simplemap for cells of type $pos.
+Using template $paramod\_90_lcu_brent_kung\WIDTH=32'00000000000000000000000000000010 for cells of type $lcu.
+Using template $paramod\_90_lcu_brent_kung\WIDTH=32'00000000000000000000000000001011 for cells of type $lcu.
+Using template $paramod\_90_lcu_brent_kung\WIDTH=32'00000000000000000000000000001000 for cells of type $lcu.
+Using template $paramod\_90_lcu_brent_kung\WIDTH=32'00000000000000000000000000001001 for cells of type $lcu.
+Using template $paramod$484d51534650924b7ed4c69e46eed3a56904771f\_90_alu for cells of type $alu.
+Using template $paramod\_90_lcu_brent_kung\WIDTH=32'00000000000000000000000000001010 for cells of type $lcu.
+Using template $paramod$bd91b1311a7e26328ec7b35acb363a89aa87e033\_90_alu for cells of type $alu.
+Using template $paramod\_90_lcu_brent_kung\WIDTH=32'00000000000000000000000000000101 for cells of type $lcu.
+No more expansions possible.
+<suppressed ~3710 debug messages>
+
+6.21. Executing OPT pass (performing simple optimizations).
+
+6.21.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module fp32_mac.
+<suppressed ~1747 debug messages>
+
+6.21.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\fp32_mac'.
+<suppressed ~1431 debug messages>
+Removed a total of 477 cells.
+
+6.21.3. Executing OPT_DFF pass (perform DFF optimizations).
+
+6.21.4. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \fp32_mac..
+Removed 559 unused cells and 2094 unused wires.
+<suppressed ~560 debug messages>
+
+6.21.5. Finished fast OPT passes.
+
+6.22. Executing HIERARCHY pass (managing design hierarchy).
+Attribute `top' found on module `fp32_mac'. Setting top module to fp32_mac.
+
+6.22.1. Analyzing design hierarchy..
+Top module:  \fp32_mac
+
+6.22.2. Analyzing design hierarchy..
+Top module:  \fp32_mac
+Removed 0 unused modules.
+
+6.23. Printing statistics.
+
+=== fp32_mac ===
+
+   Number of wires:               1239
+   Number of wire bits:           9349
+   Number of public wires:         146
+   Number of public wire bits:    2825
+   Number of ports:                 12
+   Number of port bits:            109
+   Number of memories:               0
+   Number of memory bits:            0
+   Number of processes:              0
+   Number of cells:               6070
+     $_AND_                       1334
+     $_DFFE_PN0N_                   38
+     $_DFFE_PN0P_                  335
+     $_DFF_PN0_                      2
+     $_MUX_                       2537
+     $_NOT_                        133
+     $_OR_                        1265
+     $_XOR_                        426
+
+6.24. Executing CHECK pass (checking for obvious problems).
+Checking module fp32_mac...
+Found and reported 0 problems.
+
+7. Executing CHECK pass (checking for obvious problems).
+Checking module fp32_mac...
+Found and reported 0 problems.
+
+8. Printing statistics.
+
+=== fp32_mac ===
+
+   Number of wires:               1239
+   Number of wire bits:           9349
+   Number of public wires:         146
+   Number of public wire bits:    2825
+   Number of ports:                 12
+   Number of port bits:            109
+   Number of memories:               0
+   Number of memory bits:            0
+   Number of processes:              0
+   Number of cells:               6070
+     $_AND_                       1334
+     $_DFFE_PN0N_                   38
+     $_DFFE_PN0P_                  335
+     $_DFF_PN0_                      2
+     $_MUX_                       2537
+     $_NOT_                        133
+     $_OR_                        1265
+     $_XOR_                        426
+
+End of script. Logfile hash: 2e0845a9c6, CPU: user 1.03s system 0.02s, MEM: 48.07 MB peak
+Yosys 0.52 (git sha1 fee39a3284c90249e1d9684cf6944ffbbcbb8f90)
+Time spent: 20% 36x opt_expr (0 sec), 18% 25x opt_clean (0 sec), ...

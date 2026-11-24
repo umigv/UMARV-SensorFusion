@@ -1,0 +1,1160 @@
+{
+  "a": [
+    {
+      "family": "central update",
+      "sample": 1,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 23225,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 1,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 20195,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 2,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 23221,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 2,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 20199,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 3,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 23228,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 3,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 20193,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 4,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 23223,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 4,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 20195,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 5,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 23225,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 5,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 20194,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 6,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 23219,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 6,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 20192,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 7,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 23221,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 7,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 20193,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 8,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 23222,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 8,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 20187,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 1,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 23232,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 1,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 20203,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 1,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 20458,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 2,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 23231,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 2,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 20206,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 2,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 20461,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 3,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 23225,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 3,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 20197,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 3,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 20451,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 4,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 23228,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 4,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 20204,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 4,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 20458,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 5,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 23228,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 5,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 20198,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 5,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 20452,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 6,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 23229,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 6,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 20208,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 6,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 20463,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 7,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 23226,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 7,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 20198,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 7,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 20453,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 8,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 23222,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 8,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 20193,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 8,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 20448,
+      "requests": 775
+    },
+    {
+      "family": "posterior",
+      "sample": 1,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 8551,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 2,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 8543,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 3,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 8543,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 4,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 8546,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 5,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 8543,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 6,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 8561,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 7,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 8541,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 8,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 8544,
+      "requests": 300
+    }
+  ],
+  "d": [
+    {
+      "family": "central update",
+      "sample": 1,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 17825,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 1,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 13795,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 2,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 17821,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 2,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 13799,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 3,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 17828,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 3,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 13793,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 4,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 17823,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 4,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 13795,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 5,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 17825,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 5,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 13794,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 6,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 17819,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 6,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 13792,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 7,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 17821,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 7,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 13793,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 8,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 17822,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 8,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 13787,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 1,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 17832,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 1,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 13803,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 1,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 14158,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 2,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 17831,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 2,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 13806,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 2,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 14161,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 3,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 17825,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 3,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 13797,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 3,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 14151,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 4,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 17828,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 4,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 13804,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 4,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 14158,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 5,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 17828,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 5,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 13798,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 5,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 14152,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 6,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 17829,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 6,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 13808,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 6,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 14163,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 7,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 17826,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 7,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 13798,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 7,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 14153,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 8,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 17822,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 8,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 13793,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 8,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 14148,
+      "requests": 775
+    },
+    {
+      "family": "posterior",
+      "sample": 1,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 6551,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 2,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 6543,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 3,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 6543,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 4,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 6546,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 5,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 6543,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 6,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 6561,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 7,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 6541,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 8,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 6544,
+      "requests": 300
+    }
+  ],
+  "f": [
+    {
+      "family": "central update",
+      "sample": 1,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 16745,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 1,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 12515,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 2,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 16741,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 2,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 12519,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 3,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 16748,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 3,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 12513,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 4,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 16743,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 4,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 12515,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 5,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 16745,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 5,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 12514,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 6,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 16739,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 6,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 12512,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 7,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 16741,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 7,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 12513,
+      "requests": 770
+    },
+    {
+      "family": "central update",
+      "sample": 8,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 16742,
+      "requests": 825
+    },
+    {
+      "family": "central update",
+      "sample": 8,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 12507,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 1,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 16752,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 1,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 12523,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 1,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 12898,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 2,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 16751,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 2,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 12526,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 2,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 12901,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 3,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 16745,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 3,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 12517,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 3,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 12891,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 4,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 16748,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 4,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 12524,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 4,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 12898,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 5,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 16748,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 5,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 12518,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 5,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 12892,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 6,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 16749,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 6,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 12528,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 6,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 12903,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 7,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 16746,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 7,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 12518,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 7,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 12893,
+      "requests": 775
+    },
+    {
+      "family": "central downdate",
+      "sample": 8,
+      "mode": "original",
+      "rows": 11,
+      "cycles": 16742,
+      "requests": 825
+    },
+    {
+      "family": "central downdate",
+      "sample": 8,
+      "mode": "rotation",
+      "rows": 11,
+      "cycles": 12513,
+      "requests": 770
+    },
+    {
+      "family": "central downdate",
+      "sample": 8,
+      "mode": "hybrid",
+      "rows": 11,
+      "cycles": 12888,
+      "requests": 775
+    },
+    {
+      "family": "posterior",
+      "sample": 1,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 6151,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 2,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 6143,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 3,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 6143,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 4,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 6146,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 5,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 6143,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 6,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 6161,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 7,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 6141,
+      "requests": 300
+    },
+    {
+      "family": "posterior",
+      "sample": 8,
+      "mode": "original",
+      "rows": 4,
+      "cycles": 6144,
+      "requests": 300
+    }
+  ]
+}

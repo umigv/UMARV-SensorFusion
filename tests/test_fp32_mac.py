@@ -1,4 +1,5 @@
 """Generate exact FMA results and check the RTL with Icarus Verilog."""
+import os
 from pathlib import Path
 import random
 import subprocess
@@ -59,7 +60,7 @@ def fma(a, b, c):
     return sign | ((shift - 148) << 23) | (mantissa & 0x7FFFFF), int(bool(remainder))
 
 
-def operations():
+def operations(timing=False):
     one = 0x3F800000
     directed = [
         # Seed accumulator, then apply the product.
@@ -79,6 +80,8 @@ def operations():
         (one | SIGN, one, one),              # exact cancellation to +0
         (0x80800000, 0x00800000, one + 1),   # cancellation into subnormal
         (0x7F7FFFFF, 1, 1),                 # extreme positive exponent gap
+        (1, 1, 1),                          # 176-cycle same-sign witness
+        (0x80000001, 1, 1),                 # 177-cycle opposite-sign witness
         (0xFF7FFFFF, 1, 1),                 # extreme opposite-sign exponent gap
         (1, 0x7F7FFFFF, 0x7F7FFFFF),        # extreme gap and overflow
     ]
@@ -96,9 +99,17 @@ def operations():
                 yield 0, 1, a, b
 
     rng = random.Random(0x754)
-    for index in range(5000):
+
+    def finite_nonzero():
+        while True:
+            word = rng.getrandbits(32)
+            if 0 < magnitude(word) < INF:
+                return word
+
+    for index in range(10_000 if timing else 5000):
         if index % 2:
-            a, b = (rng.getrandbits(32) for _ in range(2))
+            a, b = (finite_nonzero() for _ in range(2)) if timing else (
+                rng.getrandbits(32) for _ in range(2))
         else:
             # Bias toward similarly scaled products for alignment and cancellation.
             a, b = (((rng.randrange(115, 140) << 23) | rng.getrandbits(23)
@@ -116,24 +127,29 @@ def operations():
         yield int(index == 0), int(index == 1023), one, one
 
 
-def main():
+def write_vectors(path, requests):
     accumulator = 0
     result = 0
     lines = []
-    for clear, last, a, b in operations():
+    for clear, last, a, b in requests:
         accumulator, flags = fma(a, b, 0 if clear else accumulator)
         if last:
             result = accumulator
-        lines.append(f"{clear} {last} {a:08x} {b:08x} {result:08x} {flags:02x}\n")
+        lines.append(f"{clear} {last} {a:08x} {b:08x} {result:08x} {accumulator:08x} {flags:02x}\n")
+    path.write_text("".join(lines))
 
+
+def main():
+    timing = os.environ.get("FP32_TIMING") == "1"
     with tempfile.TemporaryDirectory() as tmp:
         executable = Path(tmp) / "sim"
         vectors = Path(tmp) / "vectors.txt"
-        vectors.write_text("".join(lines))
+        write_vectors(vectors, operations(timing))
         subprocess.run(["iverilog", "-g2012", "-Wall", "-s", "tb_fp32_mac",
                         "-o", executable, "fp32_mac.sv", "tests/tb_fp32_mac.sv"],
                        cwd=ROOT, check=True)
-        subprocess.run(["vvp", executable, f"+vectors={vectors}"], check=True, timeout=90)
+        subprocess.run(["vvp", executable, f"+vectors={vectors}", *(["+latency"] if timing else [])],
+                       check=True, timeout=180)
 
 
 if __name__ == "__main__":

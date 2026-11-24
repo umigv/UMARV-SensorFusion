@@ -1,0 +1,51 @@
+{
+  "original": {
+    "unmapped_cell_types": [],
+    "mapped_latches_or_other_non_ff_sequential_instances": 0,
+    "excluded_scope_metadata_instances": 1,
+    "yosys_check_problems": 0,
+    "yosys_stat_area_um2": 18450.1952
+  },
+  "radix4_a": {
+    "unmapped_cell_types": [],
+    "mapped_latches_or_other_non_ff_sequential_instances": 0,
+    "excluded_scope_metadata_instances": 5,
+    "yosys_check_problems": 0,
+    "yosys_stat_area_um2": 35774.3104
+  },
+  "partial_d": {
+    "unmapped_cell_types": [],
+    "mapped_latches_or_other_non_ff_sequential_instances": 0,
+    "excluded_scope_metadata_instances": 5,
+    "yosys_check_problems": 0,
+    "yosys_stat_area_um2": 39724.3488
+  },
+  "dadda_f": {
+    "unmapped_cell_types": [],
+    "mapped_latches_or_other_non_ff_sequential_instances": 0,
+    "excluded_scope_metadata_instances": 6,
+    "yosys_check_problems": 0,
+    "yosys_stat_area_um2": 51197.8528
+  },
+  "original_fast": {
+    "unmapped_cell_types": [],
+    "mapped_latches_or_other_non_ff_sequential_instances": 0,
+    "excluded_scope_metadata_instances": 1,
+    "yosys_check_problems": 0,
+    "yosys_stat_area_um2": 31908.1024
+  },
+  "booth_original_shifts": {
+    "unmapped_cell_types": [],
+    "mapped_latches_or_other_non_ff_sequential_instances": 0,
+    "excluded_scope_metadata_instances": 2,
+    "yosys_check_problems": 0,
+    "yosys_stat_area_um2": 22429.0112
+  },
+  "booth_fast_shifts": {
+    "unmapped_cell_types": [],
+    "mapped_latches_or_other_non_ff_sequential_instances": 0,
+    "excluded_scope_metadata_instances": 2,
+    "yosys_check_problems": 0,
+    "yosys_stat_area_um2": 35960.7392
+  }
+}

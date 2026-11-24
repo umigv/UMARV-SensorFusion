@@ -1,0 +1,40 @@
+{
+  "production": {
+    "n": 135113,
+    "min": 1,
+    "mean": 19.187716948036087,
+    "median": 21,
+    "p95": 22,
+    "p99": 22,
+    "max": 22,
+    "bound": 22,
+    "witness": "LAT MAC 19 3f800001 3f7ffffe bf800000 a8800000 00 22",
+    "first": {
+      "n": 32108,
+      "min": 19,
+      "mean": 19,
+      "median": 19.0,
+      "p95": 19,
+      "p99": 19,
+      "max": 19
+    },
+    "continued": {
+      "n": 73859,
+      "min": 19,
+      "mean": 21.32158572415007,
+      "median": 21,
+      "p95": 22,
+      "p99": 22,
+      "max": 22
+    },
+    "histogram": {
+      "1": 10304,
+      "19": 35115,
+      "21": 58247,
+      "22": 31447
+    },
+    "architecture": "a",
+    "topology": 4,
+    "fast_shift": true
+  }
+}

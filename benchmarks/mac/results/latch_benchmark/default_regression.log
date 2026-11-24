@@ -1,0 +1,11 @@
+CC="cc" IVERILOG="iverilog" python3 tests/test_fp32_divsqrt.py
+PASS mode 0: 12162 results and flags, latency min/max/mean 1/81/33.792 cycles
+     recurrence only: 12054 operations, min/max/mean 31/81/34.086 cycles
+PASS mode 1: 12162 results and flags, latency min/max/mean 1/54/31.045 cycles
+     recurrence only: 12065 operations, min/max/mean 31/54/31.286 cycles
+tests/tb_fp32_divsqrt.sv:146: $finish called at 16263080000 (1ps)
+python3 tests/test_fp32_mac.py
+PASS: 10112 reference MAC operations, max sampled latency 22 cycles
+tests/tb_fp32_mac.sv:135: $finish called at 3195900000 (1ps)
+iverilog -g2012 -Wall -S -tnull -s fp32_divsqrt fp32_divsqrt.sv
+iverilog -g2012 -Wall -S -tnull -s fp32_mac fp32_mac.sv

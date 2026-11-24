@@ -1,0 +1,79 @@
+
+$ command -v yosys
+[exit 1]
+
+$ command -v yosys-abc
+[exit 1]
+
+$ command -v sta
+[exit 1]
+
+$ command -v openroad
+[exit 1]
+
+$ command -v OpenROAD
+[exit 1]
+
+$ command -v openlane
+[exit 1]
+
+$ command -v openlane2
+[exit 1]
+
+$ command -v docker
+[exit 1]
+
+$ command -v podman
+[exit 1]
+
+$ command -v nix
+[exit 1]
+
+$ command -v nix-shell
+[exit 1]
+
+$ command -v volare
+[exit 1]
+
+$ command -v tt_tool
+[exit 1]
+
+$ command -v pip
+[exit 1]
+PDK_ROOT=
+PDK=
+OPENLANE_ROOT=
+OPENROAD_ROOT=
+SKY130_LIBERTY=
+
+$ apt-get -o Acquire::Retries=0 -o Acquire::http::Timeout=5 download yosys
+Err:1 http://archive.ubuntu.com/ubuntu resolute/universe amd64 yosys amd64 0.52-2
+  Temporary failure resolving 'archive.ubuntu.com'
+E: Failed to fetch http://archive.ubuntu.com/ubuntu/pool/universe/y/yosys/yosys_0.52-2_amd64.deb  Temporary failure resolving 'archive.ubuntu.com'
+[exit 100]
+
+$ apt-get -o Acquire::Retries=0 -o Acquire::http::Timeout=5 download opensta
+Err:1 http://archive.ubuntu.com/ubuntu resolute/universe amd64 opensta amd64 0~20191111gitc018cb2+dfsg-1.1
+  Temporary failure resolving 'archive.ubuntu.com'
+E: Failed to fetch http://archive.ubuntu.com/ubuntu/pool/universe/o/opensta/opensta_0%7e20191111gitc018cb2%2bdfsg-1.1_amd64.deb  Temporary failure resolving 'archive.ubuntu.com'
+[exit 100]
+
+$ apt-get -o Acquire::Retries=0 -o Acquire::http::Timeout=5 download openroad
+E: Unable to locate package openroad
+[exit 100]
+
+$ curl -fsSL --connect-timeout 5 --max-time 10 -o oss-release.json https://api.github.com/repos/YosysHQ/oss-cad-suite-build/releases/latest
+curl: (6) Could not resolve host: api.github.com
+[exit 6]
+
+$ curl -fsSL --connect-timeout 5 --max-time 10 -o pdks-release.json https://api.github.com/repos/efabless/volare/releases
+curl: (6) Could not resolve host: api.github.com
+[exit 6]
+
+$ curl -fsSL --connect-timeout 5 --max-time 10 -o openroad-release.json https://api.github.com/repos/The-OpenROAD-Project/OpenROAD/releases/latest
+curl: (6) Could not resolve host: api.github.com
+[exit 6]
+
+$ curl -fsSL --connect-timeout 5 --max-time 10 -o yowasp.json https://pypi.org/pypi/yowasp-yosys/json
+curl: (6) Could not resolve host: pypi.org
+[exit 6]

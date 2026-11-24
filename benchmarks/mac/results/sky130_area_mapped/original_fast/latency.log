@@ -1,0 +1,2 @@
+LAT MAC 19 3f800001 3f7ffffe bf800000 a8800000 00 33
+PASS: 135113 reference MAC operations, max sampled latency 33 cycles
