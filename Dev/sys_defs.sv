@@ -1,3 +1,19 @@
+// Shared read-only address map. The measurement-noise factor occupies 83..92.
+localparam logic [6:0] PROM_SR_BASE   = 7'd83;
+localparam logic [6:0] PROM_MATH_BASE = 7'd93;
+localparam logic [6:0] PROM_MATH_ZERO = PROM_MATH_BASE;
+localparam logic [6:0] PROM_MATH_ONE  = PROM_MATH_BASE + 7'd1;
+
+// Prediction currently declares the rest of the math layout without values.
+// Reserve those slots until their FP32 encodings/configuration are defined.
+function automatic logic [31:0] prom_math_read(input logic [6:0] addr);
+    case (addr)
+        PROM_MATH_ZERO: prom_math_read = 32'h00000000;
+        PROM_MATH_ONE:  prom_math_read = 32'h3f800000;
+        default:        prom_math_read = 32'h00000000;
+    endcase
+endfunction
+
 typedef struct packed {
     logic ukf_pulse;        // one clock: the measurements below are ready
     logic [31:0] ukf_beat_ts;      // time of the beat this snapshot belongs to, us
@@ -9,6 +25,20 @@ typedef struct packed {
     logic ukf_dw_valid;    // good wheel reading this beat, with a previous one to compare against
     logic signed [27:0] ukf_dw_delta;     // counts moved since the last good reading
 } meas_regfile_t;
+
+// FP32 measurements in the same local frame and units as the prediction.
+typedef struct packed {
+    logic [31:0] x;
+    logic [31:0] y;
+    logic [31:0] theta;
+    logic [31:0] omega;
+} corr_measurement_t;
+
+// FP32 upper triangle in row-major order: S11..S15, S22..S25, ..., S55.
+typedef logic [14:0][31:0] pred_s_factor_t;
+
+// FP32 upper triangle of the full 4x4 noise factor: SR11..SR14, ..., SR44.
+typedef logic [9:0][31:0] meas_s_factor_t;
 
 typedef struct packed{
     logic [31:0] ukf_x;
@@ -29,7 +59,7 @@ typedef struct packed{
 }PRED_PACKET;
 
 typedef enum logic [2:0] { 
-    UOP_MAC, UOP_ADD, UOP_DIV, UOP_DONE, UOP_NOP, UOP_SQRT, UOP_TRIG_FIX, UOP_WRAP
+    UOP_MAC, UOP_ADD, UOP_DIV, UOP_DONE, UOP_NOP, UOP_SQRT, UOP_TRIG, UOP_WRAP
 } dp_uop;
 
 typedef enum logic [2:0] { 
@@ -43,10 +73,10 @@ typedef struct packed {
     logic clr_acc; //clear MAC accumulator
     logic wb_en;  
     logic neg_b;  //write to regfile
-    logic [6:0] src_a;   //change depedning on size of regfile
+    logic [6:0] src_a;   // register or PROM address
     logic [6:0] src_b; 
     logic [6:0] dest;
-    logic [5:0] targ_pc; //size of correction engine program
+    logic [6:0] targ_pc; //size of correction engine program
     logic instr_done; //wait until uop finishes
 } corr_ukf_uop;
 
