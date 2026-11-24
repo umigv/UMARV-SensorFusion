@@ -4,7 +4,7 @@ from math import isfinite, sqrt
 
 from run_corr_x import (
     apply_update, covariance, f32, fixtures, fp32_reference, parse_simulation,
-    simulate, upper_triangle,
+    simulate, upper_triangle, wrap_heading,
 )
 
 
@@ -42,6 +42,7 @@ def joint_reference(state, measurement, packed_s, noise):
              (pi[1] * d00 - pi[0] * d01) / determinant) for pi in p]
     ex, ey = measurement[0] - state[0], measurement[1] - state[1]
     posterior = [x + k0 * ex + k1 * ey for x, (k0, k1) in zip(state, gain)]
+    posterior[2] = wrap_heading(posterior[2])
     new_covariance = [[p[i][j] - k0 * p[0][j] - k1 * p[1][j] for j in range(5)]
                       for i, (k0, k1) in enumerate(gain)]
     return posterior, new_covariance
@@ -111,7 +112,7 @@ def main():
 
     assert len(signs) == 2
     assert all(a != b for a, b in zip(results[0]["STATE"], results[0]["X_STATE"], strict=True))
-    assert results[0]["STAGE_CYCLES"][0] == 4913
+    assert results[0]["STAGE_CYCLES"][0] == 4987, results[0]["STAGE_CYCLES"]
     cycles = [case["STAGE_CYCLES"] for case in results.values() if "STAGE_CYCLES" in case]
     assert all(sum(case["STAGE_CYCLES"]) == case["CYCLES"][1]
                for case in results.values() if "CYCLES" in case)

@@ -28,11 +28,13 @@ module lat_to_xy #(
     localparam logic [6:0] SAMPLE_LON = 7'd22;
     localparam logic [6:0] LAT_SQUARED = 7'd23;
     localparam logic [6:0] COSINE = 7'd24;
-    localparam logic [6:0] NORTH_SCALE = 7'd25;
-    localparam logic [6:0] EAST_SCALE = 7'd26;
-    localparam logic [6:0] DELTA = 7'd27;
-    localparam logic [6:0] EAST_METRES = 7'd28;
-    localparam logic [6:0] NORTH_METRES = 7'd29;
+    // Each alias takes over after the previous operand is sampled by
+    // the MAC; the result is written only on the later completion beat.
+    localparam logic [6:0] NORTH_SCALE = LAT_SQUARED;
+    localparam logic [6:0] EAST_SCALE = COSINE;
+    localparam logic [6:0] DELTA = SAMPLE_LON;
+    localparam logic [6:0] EAST_METRES = EAST_SCALE;
+    localparam logic [6:0] NORTH_METRES = NORTH_SCALE;
 
     localparam logic [6:0] INIT_X = 7'd70; // Origin longitude, degrees
     localparam logic [6:0] INIT_Y = 7'd71; // Origin latitude, degrees

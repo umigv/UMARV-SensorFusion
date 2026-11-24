@@ -22,7 +22,9 @@ module corr_x_tb #(
         .ENABLE_SECOND_UPDATE(TEST_SECOND),
         .ENABLE_THIRD_UPDATE(TEST_THIRD),
         .ENABLE_FOURTH_UPDATE(TEST_FOURTH)
-    ) dut (.*);
+    ) dut (.prediction_div_owner(1'b0), .prediction_div_request(66'b0),
+           .prediction_div_response(), .load_shared_noise(), .load_shared_measurement(), .update_failed(),
+           .spad_request(), .spad_response(65'b0), .*);
 
     localparam int LAST_REG = 36;
     logic [31:0] before_write [0:LAST_REG];
@@ -103,7 +105,8 @@ module corr_x_tb #(
                      xyz_update_valid || dut.correction_program.pc != 88))
                     $fatal(1, "ukf_valid asserted before a successful fourth stage");
                 for (int a = 0; a <= LAST_REG; a++)
-                    if (!loading && !(retire && a == expected_dest) &&
+                    if ((!loading || (a >= 21 && a <= 24)) &&
+                        !(retire && a == expected_dest) &&
                         before_write[a] !== dut.correction_program.regfile[a])
                         $fatal(1, "premature write at %0d", a);
                 if (last_innov) begin
@@ -218,9 +221,30 @@ module corr_x_tb #(
             $bits(dut.correction_program.uop.src_b) < 7 ||
             $bits(dut.correction_program.pc) != 7)
             $fatal(1, "invalid ROM or PC address map");
-        for (int addr = 0; addr < 128; addr++)
-            if (prom_math_read(addr[6:0]) !== (addr == 94 ? 32'h3f800000 : 32'b0))
+        for (int addr = 0; addr < 128; addr++) begin
+            logic [31:0] expected;
+            case (addr)
+                94: expected = 32'h3f800000;
+                97: expected = 32'h40490fdb;
+                98: expected = 32'h3fc90fdb;
+                99: expected = 32'hc0490fdb;
+                100: expected = 32'hbfc90fdb;
+                101: expected = 32'h3f490fdb;
+                102: expected = 32'hbf490fdb;
+                103: expected = 32'h4016cbe4;
+                104: expected = 32'hc016cbe4;
+                107: expected = 32'hbe2aaaab;
+                108: expected = 32'h3c088889;
+                109: expected = 32'hb9500d01;
+                110: expected = 32'hbf000000;
+                111: expected = 32'h3d2aaaab;
+                112: expected = 32'hbab60b61;
+                113: expected = 32'h40c90fdb;
+                default: expected = '0;
+            endcase
+            if (prom_math_read(addr[6:0]) !== expected)
                 $fatal(1, "unexpected ROM value or address alias at %0d", addr);
+        end
         if ($low(dut.correction_program.regfile) != 0 ||
             $high(dut.correction_program.regfile) != LAST_REG)
             $fatal(1, "unexpected physical register allocation");
@@ -259,6 +283,10 @@ module corr_x_tb #(
             convert_done = 1;
             @(negedge clock);
             convert_done = 0;
+            for (int i = 0; i < 4; i++)
+                if (dut.correction_program.regfile[21+i] !== fixtures[5+i])
+                    $fatal(1, "converted component %0d was not captured in place", i);
+            convert_result = 'x;
             // A second measurement beat during correction must be ignored.
             repeat (16) @(negedge clock);
             corr_packet.ukf_pulse = 1;

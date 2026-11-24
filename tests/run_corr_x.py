@@ -1,6 +1,6 @@
 """Run the correction RTL against FP32 steps and the covariance identity."""
 
-from math import sqrt
+from math import pi, sqrt
 from pathlib import Path
 from random import Random
 from struct import pack, unpack
@@ -10,6 +10,17 @@ from tempfile import TemporaryDirectory
 
 def f32(value):
     return unpack(">f", pack(">f", value))[0]
+
+
+def wrap_heading(angle, rounded=False):
+    bound = f32(pi) if rounded else pi
+    # Binary32 inputs and the binary32 period fit in double precision
+    # during this bounded integer-turn reference calculation.
+    while angle >= bound or angle < -bound:
+        angle += -2 * bound if angle >= bound else 2 * bound
+    if rounded:
+        angle = f32(angle)
+    return angle
 
 
 def word(value):
@@ -38,6 +49,7 @@ def covariance(factor):
 def fp32_reference(state, measurement, packed_s, noise):
     s = upper_triangle(packed_s, 5)
     innovation = [f32(z - x) for z, x in zip(measurement, state)]
+    innovation[2] = wrap_heading(innovation[2], rounded=True)
     d = f32(f32(s[0][0] ** 2) + noise[0] ** 2)
     q = f32(1.0 / f32(sqrt(d)))
     g = f32(innovation[0] * q)
@@ -52,6 +64,8 @@ def apply_update(state, innovation, s, u, g):
     delta = [f32(value * g) for value in u]
     updated = [f32(x + dx) for x, dx in zip(state, delta)]
     residual = [f32(e - dx) for e, dx in zip(innovation, delta)]
+    updated[2] = wrap_heading(updated[2], rounded=True)
+    residual[2] = wrap_heading(residual[2], rounded=True)
     for k in range(5):
         diagonal = s[k][k]
         t = f32(u[k] / diagonal)
@@ -77,7 +91,7 @@ def fixtures():
     # Positive |u| < S11, but the rounded diagonal square and u square
     # produce a zero radicand at sqrt issue.
     tiny = f32(sqrt(2.0**-149)) * (1.0 + 2.0**-20)
-    yield 1, 0, state, measurement, [tiny, *s[1:]], [tiny, *noise[1:]]
+    yield 1, 0, state, [state[0], *measurement[1:]], [tiny, *s[1:]], [tiny, *noise[1:]]
     yield 0, 1, state, measurement, s, noise
     yield 0, 0, state, [state[0], *measurement[1:]], s, noise
     rng = Random(1630)
@@ -167,7 +181,7 @@ def main():
     assert results[2]["FAILURE"] == [4, 14], "late invalid pivot did not abort"
     assert results[3]["FAILURE"] == [0, 14], "rank loss did not abort"
     assert results[4]["FAILURE"] == [0, 17], "zero radicand did not abort at square-root issue"
-    assert results[0]["INNOV"][2] == -6.25, "expected raw cross-boundary heading difference"
+    assert results[0]["INNOV"][2] == wrap_heading(-6.25, rounded=True), "expected shortest heading innovation"
     cycles = [case["CYCLES"] for case in results.values() if "CYCLES" in case]
     print(f"successful cases: {len(cycles)}; baseline engine/core cycles: {cycles[0]}")
     print(f"observed engine/core cycle ranges: {min(x[0] for x in cycles)}–{max(x[0] for x in cycles)} / "

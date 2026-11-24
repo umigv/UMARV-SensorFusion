@@ -20,7 +20,7 @@ def main():
     # same types and enum members in a temporary synthesis compilation unit.
     names = findall(r"}\s*(\w+)\s*;", defs)
     names += ["pred_s_factor_t", "meas_s_factor_t"]
-    symbol = compile(r"\b(" + "|".join(names) + r"|UOP_[A-Z_]+|SEQ_[A-Z_]+|PROM_[A-Z_]+|prom_math_read)\b")
+    symbol = compile(r"\b(" + "|".join(names) + r"|UOP_[A-Z_]+|SEQ_[A-Z_]+|PROM_[A-Z_]+|prom_math_read|angle_supported|angle_needs_wrap|angle_wrap_step)\b")
     with TemporaryDirectory() as temp:
         unit = Path(temp) / "corr_package.sv"
         sources = [(source / f"{name}.sv").read_text()

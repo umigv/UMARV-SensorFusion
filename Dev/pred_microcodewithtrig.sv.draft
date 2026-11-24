@@ -1,0 +1,178 @@
+module pred_microcode_prog (
+    input logic [6:0] pc,
+
+    output pred_ukf_uop uop 
+);
+
+ //USE THESE FOR MEM ACCESS IN UOPS
+    //state regs
+    localparam logic [6:0] REG_X          = 7'd0;
+    localparam logic [6:0] REG_Y          = 7'd1;
+    localparam logic [6:0] REG_THETA      = 7'd2;
+    localparam logic [6:0] REG_OMEGA      = 7'd3;
+    localparam logic [6:0] REG_WHEEL_BIAS = 7'd4;
+
+    // velo calc from dw (1): 5
+    localparam logic [6:0] REG_V_WHEEL    = 7'd5;
+
+    // S mat (15): 6..20  -> access as (REG_S_BASE + i), i = 0..14
+    localparam logic [6:0] REG_S_BASE     = 7'd6;
+
+
+    // General scratchpad occupies 21..59. Angle routines reserve 60..63.
+    localparam logic [6:0] SPAD_BASE      = 7'd21;
+
+    // =========================================================
+    // PROM (Combinational Constants, 0 DFFs)
+    // =========================================================
+    // constants: 64..67
+    localparam logic [6:0] PROM_SIGMAPT_CONST    = 7'd64;
+    localparam logic [6:0] PROM_WEIGHT_MC2       = 7'd65;
+    localparam logic [6:0] PROM_WEIGHT_MEAN1     = 7'd66;
+    localparam logic [6:0] PROM_WEIGHT_COVAR1    = 7'd67;
+
+
+    // SQ mat (15): 68..82 -> access as (PROM_SQ_BASE + i), i = 0..14
+    localparam logic [6:0] PROM_SQ_BASE          = 7'd68;
+
+
+    // Extra math/trig constants (0.0, 1.0, dt, dt/2, pi, pi/2, -pi, -pi/2, pi/4, -pi/4, 3pi/4, -3pi/4, pi/180, earth's radius, sin/cos coeffs): 93+
+    // PROM_MATH_BASE and the shared math decoder are defined in sys_defs.sv.
+
+    localparam logic [6:0] ANGLE_WRAP_COMPARE = 7'd65;
+    localparam logic [6:0] XTRA_Z = 7'd61, XTRA_SIGN = 7'd63;
+    localparam logic [6:0] XTRA_WRAP_LOW = 7'd69;
+    localparam logic [6:0] XTRA_WRAP_ADD = 7'd71;
+    localparam logic [6:0] XTRA_SIN_POS = 7'd78;
+    localparam logic [6:0] XTRA_SIN_POS_MID = 7'd79;
+    localparam logic [6:0] XTRA_SIN_POS_OUTER = 7'd82;
+    localparam logic [6:0] XTRA_SIN_NEG_OUTER = 7'd85;
+    localparam logic [6:0] XTRA_SIN_NEG_MID = 7'd88;
+    localparam logic [6:0] XTRA_SIN_CENTRAL = 7'd91;
+    localparam logic [6:0] XTRA_COS_POS = 7'd96;
+    localparam logic [6:0] XTRA_COS_POS_MID = 7'd97;
+    localparam logic [6:0] XTRA_COS_POS_OUTER = 7'd100;
+    localparam logic [6:0] XTRA_COS_NEG_OUTER = 7'd103;
+    localparam logic [6:0] XTRA_COS_NEG_MID = 7'd106;
+    localparam logic [6:0] XTRA_COS_CENTRAL = 7'd109;
+    localparam logic [6:0] XTRA_EVAL_SIN = 7'd110;
+    localparam logic [6:0] XTRA_EVAL_COS = 7'd119;
+
+
+always_comb begin
+    uop = '0;
+    uop.dp  = UOP_NOP;
+    case(pc)
+    //sigma pt 1
+        7'd0: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = REG_X; uop.src_b = PROM_MATH_BASE + 7'd1; uop.instr_done = 1'b1; end
+        7'd1: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PROM_SIGMAPT_CONST; uop.src_b = REG_S_BASE; uop.dest = SPAD_BASE; uop.instr_done = 1'b1; end
+
+        7'd2: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = REG_Y; uop.src_b = PROM_MATH_BASE + 7'd1; uop.instr_done = 1'b1; end
+        7'd3: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = PROM_SIGMAPT_CONST; uop.src_b = REG_S_BASE + 7'd1; uop.dest = SPAD_BASE + 7'd1; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        
+        7'd4: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = REG_THETA; uop.src_b = PROM_MATH_BASE + 7'd1; uop.instr_done = 1'b1; end
+        7'd5: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = PROM_SIGMAPT_CONST; uop.src_b = REG_S_BASE + 7'd2; uop.dest = SPAD_BASE + 7'd2; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        
+        7'd6: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = REG_OMEGA; uop.src_b = PROM_MATH_BASE + 7'd1; uop.instr_done = 1'b1; end
+        7'd7: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = PROM_SIGMAPT_CONST; uop.src_b = REG_S_BASE + 7'd3; uop.dest = SPAD_BASE + 7'd3; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        
+        7'd8: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = REG_WHEEL_BIAS; uop.src_b = PROM_MATH_BASE + 7'd1; uop.instr_done = 1'b1; end
+        7'd9: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = PROM_SIGMAPT_CONST; uop.src_b = REG_S_BASE + 7'd4; uop.dest = SPAD_BASE + 7'd4; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+
+    //propogated sigma pt 1 theta M
+        7'd10: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PROM_MATH_BASE + 7'd3; uop.src_b = SPAD_BASE + 7'd3; uop.instr_done = 1'b1; end
+        7'd11: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = PROM_MATH_BASE + 7'd1; uop.src_b = SPAD_BASE + 7'd2; uop.dest = SPAD_BASE + 7'd2; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+
+    //propogated v using bias
+        7'd12: begin uop.dp = UOP_ADD; uop.neg_b = 1'b1; uop.clr_acc = 1'b1; uop.src_a = REG_V_WHEEL; uop.src_b = SPAD_BASE + 7'd4;uop.dest = SPAD_BASE + 7'd5; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+    // Validate each wrap input with SEQ_ANGLE_CHECK before range reduction.
+    // Sine and cosine use the wrapped angle in place as scratch.
+        7'd13: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = SPAD_BASE + 7'd2; uop.src_b = PROM_MATH_ONE; uop.dest = PRED_ANGLE_ARG; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd14: begin uop.seq = SEQ_CALL; uop.targ_pc = PRED_ANGLE_WRAP; end
+        7'd15: begin uop.seq = SEQ_CALL; uop.targ_pc = PRED_ANGLE_COS; end
+        7'd16: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = SPAD_BASE + 7'd5; uop.src_b = PRED_ANGLE_RESULT; uop.instr_done = 1'b1; end
+        7'd17: begin uop.dp = UOP_MAC; uop.src_a = SPAD_BASE; uop.src_b = PROM_MATH_ONE; uop.dest = SPAD_BASE; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd18: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = SPAD_BASE + 7'd2; uop.src_b = PROM_MATH_ONE; uop.dest = PRED_ANGLE_ARG; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd19: begin uop.seq = SEQ_CALL; uop.targ_pc = PRED_ANGLE_WRAP; end
+        7'd20: begin uop.seq = SEQ_CALL; uop.targ_pc = PRED_ANGLE_SIN; end
+        7'd21: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = SPAD_BASE + 7'd5; uop.src_b = PRED_ANGLE_RESULT; uop.instr_done = 1'b1; end
+        7'd22: begin uop.dp = UOP_MAC; uop.src_a = SPAD_BASE + 7'd1; uop.src_b = PROM_MATH_ONE; uop.dest = SPAD_BASE + 7'd1; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+
+        // The prediction body ends here until the remaining sigma-point program exists.
+        7'd23: begin uop.seq = SEQ_HALT; end
+        PRED_ANGLE_WRAP: begin uop.seq = SEQ_ANGLE_CHECK; uop.src_a = PRED_ANGLE_ARG; end
+        // Wrap in place. Each MAC pair seeds the accumulator, then adds one turn.
+        ANGLE_WRAP_COMPARE: begin uop.seq = SEQ_FP_LT; uop.src_a = PRED_ANGLE_ARG; uop.src_b = PROM_MATH_PI; uop.targ_pc = XTRA_WRAP_LOW; end
+        7'd66: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PRED_ANGLE_ARG; uop.src_b = PROM_MATH_ONE; uop.instr_done = 1'b1; end
+        7'd67: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = PROM_MATH_TWO_PI; uop.src_b = PROM_MATH_ONE; uop.neg_b = 1'b1; uop.dest = PRED_ANGLE_ARG; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd68: begin uop.seq = SEQ_JUMP; uop.targ_pc = ANGLE_WRAP_COMPARE; end
+        XTRA_WRAP_LOW: begin uop.seq = SEQ_FP_LT; uop.src_a = PRED_ANGLE_ARG; uop.src_b = PROM_MATH_NEG_PI; uop.targ_pc = XTRA_WRAP_ADD; end
+        7'd70: begin uop.seq = SEQ_RET; end
+        XTRA_WRAP_ADD: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PRED_ANGLE_ARG; uop.src_b = PROM_MATH_ONE; uop.instr_done = 1'b1; end
+        7'd72: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = PROM_MATH_TWO_PI; uop.src_b = PROM_MATH_ONE; uop.dest = PRED_ANGLE_ARG; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd73: begin uop.seq = SEQ_JUMP; uop.targ_pc = ANGLE_WRAP_COMPARE; end
+
+        // Reduce the wrapped angle for a sine request.
+        PRED_ANGLE_SIN: begin uop.seq = SEQ_FP_LT; uop.src_a = PRED_ANGLE_ARG; uop.src_b = PROM_MATH_NEG_3PI_4; uop.targ_pc = XTRA_SIN_NEG_OUTER; end
+        7'd75: begin uop.seq = SEQ_FP_LT; uop.src_a = PRED_ANGLE_ARG; uop.src_b = PROM_MATH_NEG_PI_4; uop.targ_pc = XTRA_SIN_NEG_MID; end
+        7'd76: begin uop.seq = SEQ_FP_LT; uop.src_a = PROM_MATH_PI_4; uop.src_b = PRED_ANGLE_ARG; uop.targ_pc = XTRA_SIN_POS; end
+        7'd77: begin uop.seq = SEQ_JUMP; uop.targ_pc = XTRA_SIN_CENTRAL; end
+        XTRA_SIN_POS: begin uop.seq = SEQ_FP_LT; uop.src_a = PROM_MATH_3PI_4; uop.src_b = PRED_ANGLE_ARG; uop.targ_pc = XTRA_SIN_POS_OUTER; end
+        XTRA_SIN_POS_MID: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PRED_ANGLE_ARG; uop.src_b = PROM_MATH_ONE; uop.instr_done = 1'b1; end
+        7'd80: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = PROM_MATH_PI_2; uop.src_b = PROM_MATH_ONE; uop.neg_b = 1'b1; uop.dest = PRED_ANGLE_ARG; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd81: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PROM_MATH_ONE; uop.src_b = PROM_MATH_ONE; uop.dest = XTRA_SIGN; uop.wb_en = 1'b1; uop.instr_done = 1'b1; uop.seq = SEQ_JUMP; uop.targ_pc = XTRA_EVAL_COS; end
+        XTRA_SIN_POS_OUTER: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PRED_ANGLE_ARG; uop.src_b = PROM_MATH_ONE; uop.instr_done = 1'b1; end
+        7'd83: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = PROM_MATH_PI; uop.src_b = PROM_MATH_ONE; uop.neg_b = 1'b1; uop.dest = PRED_ANGLE_ARG; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd84: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PROM_MATH_ONE; uop.src_b = PROM_MATH_ONE; uop.neg_b = 1'b1; uop.dest = XTRA_SIGN; uop.wb_en = 1'b1; uop.instr_done = 1'b1; uop.seq = SEQ_JUMP; uop.targ_pc = XTRA_EVAL_SIN; end
+        XTRA_SIN_NEG_OUTER: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PRED_ANGLE_ARG; uop.src_b = PROM_MATH_ONE; uop.instr_done = 1'b1; end
+        7'd86: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = PROM_MATH_PI; uop.src_b = PROM_MATH_ONE; uop.dest = PRED_ANGLE_ARG; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd87: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PROM_MATH_ONE; uop.src_b = PROM_MATH_ONE; uop.neg_b = 1'b1; uop.dest = XTRA_SIGN; uop.wb_en = 1'b1; uop.instr_done = 1'b1; uop.seq = SEQ_JUMP; uop.targ_pc = XTRA_EVAL_SIN; end
+        XTRA_SIN_NEG_MID: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PRED_ANGLE_ARG; uop.src_b = PROM_MATH_ONE; uop.instr_done = 1'b1; end
+        7'd89: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = PROM_MATH_PI_2; uop.src_b = PROM_MATH_ONE; uop.dest = PRED_ANGLE_ARG; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd90: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PROM_MATH_ONE; uop.src_b = PROM_MATH_ONE; uop.neg_b = 1'b1; uop.dest = XTRA_SIGN; uop.wb_en = 1'b1; uop.instr_done = 1'b1; uop.seq = SEQ_JUMP; uop.targ_pc = XTRA_EVAL_COS; end
+        XTRA_SIN_CENTRAL: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PROM_MATH_ONE; uop.src_b = PROM_MATH_ONE; uop.dest = XTRA_SIGN; uop.wb_en = 1'b1; uop.instr_done = 1'b1; uop.seq = SEQ_JUMP; uop.targ_pc = XTRA_EVAL_SIN; end
+
+        // Reduce the wrapped angle for a cosine request.
+        PRED_ANGLE_COS: begin uop.seq = SEQ_FP_LT; uop.src_a = PRED_ANGLE_ARG; uop.src_b = PROM_MATH_NEG_3PI_4; uop.targ_pc = XTRA_COS_NEG_OUTER; end
+        7'd93: begin uop.seq = SEQ_FP_LT; uop.src_a = PRED_ANGLE_ARG; uop.src_b = PROM_MATH_NEG_PI_4; uop.targ_pc = XTRA_COS_NEG_MID; end
+        7'd94: begin uop.seq = SEQ_FP_LT; uop.src_a = PROM_MATH_PI_4; uop.src_b = PRED_ANGLE_ARG; uop.targ_pc = XTRA_COS_POS; end
+        7'd95: begin uop.seq = SEQ_JUMP; uop.targ_pc = XTRA_COS_CENTRAL; end
+        XTRA_COS_POS: begin uop.seq = SEQ_FP_LT; uop.src_a = PROM_MATH_3PI_4; uop.src_b = PRED_ANGLE_ARG; uop.targ_pc = XTRA_COS_POS_OUTER; end
+        XTRA_COS_POS_MID: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PRED_ANGLE_ARG; uop.src_b = PROM_MATH_ONE; uop.instr_done = 1'b1; end
+        7'd98: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = PROM_MATH_PI_2; uop.src_b = PROM_MATH_ONE; uop.neg_b = 1'b1; uop.dest = PRED_ANGLE_ARG; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd99: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PROM_MATH_ONE; uop.src_b = PROM_MATH_ONE; uop.neg_b = 1'b1; uop.dest = XTRA_SIGN; uop.wb_en = 1'b1; uop.instr_done = 1'b1; uop.seq = SEQ_JUMP; uop.targ_pc = XTRA_EVAL_SIN; end
+        XTRA_COS_POS_OUTER: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PRED_ANGLE_ARG; uop.src_b = PROM_MATH_ONE; uop.instr_done = 1'b1; end
+        7'd101: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = PROM_MATH_PI; uop.src_b = PROM_MATH_ONE; uop.neg_b = 1'b1; uop.dest = PRED_ANGLE_ARG; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd102: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PROM_MATH_ONE; uop.src_b = PROM_MATH_ONE; uop.neg_b = 1'b1; uop.dest = XTRA_SIGN; uop.wb_en = 1'b1; uop.instr_done = 1'b1; uop.seq = SEQ_JUMP; uop.targ_pc = XTRA_EVAL_COS; end
+        XTRA_COS_NEG_OUTER: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PRED_ANGLE_ARG; uop.src_b = PROM_MATH_ONE; uop.instr_done = 1'b1; end
+        7'd104: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = PROM_MATH_PI; uop.src_b = PROM_MATH_ONE; uop.dest = PRED_ANGLE_ARG; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd105: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PROM_MATH_ONE; uop.src_b = PROM_MATH_ONE; uop.neg_b = 1'b1; uop.dest = XTRA_SIGN; uop.wb_en = 1'b1; uop.instr_done = 1'b1; uop.seq = SEQ_JUMP; uop.targ_pc = XTRA_EVAL_COS; end
+        XTRA_COS_NEG_MID: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PRED_ANGLE_ARG; uop.src_b = PROM_MATH_ONE; uop.instr_done = 1'b1; end
+        7'd107: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = PROM_MATH_PI_2; uop.src_b = PROM_MATH_ONE; uop.dest = PRED_ANGLE_ARG; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd108: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PROM_MATH_ONE; uop.src_b = PROM_MATH_ONE; uop.dest = XTRA_SIGN; uop.wb_en = 1'b1; uop.instr_done = 1'b1; uop.seq = SEQ_JUMP; uop.targ_pc = XTRA_EVAL_SIN; end
+        XTRA_COS_CENTRAL: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PROM_MATH_ONE; uop.src_b = PROM_MATH_ONE; uop.dest = XTRA_SIGN; uop.wb_en = 1'b1; uop.instr_done = 1'b1; uop.seq = SEQ_JUMP; uop.targ_pc = XTRA_EVAL_COS; end
+
+        // Sine Horner evaluation, then multiply by the reduced angle and sign.
+        XTRA_EVAL_SIN: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PRED_ANGLE_ARG; uop.src_b = PRED_ANGLE_ARG; uop.dest = XTRA_Z; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd111: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PROM_MATH_SIN_C5; uop.src_b = PROM_MATH_ONE; uop.instr_done = 1'b1; end
+        7'd112: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = XTRA_Z; uop.src_b = PROM_MATH_SIN_C7; uop.dest = PRED_ANGLE_RESULT; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd113: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PROM_MATH_SIN_C3; uop.src_b = PROM_MATH_ONE; uop.instr_done = 1'b1; end
+        7'd114: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = XTRA_Z; uop.src_b = PRED_ANGLE_RESULT; uop.dest = PRED_ANGLE_RESULT; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd115: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PROM_MATH_ONE; uop.src_b = PROM_MATH_ONE; uop.instr_done = 1'b1; end
+        7'd116: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = XTRA_Z; uop.src_b = PRED_ANGLE_RESULT; uop.dest = PRED_ANGLE_RESULT; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd117: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PRED_ANGLE_ARG; uop.src_b = PRED_ANGLE_RESULT; uop.dest = PRED_ANGLE_RESULT; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd118: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PRED_ANGLE_RESULT; uop.src_b = XTRA_SIGN; uop.dest = PRED_ANGLE_RESULT; uop.wb_en = 1'b1; uop.instr_done = 1'b1; uop.seq = SEQ_RET; end
+
+        // Cosine Horner evaluation, then apply the stored sign.
+        XTRA_EVAL_COS: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PRED_ANGLE_ARG; uop.src_b = PRED_ANGLE_ARG; uop.dest = XTRA_Z; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd120: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PROM_MATH_COS_C4; uop.src_b = PROM_MATH_ONE; uop.instr_done = 1'b1; end
+        7'd121: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = XTRA_Z; uop.src_b = PROM_MATH_COS_C6; uop.dest = PRED_ANGLE_RESULT; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd122: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PROM_MATH_COS_C2; uop.src_b = PROM_MATH_ONE; uop.instr_done = 1'b1; end
+        7'd123: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = XTRA_Z; uop.src_b = PRED_ANGLE_RESULT; uop.dest = PRED_ANGLE_RESULT; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd124: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PROM_MATH_ONE; uop.src_b = PROM_MATH_ONE; uop.instr_done = 1'b1; end
+        7'd125: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = XTRA_Z; uop.src_b = PRED_ANGLE_RESULT; uop.dest = PRED_ANGLE_RESULT; uop.wb_en = 1'b1; uop.instr_done = 1'b1; end
+        7'd126: begin uop.dp = UOP_MAC; uop.clr_acc = 1'b1; uop.src_a = PRED_ANGLE_RESULT; uop.src_b = XTRA_SIGN; uop.dest = PRED_ANGLE_RESULT; uop.wb_en = 1'b1; uop.instr_done = 1'b1; uop.seq = SEQ_RET; end
+        default: begin uop.seq = SEQ_HALT; end
+    endcase
+end
+endmodule

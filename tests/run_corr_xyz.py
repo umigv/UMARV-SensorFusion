@@ -3,7 +3,7 @@
 from math import sqrt
 
 from run_corr_x import (
-    apply_update, covariance, f32, fp32_reference, parse_simulation, simulate, upper_triangle,
+    apply_update, covariance, f32, fp32_reference, parse_simulation, simulate, upper_triangle, wrap_heading,
 )
 from run_corr_xy import combined_fixtures, compare, fp32_second
 
@@ -64,8 +64,10 @@ def joint_reference(state, measurement, packed_s, noise):
     d = [[p[i][j] + r[i][j] for j in range(3)] for i in range(3)]
     gains = [solve_system(d, row[:3]) for row in p]
     innovation = [measurement[i] - state[i] for i in range(3)]
+    innovation[2] = wrap_heading(innovation[2])
     posterior = [state[i] + sum(gains[i][k] * innovation[k] for k in range(3))
                  for i in range(5)]
+    posterior[2] = wrap_heading(posterior[2])
     new_covariance = [[p[i][j] - sum(gains[i][k] * p[k][j] for k in range(3))
                        for j in range(5)] for i in range(5)]
     return posterior, new_covariance
@@ -142,7 +144,7 @@ def main():
     assert all(len(values) == 2 for values in signs)
     assert all(a != b for a, b in zip(results[0]["STATE"], results[0]["XY_STATE"], strict=True))
     cycles = [case["STAGE_CYCLES"] for case in results.values() if "CYCLES" in case]
-    assert cycles[0][:2] == [4913, 4919]
+    assert cycles[0][:2] == [4987, 4916], cycles[0]
     assert all(sum(case["STAGE_CYCLES"]) == case["CYCLES"][1]
                for case in results.values() if "CYCLES" in case)
     print(f"successful cases: {len(cycles)}")

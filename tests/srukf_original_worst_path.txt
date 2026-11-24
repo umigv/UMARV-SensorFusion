@@ -1,0 +1,39 @@
+Original SR-UKF SKY130 HD worst setup path
+TT 25 C, 1.8 V. Ideal 20 ns core clock. Zero input/output delay.
+Reset data paths excluded. No extracted placement/routing parasitics.
+Register names: correction/_9375_/Q = ukf_valid; _09999_/Q = latest_state[2].
+Fanout: ukf_valid 1282 top-level cell inputs; _07082_/X 640; _07089_/Y 1; _07090_/Y 1.
+Capacitance and slew below use the Liberty and STA report units.
+
+Startpoint: correction/_9375_ (rising edge-triggered flip-flop clocked by core)
+Endpoint: _09999_ (rising edge-triggered flip-flop clocked by core)
+Path Group: core
+Path Type: max
+
+      Cap      Slew     Delay      Time   Description
+-------------------------------------------------------------------------------
+             0.0000    0.0000    0.0000   clock core (rise edge)
+                       0.0000    0.0000   clock network delay (ideal)
+             0.0000    0.0000    0.0000 ^ correction/_9375_/CLK (sky130_fd_sc_hd__dfrtp_1)
+   2.8356   23.9725   17.1724   17.1724 ^ correction/_9375_/Q (sky130_fd_sc_hd__dfrtp_1)
+   1.5203   46.8173   96.8938  114.0662 v _07082_/X (sky130_fd_sc_hd__lpflow_isobufsrc_1)
+   0.0028    5.2718   10.0111  124.0773 ^ _07089_/Y (sky130_fd_sc_hd__a22oi_1)
+   0.0023    0.4741    0.1223  124.1996 v _07090_/Y (sky130_fd_sc_hd__nand2_1)
+             0.4742    0.0040  124.2035 v _09999_/D (sky130_fd_sc_hd__dfrtp_1)
+                               124.2035   data arrival time
+
+             0.0000   20.0000   20.0000   clock core (rise edge)
+                       0.0000   20.0000   clock network delay (ideal)
+                       0.0000   20.0000   clock reconvergence pessimism
+                                20.0000 ^ _09999_/CLK (sky130_fd_sc_hd__dfrtp_1)
+                      -0.3123   19.6877   library setup time
+                                19.6877   data required time
+-------------------------------------------------------------------------------
+                                19.6877   data required time
+                              -124.2035   data arrival time
+-------------------------------------------------------------------------------
+                              -104.5158   slack (VIOLATED)
+
+
+worst slack -104.5158
+tns -138894.7500

@@ -3,13 +3,21 @@ module UKF_corr_engine #(
     parameter bit ENABLE_THIRD_UPDATE = 1'b1,
     parameter bit ENABLE_FOURTH_UPDATE = 1'b1,
     parameter bit SHARE_MAC = 1'b0,
-    parameter bit REPORT_PRED_FAILURE = 1'b0
+    parameter bit REPORT_PRED_FAILURE = 1'b0,
+    parameter bit HELD_PREDICTION = 1'b0,
+    parameter bit SHARED_STORAGE = 1'b0,
+    parameter logic [160:0] INITIAL_STATE = '0,
+    parameter logic [479:0] INITIAL_S = '0
 ) (
     input  logic clock, reset,
     input  meas_regfile_t corr_packet,
     input  PRED_PACKET pred_packet,
     input  pred_s_factor_t pred_s,
     input  meas_s_factor_t measurement_s,
+    output logic load_shared_measurement, update_failed,
+    output logic load_shared_noise,
+    output ukf_spad_request_t spad_request,
+    input ukf_spad_response_t spad_response,
     output logic convert_start,
     output meas_regfile_t convert_input,
     input  logic convert_done,
@@ -20,6 +28,9 @@ module UKF_corr_engine #(
     output logic xy_update_valid, xyz_update_valid,
     input logic sensor_mac_owner,
     input ukf_mac_request_t sensor_mac_request,
+    input logic prediction_div_owner,
+    input ukf_divsqrt_request_t prediction_div_request,
+    output ukf_divsqrt_response_t prediction_div_response,
     output ukf_mac_response_t sensor_mac_response,
     input logic prediction_failed
 );
@@ -30,7 +41,6 @@ module UKF_corr_engine #(
     } corr_states;
 
     corr_states state, next_state;
-    corr_measurement_t measurement;
     PRED_PACKET prediction;
     pred_s_factor_t prediction_s;
     logic accept_measurement, output_valid, have_prediction, have_conversion;
@@ -42,6 +52,9 @@ module UKF_corr_engine #(
     assign accept_measurement = state == IDLE &&
                                 corr_packet.ukf_pulse && corr_packet.ukf_vn_valid;
     assign busy = state != IDLE;
+    assign load_shared_noise = SHARED_STORAGE && state == LOAD_INPUTS;
+    assign load_shared_measurement = SHARED_STORAGE && capture_conversion && !abort_prediction;
+    assign update_failed = state == RUN_CORR_MICROCODE && microcode_failed;
     assign done = state == CORR_DONE;
     assign convert_start = !reset && state == START_CONVERSION;
     assign capture_prediction = pred_packet.pred_valid && (accept_measurement ||
@@ -57,19 +70,41 @@ module UKF_corr_engine #(
         end
     endgenerate
 
+    generate
+        if (HELD_PREDICTION) begin : held_prediction
+            // Built-in predictor holds its payload until the next start.
+            assign prediction = {pred_packet[160:1], have_prediction};
+            assign prediction_s = pred_s;
+        end else begin : pulse_prediction
+            always_ff @(posedge clock or posedge reset) begin
+                if (reset) begin
+                    prediction <= '0;
+                    prediction_s <= '0;
+                end else if (capture_prediction) begin
+                    prediction <= pred_packet;
+                    prediction_s <= pred_s;
+                end
+            end
+        end
+    endgenerate
+
     corr_microcode #(
         .ENABLE_SECOND_UPDATE(ENABLE_SECOND_UPDATE),
         .ENABLE_THIRD_UPDATE(ENABLE_THIRD_UPDATE),
         .ENABLE_FOURTH_UPDATE(ENABLE_FOURTH_UPDATE),
-        .SHARE_MAC(SHARE_MAC)
+        .SHARE_MAC(SHARE_MAC),
+        .SHARED_STORAGE(SHARED_STORAGE), .INITIAL_STATE(INITIAL_STATE), .INITIAL_S(INITIAL_S)
     ) correction_program (
         .clock(clock),
         .reset(reset),
         .start(state == LOAD_INPUTS),
-        .measurement(measurement),
-        .prediction(prediction),
+        .measurement_load(capture_conversion),
+        .measurement(convert_result),
+        .prediction(SHARED_STORAGE ? pred_packet : prediction),
         .prediction_s(prediction_s),
+        .prediction_load(pred_packet.pred_valid),
         .measurement_s(measurement_s),
+        .spad_request(spad_request), .spad_response(spad_response),
         .done(microcode_done),
         .x_update_valid(microcode_x_valid),
         .xy_update_valid(microcode_xy_valid),
@@ -77,6 +112,9 @@ module UKF_corr_engine #(
         .failed(microcode_failed),
         .result(microcode_result),
         .corrected_s(corrected_s),
+        .prediction_div_owner(prediction_div_owner),
+        .prediction_div_request(prediction_div_request),
+        .prediction_div_response(prediction_div_response),
         .sensor_mac_owner(sensor_mac_owner),
         .sensor_mac_request(sensor_mac_request),
         .sensor_mac_response(sensor_mac_response)
@@ -116,9 +154,6 @@ module UKF_corr_engine #(
             have_prediction <= 1'b0;
             have_conversion <= 1'b0;
             convert_input <= '0;
-            measurement <= '0;
-            prediction <= '0;
-            prediction_s <= '0;
             x_update_valid <= 1'b0;
             xy_update_valid <= 1'b0;
             xyz_update_valid <= 1'b0;
@@ -135,20 +170,11 @@ module UKF_corr_engine #(
             end
             if (accept_measurement)
                 convert_input <= corr_packet;
-            // The factor belongs to the state on the same pred_valid beat.
-            if (capture_prediction) begin
-                prediction <= pred_packet;
-                prediction_s <= pred_s;
-            end
-
-            // The converter presents the normalized result with its done pulse.
-            if (capture_conversion)
-                measurement <= convert_result;
 
             x_update_valid <= state == RUN_CORR_MICROCODE && microcode_x_valid;
             xy_update_valid <= state == RUN_CORR_MICROCODE && microcode_xy_valid;
             xyz_update_valid <= state == RUN_CORR_MICROCODE && microcode_xyz_valid;
-            failed <= abort_prediction || (state == RUN_CORR_MICROCODE && microcode_failed);
+            failed <= abort_prediction || update_failed;
             output_valid <= state == RUN_CORR_MICROCODE && microcode_result.ukf_valid;
         end
     end

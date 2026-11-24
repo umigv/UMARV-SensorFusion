@@ -6,8 +6,10 @@ from struct import pack, unpack
 from subprocess import PIPE, STDOUT, run
 from tempfile import TemporaryDirectory
 
-from run_corr_full import full_fixtures, joint_reference
-from run_corr_x import covariance, f32, upper_triangle
+from run_corr_full import fp32_fourth, full_fixtures, joint_reference
+from run_corr_x import covariance, f32, fp32_reference, upper_triangle
+from run_corr_xy import fp32_second
+from run_corr_xyz import fp32_third
 
 
 def bits(value, width=32):
@@ -52,7 +54,7 @@ def fixture_file(path):
 def main():
     root = Path(__file__).resolve().parents[1]
     sources = ("sys_defs FP_MAC FP_SQRTDIV corr_microcode corr_engine int_to_fp32 "
-               "deadwheel_velocity lat_to_xy pred_engine pred_microcode vn_to_correction UKF")
+               "deadwheel_velocity lat_to_xy pred_engine pred_microcode pred_sequencer vn_to_correction UKF")
     with TemporaryDirectory() as directory:
         fixture = Path(directory) / "fixtures.txt"
         reference = fixture_file(fixture)
@@ -80,7 +82,13 @@ def main():
             index, packed_state, packed_factor = fields
             index = int(index)
             state, factor, noise, _ = reference[index]
-            expected_state, expected_cov = joint_reference(state, measurements[index], factor, noise)
+            _, expected_cov = joint_reference(state, measurements[index], factor, noise)
+            # Large position updates can move the heading residual across the
+            # branch cut between stages. Model each wrap before the next row.
+            first = fp32_reference(state, measurements[index], factor, noise)
+            second = fp32_second(first, noise)
+            third = fp32_third(second, noise)
+            expected_state = fp32_fourth(third, noise)["STATE"]
             assert int(packed_state, 16) & 1
             actual_state = words(f"{int(packed_state, 16) >> 1:040x}", 5)
             actual_cov = covariance(upper_triangle(words(packed_factor, 15)[::-1], 5))

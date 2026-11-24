@@ -2,20 +2,30 @@ module corr_microcode #(
     parameter bit ENABLE_SECOND_UPDATE = 1'b1,
     parameter bit ENABLE_THIRD_UPDATE = 1'b1,
     parameter bit ENABLE_FOURTH_UPDATE = 1'b1,
-    parameter bit SHARE_MAC = 1'b0
+    parameter bit SHARE_MAC = 1'b0,
+    parameter bit SHARED_STORAGE = 1'b0,
+    parameter logic [160:0] INITIAL_STATE = '0,
+    parameter logic [479:0] INITIAL_S = '0
 ) (
     input  logic clock, reset,
     input  logic start,
+    input  logic measurement_load,
     input  corr_measurement_t measurement,
     input  PRED_PACKET prediction,
     input  pred_s_factor_t prediction_s,
     input  meas_s_factor_t measurement_s,
+    input  logic prediction_load,
+    output ukf_spad_request_t spad_request,
+    input ukf_spad_response_t spad_response,
     output logic done, x_update_valid, failed,
     output UKF_OUT_PACKET result,
     output pred_s_factor_t corrected_s,
     output logic xy_update_valid, xyz_update_valid,
     input logic sensor_mac_owner,
     input ukf_mac_request_t sensor_mac_request,
+    input logic prediction_div_owner,
+    input ukf_divsqrt_request_t prediction_div_request,
+    output ukf_divsqrt_response_t prediction_div_response,
     output ukf_mac_response_t sensor_mac_response
 );
 
@@ -96,6 +106,11 @@ module corr_microcode #(
     localparam logic [6:0] PC_RATE_VARIANCE = 7'd86;
     localparam logic [6:0] PC_RATE_VECTOR = 7'd87;
     localparam logic [6:0] PC_FULL_DONE = 7'd88;
+    localparam logic [6:0] PC_WRAP_INNOVATION = 7'd89;
+    localparam logic [6:0] PC_WRAP_HEADING = 7'd90;
+    localparam logic [6:0] PC_WRAP_RESIDUAL = 7'd91;
+    logic [6:0] wrap_return_pc;
+    logic wrap_step, wrap_needed;
 
     typedef enum logic [1:0] {UPDATE_X, UPDATE_XY, UPDATE_XYZ, UPDATE_XYZW} update_stage_t;
 
@@ -110,7 +125,9 @@ module corr_microcode #(
     logic third_term, fourth_term, full_update_valid;
     logic [6:0] diag_addr, factor_addr, row_u, col_u, state_addr, meas_addr;
     logic [6:0] second_row_addr, third_row_addr, fourth_row_addr;
-    logic [31:0] regfile [REG_C:REG_X];
+    localparam logic [6:0] RF_LAST = SHARED_STORAGE ? REG_S_BASE + 7'd14 : REG_C;
+    logic [31:0] regfile [RF_LAST:REG_X];
+    logic residual_heading_negative;
     corr_ukf_uop uop;
     logic [31:0] operand_a, operand_b, mac_a, mac_b, mac_result, div_result;
     logic mac_start, mac_busy, mac_done, mac_result_valid;
@@ -150,12 +167,20 @@ module corr_microcode #(
         uop.clr_acc = 1'b1;
         uop.wb_en = 1'b1;
         case (pc)
-            // Consume the normalized measurements in place. TODO: wrap the heading innovation.
+            // Consume the normalized measurements in place.
             7'd0: begin uop.dp = UOP_ADD; uop.neg_b = 1'b1; uop.src_a = REG_MEAS_X; uop.src_b = REG_X; uop.dest = REG_MEAS_X; end
             7'd1: begin uop.dp = UOP_ADD; uop.neg_b = 1'b1; uop.src_a = REG_MEAS_Y; uop.src_b = REG_Y; uop.dest = REG_MEAS_Y; end
             7'd2: begin uop.dp = UOP_ADD; uop.neg_b = 1'b1; uop.src_a = REG_MEAS_THETA; uop.src_b = REG_THETA; uop.dest = REG_MEAS_THETA; end
-            //add wrap
             7'd3: begin uop.dp = UOP_ADD; uop.neg_b = 1'b1; uop.src_a = REG_MEAS_OMEGA; uop.src_b = REG_OMEGA; uop.dest = REG_MEAS_OMEGA; end
+
+            PC_WRAP_INNOVATION, PC_WRAP_HEADING, PC_WRAP_RESIDUAL: begin
+                uop.dp = UOP_ADD;
+                uop.src_a = pc == PC_WRAP_HEADING ? REG_THETA : REG_MEAS_THETA;
+                uop.src_b = PROM_MATH_TWO_PI;
+                uop.dest = uop.src_a;
+                uop.neg_b = pc == PC_WRAP_HEADING ? !regfile[REG_THETA][31]
+                                                  : !residual_heading_negative;
+            end
 
             // d, sqrt(d), q, g. The root in REG_TEMP dies when q is written.
             PC_VARIANCE: begin uop.dp = UOP_MAC; uop.src_a = REG_S_BASE; uop.src_b = REG_S_BASE; uop.wb_en = 1'b0; end
@@ -169,7 +194,6 @@ module corr_microcode #(
             PC_VECTOR_NEXT: begin uop.dp = UOP_MAC; uop.src_a = REG_TEMP; uop.src_b = REG_Q; uop.dest = col_u; uop.seq = SEQ_LOOP; uop.targ_pc = PC_VECTOR; end
 
             // Reuse the same rounded delta for the state and its innovation.
-            // TODO: wrap the corrected heading and the updated heading innovation.
             PC_STATE: begin uop.dp = UOP_MAC; uop.src_a = col_u; uop.src_b = REG_G; uop.dest = REG_TEMP; end
             7'd12: begin uop.dp = UOP_ADD; uop.src_a = state_addr; uop.src_b = REG_TEMP; uop.dest = state_addr; end
             PC_STATE_NEXT: begin uop.dp = col == 3'd4 ? UOP_NOP : UOP_ADD; uop.neg_b = 1'b1; uop.src_a = meas_addr; uop.src_b = REG_TEMP; uop.dest = meas_addr; uop.seq = SEQ_LOOP; uop.targ_pc = PC_STATE; end
@@ -290,25 +314,49 @@ module corr_microcode #(
             default: read_operand = addr >= PROM_MATH_BASE ? prom_math_read(addr) : register_word;
         endcase
     endfunction
-    assign operand_a = read_operand(uop.src_a, uop.src_a <= REG_C ? regfile[uop.src_a] : 32'b0,
+    generate
+        if (SHARED_STORAGE)
+            assign residual_heading_negative = spad_response.heading_negative;
+        else
+            assign residual_heading_negative = regfile[REG_MEAS_THETA][31];
+    endgenerate
+    // Correction addresses 21..36 map to the same sixteen words as
+    // prediction's scratchpad. The standalone build keeps local storage.
+    assign spad_request = {
+        SHARED_STORAGE && state != IDLE,
+        SHARED_STORAGE && arithmetic_complete && !arithmetic_failed && uop.wb_en &&
+            uop.dest >= REG_MEAS_X && uop.dest <= REG_C,
+        uop.src_a[3:0] - REG_MEAS_X[3:0],
+        uop.src_b[3:0] - REG_MEAS_X[3:0],
+        uop.dest[3:0] - REG_MEAS_X[3:0], arithmetic_result
+    };
+    assign operand_a = read_operand(uop.src_a,
+                                    SHARED_STORAGE && uop.src_a >= REG_MEAS_X ? spad_response.a :
+                                    uop.src_a <= RF_LAST ? regfile[uop.src_a] : 32'b0,
                                     measurement_words);
-    assign operand_b = read_operand(uop.src_b, uop.src_b <= REG_C ? regfile[uop.src_b] : 32'b0,
+    assign operand_b = wrap_step ? angle_wrap_step(operand_a) : read_operand(uop.src_b,
+                                    SHARED_STORAGE && uop.src_b >= REG_MEAS_X ? spad_response.b :
+                                    uop.src_b <= RF_LAST ? regfile[uop.src_b] : 32'b0,
                                     measurement_words);
 
     function automatic logic positive_finite(input logic [31:0] word);
         positive_finite = !word[31] && (|word[30:0]) && word[30:23] != 8'hff;
     endfunction
 
-    // Test |u[k]| < S[k,k] before touching this row, then test the rounded
-    // radicand at SQRT issue. Either failure invalidates the whole transaction.
-    assign bad_operands = (uop.dp == UOP_SQRT && !positive_finite(operand_a)) ||
+    assign wrap_step = pc == PC_WRAP_INNOVATION || pc == PC_WRAP_HEADING ||
+                       pc == PC_WRAP_RESIDUAL;
+    assign wrap_needed = angle_needs_wrap(operand_a);
+
+    // Reject unsupported angles and invalid downdates before issuing arithmetic.
+    assign bad_operands = (wrap_step && !angle_supported(operand_a)) ||
+                          (uop.dp == UOP_SQRT && !positive_finite(operand_a)) ||
                           (uop.dp == UOP_DIV && !positive_finite(operand_b)) ||
                           (pc == PC_DOWNDATE && operand_a[30:0] >= operand_b[30:0]) ||
                           (pc == PC_VARIANCE && !positive_finite(operand_a)) ||
                           (pc == 7'd5 && !positive_finite(operand_a)) ||
                           (pc == PC_WHITEN && !positive_finite(operand_b));
 
-    assign mac_start = !mac_busy && !bad_operands &&
+    assign mac_start = !mac_busy && !bad_operands && (!wrap_step || wrap_needed) &&
                        ((state == ISSUE_A && (uop.dp == UOP_ADD || uop.dp == UOP_MAC)) ||
                         state == ISSUE_B);
     assign mac_a = state == ISSUE_B ? {operand_b[31] ^ uop.neg_b, operand_b[30:0]}
@@ -333,11 +381,16 @@ module corr_microcode #(
 
     assign div_start = state == ISSUE_A && !div_busy && !bad_operands &&
                        (uop.dp == UOP_DIV || uop.dp == UOP_SQRT);
+    ukf_divsqrt_request_t active_div_request;
+    assign active_div_request = SHARE_MAC && prediction_div_owner ? prediction_div_request :
+        {div_start, uop.dp == UOP_SQRT,
+         operand_a[31] ^ (uop.dp == UOP_DIV && uop.neg_b), operand_a[30:0], operand_b};
+    assign prediction_div_response = {div_busy, div_done, div_invalid, div_zero,
+                                      div_overflow, div_result};
     fp32_divsqrt correction_divsqrt (
-        .clk(clock), .rst_n(!reset), .start(div_start), .mode(uop.dp == UOP_SQRT),
-        // Division sign control negates the quotient through its numerator.
-        .a({operand_a[31] ^ (uop.dp == UOP_DIV && uop.neg_b), operand_a[30:0]}),
-        .b(operand_b), .busy(div_busy), .done(div_done), .result(div_result),
+        .clk(clock), .rst_n(!reset), .start(active_div_request.start),
+        .mode(active_div_request.sqrt_mode), .a(active_div_request.a), .b(active_div_request.b),
+        .busy(div_busy), .done(div_done), .result(div_result),
         .invalid(div_invalid), .divide_by_zero(div_zero), .overflow(div_overflow),
         .underflow(), .inexact()
     );
@@ -360,10 +413,17 @@ module corr_microcode #(
 
     always_ff @(posedge clock or posedge reset) begin
         if (reset) begin
-            for (int addr = REG_X; addr <= REG_C; addr++)
+            for (int addr = REG_X; addr <= RF_LAST; addr++)
                 regfile[addr] <= '0;
+            if (SHARED_STORAGE) begin
+                {regfile[REG_X], regfile[REG_Y], regfile[REG_THETA],
+                 regfile[REG_OMEGA], regfile[REG_WHEEL_BIAS]} <= INITIAL_STATE[160:1];
+                for (int i = 0; i < S_WORDS; i++)
+                    regfile[REG_S_BASE + i] <= INITIAL_S[32*i +: 32];
+            end
             state <= IDLE;
             pc <= '0;
+            wrap_return_pc <= '0;
             row <= '0;
             col <= '0;
             done <= 1'b0;
@@ -380,13 +440,27 @@ module corr_microcode #(
             xyz_update_valid <= 1'b0;
             full_update_valid <= 1'b0;
             failed <= 1'b0;
+            // Prediction owns the main bank until done. Load its completed
+            // pair on that edge, even on a wheel-only beat.
+            if (SHARED_STORAGE && state == IDLE && prediction_load) begin
+                {regfile[REG_X], regfile[REG_Y], regfile[REG_THETA],
+                 regfile[REG_OMEGA], regfile[REG_WHEEL_BIAS]} <= prediction[160:1];
+                for (int i = 0; i < S_WORDS; i++)
+                    regfile[REG_S_BASE + i] <= prediction_words[i*32 +: 32];
+            end
+            if (!SHARED_STORAGE && state == IDLE && measurement_load) begin
+                regfile[REG_MEAS_X] <= measurement.x;
+                regfile[REG_MEAS_Y] <= measurement.y;
+                regfile[REG_MEAS_THETA] <= measurement.theta;
+                regfile[REG_MEAS_OMEGA] <= measurement.omega;
+            end
             if ((arithmetic_complete && arithmetic_failed) || (state == ISSUE_A && bad_operands)) begin
                 // No rollback bank. A failed in-place update is never published.
                 failed <= 1'b1;
                 done <= 1'b1;
                 state <= IDLE;
             end else if (arithmetic_complete || (state == ISSUE_A && uop.dp == UOP_NOP)) begin
-                if (arithmetic_complete && uop.wb_en && uop.dest <= REG_C)
+                if (arithmetic_complete && uop.wb_en && uop.dest <= RF_LAST)
                     regfile[uop.dest] <= arithmetic_result;
                 state <= ISSUE_A;
                 pc <= pc + 7'd1;
@@ -405,6 +479,19 @@ module corr_microcode #(
                     end
                 end
                 case (pc)
+                    7'd2: begin
+                        wrap_return_pc <= 7'd3;
+                        pc <= PC_WRAP_INNOVATION;
+                    end
+                    7'd12: if (col == 3'd2) begin
+                        wrap_return_pc <= PC_STATE_NEXT;
+                        pc <= PC_WRAP_HEADING;
+                    end
+                    PC_STATE_NEXT: if (col == 3'd2) begin
+                        wrap_return_pc <= PC_STATE;
+                        pc <= PC_WRAP_RESIDUAL;
+                    end
+                    PC_WRAP_INNOVATION, PC_WRAP_HEADING, PC_WRAP_RESIDUAL: pc <= pc;
                     PC_DIAG_WRITE: begin
                         if (row == 3'd4) begin
                             case (update_stage)
@@ -429,18 +516,13 @@ module corr_microcode #(
                 endcase
             end else begin
                 case (state)
-                    IDLE: if (start && prediction.pred_valid) begin
-                        regfile[REG_X] <= prediction.pred_x;
-                        regfile[REG_Y] <= prediction.pred_y;
-                        regfile[REG_THETA] <= prediction.pred_theta;
-                        regfile[REG_OMEGA] <= prediction.pred_omega;
-                        regfile[REG_WHEEL_BIAS] <= prediction.pred_wheelB;
-                        for (int i = 0; i < S_WORDS; i++)
-                            regfile[REG_S_BASE + i] <= prediction_words[i*32 +: 32];
-                        regfile[REG_MEAS_X] <= measurement.x;
-                        regfile[REG_MEAS_Y] <= measurement.y;
-                        regfile[REG_MEAS_THETA] <= measurement.theta;
-                        regfile[REG_MEAS_OMEGA] <= measurement.omega;
+                    IDLE: if (start && (SHARED_STORAGE || prediction.pred_valid)) begin
+                        if (!SHARED_STORAGE) begin
+                            {regfile[REG_X], regfile[REG_Y], regfile[REG_THETA],
+                             regfile[REG_OMEGA], regfile[REG_WHEEL_BIAS]} <= prediction[160:1];
+                            for (int i = 0; i < S_WORDS; i++)
+                                regfile[REG_S_BASE + i] <= prediction_words[i*32 +: 32];
+                        end
                         pc <= '0;
                         row <= '0;
                         col <= '0;
@@ -448,7 +530,9 @@ module corr_microcode #(
                         state <= ISSUE_A;
                     end
                     ISSUE_A: begin
-                        if (uop.seq == SEQ_HALT) begin
+                        if (wrap_step && !wrap_needed) begin
+                            pc <= wrap_return_pc;
+                        end else if (uop.seq == SEQ_HALT) begin
                             x_update_valid <= pc == PC_X_DONE;
                             xy_update_valid <= pc == PC_XY_DONE;
                             xyz_update_valid <= pc == PC_XYZ_DONE;

@@ -51,7 +51,7 @@ module vn_to_correction #(
     logic [6:0] address;
     logic write_enable, xy_valid;
     logic [31:0] read_data, write_data, x, y;
-    logic [31:0] scratch [21:29];
+    logic [31:0] scratch [21:24];
 
     assign busy = state != IDLE;
     assign done = state == WAIT_HEADING && mac_response.valid;
@@ -71,7 +71,7 @@ module vn_to_correction #(
             7'd112: read_data = 32'h37d00d01;
             7'd113: read_data = 32'hb493f27e;
             7'd114: read_data = 32'h310f76c7;
-            default: read_data = address >= 7'd21 && address <= 7'd29 ? scratch[address] : '0;
+            default: read_data = address >= 7'd21 && address <= 7'd24 ? scratch[address] : '0;
         endcase
     end
 

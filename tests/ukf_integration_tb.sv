@@ -12,7 +12,12 @@ module ukf_integration_tb;
     pred_s_factor_t prediction_prior_s, prediction_result_s;
     logic [31:0] prediction_ts, prediction_wheel_velocity;
     PRED_PACKET prediction_result;
-    logic ukf_busy, ukf_pred_done, ukf_valid, ukf_failed;
+    ukf_mac_request_t prediction_mac_request = '0;
+    ukf_mac_response_t prediction_mac_response;
+    ukf_divsqrt_request_t prediction_div_request = '0;
+    ukf_divsqrt_response_t prediction_div_response;
+    logic prediction_mac_grant, prediction_div_grant;
+    logic ukf_busy, ukf_pred_done, ukf_valid, ukf_failed, ukf_vn_overflow, ukf_reinit_required;
     logic [31:0] ukf_x, ukf_y, ukf_theta, ukf_omega, ukf_wheelB;
     pred_s_factor_t corrected_s;
     PRED_PACKET fixture_prediction;
@@ -24,10 +29,12 @@ module ukf_integration_tb;
     time conversion_tick, prediction_tick;
     string fixture_path;
 
-    UKF #(.ORIGIN_LATITUDE(32'h42280000), .ORIGIN_LONGITUDE(32'hc2a60000),
+    UKF #(.EXTERNAL_PREDICTION(1'b1), .ORIGIN_LATITUDE(32'h42280000), .ORIGIN_LONGITUDE(32'hc2a60000),
           .WHEEL_VELOCITY_SCALE(32'h3f000000)) dut (.*);
 
     always @(posedge clk) if (rst_n) begin
+        if (prediction_mac_grant && (dut.wheel_mac_owner || dut.converter_busy || dut.convert_start))
+            $fatal(1, "multiple MAC owners");
         if (prediction_start) starts++;
         if (dut.convert_start) conversions++;
         if (dut.convert_done) begin
@@ -104,9 +111,15 @@ module ukf_integration_tb;
         if (dut.correction.prediction !== fixture_prediction ||
             dut.correction.prediction_s !== fixture_s)
             $fatal(1, "prediction state and factor were sampled separately");
-        $display("MEAS %0d %h", index, dut.correction.measurement);
+        $display("MEAS %0d %08h%08h%08h%08h", index,
+                 dut.correction.correction_program.regfile[21],
+                 dut.correction.correction_program.regfile[22],
+                 dut.correction.correction_program.regfile[23],
+                 dut.correction.correction_program.regfile[24]);
 
-        // A pulse during correction must not create either new transaction.
+        // A wheel-only pulse during correction must not start prediction.
+        // The dedicated queue regression exercises VN acceptance while busy.
+        ukf_vn_valid = 0;
         ukf_pulse = 1;
         @(negedge clk);
         ukf_pulse = 0;
