@@ -16,7 +16,7 @@ always_comb begin : state_transition
     ns = s;
     case(s)
         IDLE: begin
-            if(corr_packet.vn_valid[0])begin
+            if(corr_packet.ukf_vn_valid)begin
                 ns = ERROR_CALC;
             end
             else begin

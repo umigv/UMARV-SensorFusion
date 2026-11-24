@@ -1,12 +1,11 @@
 typedef struct packed {
-    logic ukf_pulse;        // one clock: the measurements below are ready
     logic [31:0] ukf_beat_ts;      // time of the beat this snapshot belongs to, us
-    logic ukf_vn_valid;     // new, CRC-good, status-good message this beat
+    logic ukf_vn_valid;     // one-clock correction strobe for a good VN message
     logic [31:0] ukf_vn_yaw_f32;   // raw IEEE float: yaw, degrees, clockwise from north
     logic [31:0] ukf_vn_rate_f32;  // raw IEEE float: body Z turn rate, rad/s
     logic        [63:0] ukf_vn_lat_f64;   // raw IEEE double: latitude, degrees
     logic        [63:0] ukf_vn_lon_f64;   // raw IEEE double: longitude, degrees
-    logic ukf_dw_valid;    // good wheel reading this beat, with a previous one to compare against
+    logic ukf_dw_valid;    // one-clock prediction strobe for a good wheel delta
     logic signed [27:0] ukf_dw_delta;     // counts moved since the last good reading
 } meas_regfile_t;
 
