@@ -3,20 +3,28 @@
 // A latch is about half the size of a flip-flop with a write enable, and the buffer is the
 // largest thing in the lidar block.
 //
-// How a write stays safe:
-//   clock 0   we, waddr, wdata are registered.
-//   clock 1   the word select is decoded from the registered address. It may glitch while it
-//             settles; nothing is listening yet.
-//   clock 2   a clock gate per word (a latch that is open while clk is low, then an AND with
-//             clk) passes one clean clk-high pulse to the selected word's 16 latches. The data,
-//             registered a second time, is steady for the whole of this clock.
-// So a word holds its new value from the middle of the second clock after the write.
-// Writes on consecutive clocks are fine.
+// RULE FOR THE USER OF THIS BLOCK: writes must be at least 3 clocks apart. The point buffer
+// writes once per lidar return, which is 12 clocks apart at the fastest.
+//
+// How a write stays safe, with no gated clocks:
+//   rising edge 0     we, waddr and wdata are registered. The data register then holds its
+//                     value until the next write, at least 3 clocks later.
+//   falling edge 0.5  one flip-flop per word, clocked on the FALLING edge, takes the decoded
+//                     word select. Its output is that word's latch enable: a clean, glitch-free
+//                     level from a flip-flop, high for exactly one clock (falling edge 0.5 to
+//                     falling edge 1.5).
+//   The data has been steady for half a clock before the enable rises and stays steady for at
+//   least a clock and a half after it falls. Both margins are there by construction; they do
+//   not rely on the tools checking a latch's timing.
+// A word holds its new value from falling edge 0.5, and must not be read before rising edge 2.
 //
 // Reading is combinational: rdata follows raddr.
 //
-// For synthesis the clock gates and latches are Sky130 cells placed by name. Simulation without
-// the cell library uses the equivalent behaviour below.
+// An earlier version used one clock gate per word. The place-and-route tools treated the 256
+// gated clocks as clock nets, gave each of them wide wiring, and could not route the result.
+//
+// For synthesis the latches are Sky130 cells placed by name. Simulation without the cell
+// library uses the equivalent behaviour below.
 module lidar_latch_mem (
     input  logic        clk,
     input  logic        we,
@@ -28,33 +36,37 @@ module lidar_latch_mem (
 
     logic        we_q;
     logic [7:0]  wa_q;
-    logic [15:0] wd_q, wd_q2;
+    logic [15:0] wd_q;
     always_ff @(posedge clk) begin
-        we_q  <= we;
-        wa_q  <= waddr;
-        wd_q  <= wdata;
-        wd_q2 <= wd_q;
+        we_q <= we;
+        if (we) begin
+            wa_q <= waddr;
+            wd_q <= wdata;
+        end
+    end
+
+    // one latch enable per word, from a flip-flop on the falling edge
+    logic [255:0] gate;
+    integer n;
+    always_ff @(negedge clk) begin
+        for (n = 0; n < 256; n = n + 1)
+            gate[n] <= we_q && (wa_q == n[7:0]);
     end
 
     wire [15:0] q [0:255];
     assign rdata = q[raddr];
 
-    genvar i, b;
+    genvar i;
     generate
         for (i = 0; i < 256; i = i + 1) begin : word
-            wire sel = we_q && (wa_q == i);
-            wire gclk;
 `ifdef SYNTHESIS
-            sky130_fd_sc_hd__dlclkp_1 u_gate (.CLK(clk), .GATE(sel), .GCLK(gclk));
+            genvar b;
             for (b = 0; b < 16; b = b + 1) begin : bit_
-                sky130_fd_sc_hd__dlxtp_1 u_latch (.D(wd_q2[b]), .GATE(gclk), .Q(q[i][b]));
+                sky130_fd_sc_hd__dlxtp_1 u_latch (.D(wd_q[b]), .GATE(gate[i]), .Q(q[i][b]));
             end
 `else
-            reg        sel_l;
             reg [15:0] d;
-            always_latch if (!clk) sel_l = sel;
-            assign gclk = clk & sel_l;
-            always_latch if (gclk) d = wd_q2;
+            always_latch if (gate[i]) d = wd_q;
             assign q[i] = d;
 `endif
         end

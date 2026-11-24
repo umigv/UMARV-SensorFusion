@@ -19,6 +19,10 @@
   "//": "The value is in nanoseconds, so 20ns == 50MHz.",
   "CLOCK_PERIOD": 20,
 
+  "//": "SYNTH_STRATEGY - AREA 3 is the only one of the nine strategies with which this design routes.",
+  "//": "The other eight overflow global routing by 8,000 to 58,000 tracks (trial builds, 24 Nov 2026).",
+  "SYNTH_STRATEGY": "AREA 3",
+
   "//": "Hold slack margin - Increase them in case you are getting hold violations.",
   "PL_RESIZER_HOLD_SLACK_MARGIN": 0.1,
   "GRT_RESIZER_HOLD_SLACK_MARGIN": 0.05,
