@@ -48,6 +48,7 @@ module timestamper (
 
     logic beat; // one clock per beat
     assign beat = enable && us_tick && (beat_ctr == period_us - 1'b1);
+    assign ukf_beat = beat;
 
     // counter updates
     always_ff @(posedge clk or negedge rst_n) begin

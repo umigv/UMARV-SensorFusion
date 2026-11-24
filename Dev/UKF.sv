@@ -1,6 +1,8 @@
 module UKF (
     input  logic               clk,
     input  logic               rst_n,
+    input  logic               ukf_beat,
+    input  logic               ukf_pulse,
     input  logic        [31:0] ukf_beat_ts,
     input  logic               ukf_vn_valid,
     input  logic        [31:0] ukf_vn_yaw_f32,
@@ -10,6 +12,7 @@ module UKF (
     input  logic               ukf_dw_valid,
     input  logic signed [27:0] ukf_dw_delta,
 
+    output logic               ukf_pred_done,
     output logic               ukf_valid,
     output logic        [31:0] ukf_x,
     output logic        [31:0] ukf_y,
@@ -24,34 +27,26 @@ module UKF (
     logic reset;
     meas_regfile_t time_pack;
     PRED_PACKET pred_packet;
-    UKF_OUT_PACKET result_packet;
+    UKF_OUT_PACKET result_packet, latest_state, next_state;
 
     assign reset = ~rst_n;
-    assign time_pack.ukf_dw_valid = ukf_dw_valid;
-    assign time_pack.ukf_vn_valid = ukf_vn_valid;
-
-    // The timestamper staggers the one-clock valid strobes so the engines run serially.
-    // Each payload must settle through its latch before the engine samples the strobe.
-    always_latch begin
-        if (ukf_dw_valid || ukf_vn_valid)
-            time_pack.ukf_beat_ts     <= ukf_beat_ts;
-        if (ukf_vn_valid) begin
-            time_pack.ukf_vn_yaw_f32  <= ukf_vn_yaw_f32;
-            time_pack.ukf_vn_rate_f32 <= ukf_vn_rate_f32;
-            time_pack.ukf_vn_lat_f64  <= ukf_vn_lat_f64;
-            time_pack.ukf_vn_lon_f64  <= ukf_vn_lon_f64;
-        end
-        if (ukf_dw_valid)
-            time_pack.ukf_dw_delta    <= ukf_dw_delta;
-    end
+    // The timestamper holds the payload and flags. Only the ready pulse starts work.
+    assign time_pack.ukf_beat_ts = ukf_beat_ts;
+    assign time_pack.ukf_dw_valid = ukf_pulse && ukf_dw_valid;
+    assign time_pack.ukf_vn_valid = ukf_pulse && ukf_vn_valid;
+    assign time_pack.ukf_vn_yaw_f32 = ukf_vn_yaw_f32;
+    assign time_pack.ukf_vn_rate_f32 = ukf_vn_rate_f32;
+    assign time_pack.ukf_vn_lat_f64 = ukf_vn_lat_f64;
+    assign time_pack.ukf_vn_lon_f64 = ukf_vn_lon_f64;
+    assign time_pack.ukf_dw_delta = ukf_dw_delta;
 
     UKF_pred_engine prediction (
         .clock(clk),
         .reset(reset),
-        .corr_packet(result_packet),
+        .corr_packet(latest_state),
         .timestamp_pack(time_pack),
         .busy(),
-        .done(),
+        .done(ukf_pred_done),
         .pred_pack(pred_packet)
     );
 
@@ -63,11 +58,29 @@ module UKF (
         .ukf_output(result_packet)
     );
 
-    assign ukf_valid  = result_packet.ukf_valid;
-    assign ukf_x      = result_packet.ukf_x;
-    assign ukf_y      = result_packet.ukf_y;
-    assign ukf_theta  = result_packet.ukf_theta;
-    assign ukf_omega  = result_packet.ukf_omega;
-    assign ukf_wheelB = result_packet.ukf_wheelB;
+    always_comb begin
+        next_state = latest_state;
+        if (result_packet.ukf_valid)
+            next_state = result_packet;
+        else if (ukf_pred_done && pred_packet.pred_valid)
+            next_state = {pred_packet.pred_x, pred_packet.pred_y,
+                          pred_packet.pred_theta, pred_packet.pred_omega,
+                          pred_packet.pred_wheelB, 1'b1};
+    end
+
+    always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            latest_state <= '0;
+            ukf_valid <= 1'b0;
+            {ukf_x, ukf_y, ukf_theta, ukf_omega, ukf_wheelB} <= '0;
+        end else begin
+            latest_state <= next_state;
+            ukf_valid <= ukf_beat;
+            if (ukf_beat)
+                {ukf_x, ukf_y, ukf_theta, ukf_omega, ukf_wheelB} <=
+                    {next_state.ukf_x, next_state.ukf_y, next_state.ukf_theta,
+                     next_state.ukf_omega, next_state.ukf_wheelB};
+        end
+    end
 
 endmodule

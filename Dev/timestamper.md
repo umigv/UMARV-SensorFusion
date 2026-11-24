@@ -69,6 +69,7 @@ Times are for the default settings (50 MHz clock, 2,500 us period, 2,000 us dead
 | `vn_rx` | in | 1 | serial data from the VN-300 |
 | `cs_n`, `sck`, `mosi` | out | 1 | SPI to the AMT22 |
 | `miso` | in | 1 | SPI from the AMT22 |
+| `ukf_beat` | out | 1 | one clock at the fixed-rate beat boundary |
 | `ukf_pulse` | out | 1 | one clock: measurements for this beat are ready |
 | `ukf_*` | out | | the measurements, see below |
 | `time_us` | out | 40 | free-running microsecond clock |

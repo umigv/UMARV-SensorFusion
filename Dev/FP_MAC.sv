@@ -145,7 +145,7 @@ module fp32_mac (
     end
 
     always_ff @(posedge clock or negedge reset) begin
-        if (!rst_n) begin
+        if (!reset) begin
             state <= IDLE;
             accumulator <= '0;
             result <= '0;

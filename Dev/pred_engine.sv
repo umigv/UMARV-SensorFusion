@@ -11,11 +11,10 @@ typedef enum logic [2:0]{
 } pred_states;
 pred_states s, ns;
 
-logic [31:0] dw_delta_f32;
-int_to_fp32 dw_converter (
-    .int_in(timestamp_pack.ukf_dw_delta),
-    .fp_out(dw_delta_f32)
-);
+assign busy = (s != IDLE);
+assign done = (s == PRED_DONE);
+// The prediction datapath has yet to drive a result.
+assign pred_pack = '0;
 
 always_ff @(posedge clock or posedge reset)begin
     if(reset)
@@ -31,6 +30,7 @@ always_comb begin
             if(timestamp_pack.ukf_dw_valid)begin
                 ns = LOAD_INPUTS;
             end
+        end
             LOAD_INPUTS: begin
                 ns = CALC_WHEEL_V;
             end 
@@ -38,13 +38,12 @@ always_comb begin
                 ns = RUN_PRED_MICROCODE;
             end 
             RUN_PRED_MICROCODE: begin
-                ns = PRED_DONE
+                ns = PRED_DONE;
             end
             PRED_DONE:begin
                 ns = IDLE;
             end
             default: ns=IDLE;
-        end
     endcase
 end
 

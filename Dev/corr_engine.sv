@@ -7,7 +7,7 @@ module UKF_corr_engine #()(
 );
 
 typedef enum logic[4:0] {  
-    IDLE, ERROR_CALC,
+    IDLE, ERROR_CALC
 } corr_states;
 
 corr_states s, ns;
@@ -23,26 +23,21 @@ always_comb begin : state_transition
                 ns = IDLE;
             end
         end
-        ERROR_CALC: begin
+        ERROR_CALC: ns = IDLE;
 
-        end
-
-        default: state = ERR
+        default: ns = IDLE;
     endcase
 end
 
 
-always_ff @(posedge clock) begin : blockName
-    if(reset) begin
-    
-    end
-    else begin
-        if(s == ERROR_CALC)begin
-            
-        end
-    end
+always_ff @(posedge clock) begin
+    if (reset)
+        s <= IDLE;
+    else
+        s <= ns;
 end
 
-CORDIC cordic #()();
+// The correction datapath has yet to drive a result.
+assign ukf_output = '0;
 
 endmodule
