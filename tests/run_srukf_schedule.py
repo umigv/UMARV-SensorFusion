@@ -10,7 +10,7 @@ from run_corr_x import word
 from run_ukf_integration import bits
 
 DRIVER = r"""
-    integer phase, layout, index;
+    integer phase, layout, index, first_release;
     integer overflows = 0, refills = 0, corrected_count = 0;
     integer mac_wait, pred_mac_busy, pred_div_busy, corr_mac_busy, corr_div_busy;
     integer first_mac, correction_first;
@@ -18,10 +18,10 @@ DRIVER = r"""
     pred_s_factor_t matching_factor;
     always @(posedge clk) if (rst_n) begin
         if (ukf_pulse)
-            $display("RELEASE %0d %0d %0b %0b %0b", ($time-35)/10, ukf_beat_ts,
+            $display("RELEASE %0d %0d %0b %0b %0b", ($time-first_release)/10, ukf_beat_ts,
                      ukf_dw_valid, ukf_vn_valid, dut.time_pack.ukf_pulse);
         if (dut.vn_arrival)
-            $display("VN %0d %0d %0b %0b", ($time-35)/10, ukf_beat_ts,
+            $display("VN %0d %0d %0b %0b", ($time-first_release)/10, ukf_beat_ts,
                      dut.vn_dispatch && !dut.vn_pending || dut.vn_store, dut.vn_store);
         if (ukf_vn_overflow) overflows++;
         if (dut.vn_pending && dut.vn_dispatch && dut.vn_store) refills++;
@@ -30,18 +30,18 @@ DRIVER = r"""
             pred_mac_busy = 0;
             pred_div_busy = 0;
             first_mac = -1;
-            $display("PSTART %0d %0d", ($time-35)/10, dut.prediction_ts);
+            $display("PSTART %0d %0d", ($time-first_release)/10, dut.prediction_ts);
         end
         if (dut.backend_active) begin
             if (!dut.prediction_mac_grant) mac_wait++;
             if (dut.prediction_mac_response.busy) pred_mac_busy++;
             if (dut.prediction_div_response.busy) pred_div_busy++;
-            if (dut.backend_mac_request.start && first_mac < 0) first_mac = ($time-35)/10;
+            if (dut.backend_mac_request.start && first_mac < 0) first_mac = ($time-first_release)/10;
         end
         if (ukf_pred_done) begin
             matching_prediction = dut.pred_packet;
             matching_factor = dut.pred_s;
-            $display("PDONE %0d %0d %0d %0d %0d %0d", ($time-35)/10, dut.prediction_ts,
+            $display("PDONE %0d %0d %0d %0d %0d %0d", ($time-first_release)/10, dut.prediction_ts,
                      first_mac, mac_wait, pred_mac_busy, pred_div_busy);
         end
         if (dut.correction.state == dut.correction.LOAD_INPUTS) begin
@@ -62,11 +62,11 @@ DRIVER = r"""
             corr_mac_busy = 0;
             corr_div_busy = 0;
             correction_first = -1;
-            $display("CSTART %0d %0d", ($time-35)/10, dut.correction.convert_input.ukf_beat_ts);
+            $display("CSTART %0d %0d", ($time-first_release)/10, dut.correction.convert_input.ukf_beat_ts);
         end
         if (dut.correction.state == dut.correction.RUN_CORR_MICROCODE) begin
             if (dut.correction.correction_program.mac_start && correction_first < 0)
-                correction_first = ($time-35)/10;
+                correction_first = ($time-first_release)/10;
             if (dut.correction.correction_program.mac_busy) corr_mac_busy++;
             if (dut.correction.correction_program.div_busy) corr_div_busy++;
         end
@@ -74,7 +74,7 @@ DRIVER = r"""
             if (layout == 3 && dut.correction.convert_input.ukf_beat_ts != corrected_count)
                 $fatal(1, "VN queue order or duplicate consumption");
             corrected_count++;
-            $display("CDONE %0d %0d %0d %0d %0d", ($time-35)/10,
+            $display("CDONE %0d %0d %0d %0d %0d", ($time-first_release)/10,
                      dut.correction.convert_input.ukf_beat_ts, correction_first,
                      corr_mac_busy, corr_div_busy);
         end
@@ -100,6 +100,9 @@ DRIVER = r"""
         measurement_s = NOISE;
         repeat (3) @(negedge clk);
         rst_n = 1;
+        wait (!ukf_busy);
+        @(negedge clk);
+        first_release = $time + 5;
         if (layout == 3) begin
             ukf_dw_delta = 24;
             pulse(1, 1, 0);

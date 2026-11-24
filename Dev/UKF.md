@@ -82,27 +82,29 @@ work on reset.
 
 ## Shared storage and handoff
 
-`Dev/ukf_regfile.sv` defines the synchronous memory interface for a future
-shared bank. It accepts a two-address read or a one-word write on each
-rising edge. The controller samples a valid read response on the next
-rising edge. Reset clears the response qualifier and suppresses commands.
-Memory contents are unspecified at power-up. The controller must write
-initial values before issuing reads that depend on them.
+The development UKF uses `ukf_regfile` for built-in prediction, VN
+conversion, and correction by default. The bank accepts a dual-address
+read or a one-word write each cycle. The sequencers capture read operands
+on the following rising edge and retain them through arithmetic completion.
+After reset, `ukf_busy` stays asserted for 22 clocks while the controller
+initializes the prior and coordinate origins.
 
-The proposed physical allocation is 0–4 for state, 5 for wheel velocity,
-6–20 for S, 21–36 for shared scratch, 37–51 for S_Q/S_R, 52 for origin
-longitude, and 53 for origin latitude. Initialize the origin words from
-the FP32 degree parameters. Allocate later words for the live packets,
-noise snapshots, and converter work after accounting for overlapping
-lifetimes. Microcode and PROM constants remain in the existing RTL decode.
+The bank uses addresses 0–4 for state, 5 for wheel velocity, 6–20 for the
+covariance factor, 21–36 for scratch, 37–51 for process and measurement
+noise, and 52–53 for origin longitude and latitude. Prediction commits
+its state and factor before handing the bank to VN conversion. Conversion
+reuses the scratch region for coordinate math. The controller writes
+the four measurement words and ten measurement-noise words before
+correction fetches its first operands. Correction collects its state and
+factor into parallel outputs before each stage strobe. Raw VN packets and
+their pending noise snapshots remain in the input buffering registers.
 
-The current UKF still uses the arrays and parallel transfers below.
-Connecting the shared bank requires scheduling operand reads, serialized
-initialization and packet transfers, and result assembly before asserting
-completion. For `USE_SKY130=1`, the candidate wrapper instantiates
-`sky130_sram_1kbyte_1rw1r_32x256_8`. Use matching Verilog, Liberty, LEF,
-and GDS views from the chosen macro release and connect its power pins in
-the physical flow.
+Set `SRAM_STORAGE=0` to use the legacy parallel storage. With SRAM storage
+enabled, `USE_SKY130=0` selects the synchronous RTL memory and
+`USE_SKY130=1` selects `sky130_sram_1kbyte_1rw1r_32x256_8`. The macro
+requires matching Verilog, Liberty, LEF, and GDS views for physical
+implementation. To simulate its interface, run
+`python3 tests/run_srukf_end_to_end.py --sram-model /path/to/openram_model.v`.
 
 The built-in path uses one 16-word scratchpad in the prediction sequencer
 for both engines. Prediction offsets 0–4 hold the current point and then
@@ -112,13 +114,6 @@ argument, square, and result alias offsets 12, 13, and 6. The sign uses
 offset 15. Correction reinterprets the 16 offsets as four residuals plus
 twelve work words. Correction arithmetic owns the scratchpad only after
 prediction has finished.
-
-The built-in path uses 52 main FP32 data words. The five state words
-and fifteen factor words live in the correction register file and are
-read directly by prediction. Prediction writes its completed pair into
-this bank on the done edge. Correction then updates the same words.
-The remaining main storage is the shared 15-word S_Q/S_R bank, 16
-scratch words, and one wheel word.
 
 A VN sample may arrive while S_Q is still being updated, so the UKF
 captures its ten-word runtime S_R in a separate configuration snapshot.
@@ -184,8 +179,8 @@ A rejected prediction or correction pulses `ukf_failed`. The built-in
 predictor leaves the main prior untouched on prediction failure. A built-in
 correction failure latches `ukf_reinit_required`, discards the pending VN
 transaction, and blocks new wheel and VN input. It publishes no correction
-result. The live output wires must be treated as invalid while correction
-is updating them or the reset-required flag is set. Hold `rst_n` low to
+result. Treat output wires as valid on their corresponding completion strobe.
+A correction failure invalidates the bank until reset. Hold `rst_n` low to
 reload `INITIAL_STATE` and `INITIAL_S` and clear the flag. Only submit fresh
 inputs after reset. The external-backend option keeps the previous
 correction rollback behavior and leaves `ukf_reinit_required` low.
@@ -209,9 +204,9 @@ with the SKY130 HD Liberty, `tests/buffer_srukf_netlist.py` on the mapped
 JSON, and `tests/srukf_timing.tcl` in OpenSTA after exporting the buffered
 JSON as Verilog with Yosys `write_verilog -noattr -noexpr -simple-lhs`.
 
-### Lowest-area integrated UKF map
+### Lowest-area map of the legacy parallel-storage UKF
 
-The lowest-area tested SKY130 HD map uses flattened synthesis, default ABC
+The legacy parallel-storage SKY130 HD map used flattened synthesis, default ABC
 Liberty mapping, and post-map buffer trees with a fanout limit of 32. Run
 these commands from the repository root with `liberty` set to the absolute
 path of `sky130_fd_sc_hd__tt_025C_1v80.lib` and OpenSTA available as `sta`.

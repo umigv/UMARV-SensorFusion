@@ -3,6 +3,7 @@ module corr_microcode #(
     parameter bit ENABLE_THIRD_UPDATE = 1'b1,
     parameter bit ENABLE_FOURTH_UPDATE = 1'b1,
     parameter bit SHARE_MAC = 1'b0,
+    parameter bit SRAM_STORAGE = 1'b0,
     parameter bit SHARED_STORAGE = 1'b0,
     parameter logic [160:0] INITIAL_STATE = '0,
     parameter logic [479:0] INITIAL_S = '0
@@ -17,6 +18,8 @@ module corr_microcode #(
     input  logic prediction_load,
     output ukf_spad_request_t spad_request,
     input ukf_spad_response_t spad_response,
+    input logic spad_read_valid,
+    output logic spad_read,
     output logic done, x_update_valid, failed,
     output UKF_OUT_PACKET result,
     output pred_s_factor_t corrected_s,
@@ -114,8 +117,9 @@ module corr_microcode #(
 
     typedef enum logic [1:0] {UPDATE_X, UPDATE_XY, UPDATE_XYZ, UPDATE_XYZW} update_stage_t;
 
-    typedef enum logic [2:0] {
-        IDLE, ISSUE_A, WAIT_A, ISSUE_B, WAIT_B, WAIT_DIVSQRT
+    typedef enum logic [3:0] {
+        IDLE, ISSUE_A, WAIT_A, ISSUE_B, WAIT_B, WAIT_DIVSQRT,
+        FETCH, COLLECT, PUBLISH
     } corr_state_t;
 
     corr_state_t state;
@@ -128,6 +132,12 @@ module corr_microcode #(
     localparam logic [6:0] RF_LAST = SHARED_STORAGE ? REG_S_BASE + 7'd14 : REG_C;
     logic [31:0] regfile [RF_LAST:REG_X];
     logic residual_heading_negative;
+    logic [31:0] held_a, held_b;
+    logic [6:0] collect_addr;
+    wire sram_write = SRAM_STORAGE && arithmetic_complete && !arithmetic_failed &&
+                      uop.wb_en && uop.dest <= REG_C;
+    assign spad_read = SRAM_STORAGE && (state == FETCH || state == COLLECT) &&
+                       !spad_read_valid;
     corr_ukf_uop uop;
     logic [31:0] operand_a, operand_b, mac_a, mac_b, mac_result, div_result;
     logic mac_start, mac_busy, mac_done, mac_result_valid;
@@ -325,15 +335,17 @@ module corr_microcode #(
     assign spad_request = {
         SHARED_STORAGE && state != IDLE,
         SHARED_STORAGE && arithmetic_complete && !arithmetic_failed && uop.wb_en &&
-            uop.dest >= REG_MEAS_X && uop.dest <= REG_C,
+            uop.dest <= REG_C && (SRAM_STORAGE || uop.dest >= REG_MEAS_X),
         uop.src_a[3:0] - REG_MEAS_X[3:0],
         uop.src_b[3:0] - REG_MEAS_X[3:0],
-        uop.dest[3:0] - REG_MEAS_X[3:0], uop.src_a, uop.src_b, arithmetic_result
+        uop.dest[3:0] - REG_MEAS_X[3:0],
+        sram_write ? uop.dest : state == COLLECT ? collect_addr : uop.src_a,
+        uop.src_b, arithmetic_result
     };
-    assign operand_a = SHARED_STORAGE ? spad_response.a : read_operand(uop.src_a,
+    assign operand_a = SRAM_STORAGE ? held_a : SHARED_STORAGE ? spad_response.a : read_operand(uop.src_a,
                                     uop.src_a <= RF_LAST ? regfile[uop.src_a] : 32'b0,
                                     measurement_words);
-    assign operand_b = wrap_step ? angle_wrap_step(operand_a) : (SHARED_STORAGE ? spad_response.b : read_operand(uop.src_b,
+    assign operand_b = wrap_step ? angle_wrap_step(operand_a) : (SRAM_STORAGE ? held_b : SHARED_STORAGE ? spad_response.b : read_operand(uop.src_b,
                                     uop.src_b <= RF_LAST ? regfile[uop.src_b] : 32'b0,
                                     measurement_words));
 
@@ -449,11 +461,11 @@ module corr_microcode #(
             // pair on that edge, even on a wheel-only beat.
             if (SHARED_STORAGE) begin
                 for (int i = 0; i <= RF_LAST; i++) begin
-                    if (i != 5 && (load_main || (retire_main && uop.dest == 7'(i)))) begin
+                    if (i != 5 && (load_main || (!SRAM_STORAGE && retire_main && uop.dest == 7'(i)))) begin
                         if (i < 5)
                             regfile[i] <= ({32{load_main}} & prediction[160-32*i -: 32]) |
                                           main_write_data;
-                        else
+                        else if (i >= 6)
                             regfile[i] <= ({32{load_main}} & prediction_words[32*(i-6) +: 32]) |
                                           main_write_data;
                     end
@@ -473,7 +485,10 @@ module corr_microcode #(
             end else if (arithmetic_complete || (state == ISSUE_A && uop.dp == UOP_NOP)) begin
                 if (!SHARED_STORAGE && arithmetic_complete && uop.wb_en && uop.dest <= RF_LAST)
                     regfile[uop.dest] <= arithmetic_result;
-                state <= ISSUE_A;
+                if (SRAM_STORAGE)
+                    state <= FETCH;
+                else
+                    state <= ISSUE_A;
                 pc <= pc + 7'd1;
                 if (uop.seq == SEQ_LOOP) begin
                     if (col == 3'd4) begin
@@ -538,11 +553,31 @@ module corr_microcode #(
                         row <= '0;
                         col <= '0;
                         update_stage <= UPDATE_X;
+                        if (SRAM_STORAGE)
+                            state <= FETCH;
+                        else
+                            state <= ISSUE_A;
+                    end
+                    FETCH: if (spad_read_valid) begin
+                        held_a <= spad_response.a;
+                        held_b <= spad_response.b;
                         state <= ISSUE_A;
                     end
-                    ISSUE_A: begin
+                    COLLECT: if (spad_read_valid) begin
+                        regfile[collect_addr[4:0]] <= spad_response.a;
+                        if (collect_addr == RF_LAST)
+                            state <= PUBLISH;
+                        else
+                            collect_addr <= collect_addr == 4 ? 7'd6 : collect_addr + 7'd1;
+                    end
+                    ISSUE_A, PUBLISH: begin
                         if (wrap_step && !wrap_needed) begin
                             pc <= wrap_return_pc;
+                            if (SRAM_STORAGE)
+                                state <= FETCH;
+                        end else if (SRAM_STORAGE && state == ISSUE_A && uop.seq == SEQ_HALT) begin
+                            collect_addr <= '0;
+                            state <= COLLECT;
                         end else if (uop.seq == SEQ_HALT) begin
                             x_update_valid <= pc == PC_X_DONE;
                             xy_update_valid <= pc == PC_XY_DONE;
@@ -552,16 +587,22 @@ module corr_microcode #(
                                 row <= '0;
                                 col <= '0;
                                 pc <= PC_WHITEN;
+                                if (SRAM_STORAGE)
+                                    state <= FETCH;
                             end else if (ENABLE_THIRD_UPDATE && pc == PC_XY_DONE) begin
                                 update_stage <= UPDATE_XYZ;
                                 row <= '0;
                                 col <= '0;
                                 pc <= PC_HEADING_WHITEN;
+                                if (SRAM_STORAGE)
+                                    state <= FETCH;
                             end else if (ENABLE_FOURTH_UPDATE && pc == PC_XYZ_DONE) begin
                                 update_stage <= UPDATE_XYZW;
                                 row <= '0;
                                 col <= '0;
                                 pc <= PC_RATE_WHITEN;
+                                if (SRAM_STORAGE)
+                                    state <= FETCH;
                             end else begin
                                 full_update_valid <= pc == PC_FULL_DONE;
                                 done <= 1'b1;

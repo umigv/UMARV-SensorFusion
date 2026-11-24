@@ -5,6 +5,8 @@ module UKF #(
     parameter logic [31:0] WHEEL_VELOCITY_SCALE = 32'b0,
     parameter logic [160:0] INITIAL_STATE = '0,
     parameter logic [479:0] INITIAL_S = '0,
+    parameter bit SRAM_STORAGE = 1'b1,
+    parameter bit USE_SKY130 = 1'b0,
     parameter bit EXTERNAL_PREDICTION = 1'b0,
     parameter logic [31:0] PRED_DT = 32'h3b23d70a,
     parameter logic [31:0] SIGMA_SCALE = 32'h3f8f1bbd,
@@ -61,7 +63,11 @@ module UKF #(
     input  ukf_divsqrt_request_t  prediction_div_request,
     output ukf_divsqrt_response_t prediction_div_response,
     output logic                  prediction_div_grant
+`ifdef USE_POWER_PINS
+    , inout wire vccd1, vssd1
+`endif
 );
+    localparam bit INTERNAL_SRAM = SRAM_STORAGE && !EXTERNAL_PREDICTION;
     localparam logic [6:0] WHEEL_SCALE_ADDR = 7'd95;
 
     logic reset, prediction_busy, backend_active, correction_busy, prediction_failed, correction_failed;
@@ -73,6 +79,7 @@ module UKF #(
     logic load_shared_noise, load_shared_measurement, correction_update_failed;
     ukf_spad_request_t correction_spad_request, converter_scratch_request, shared_spad_request;
     ukf_spad_response_t correction_spad_response;
+    logic memory_initializing, converter_read, correction_read, shared_read_valid;
     logic vn_pending, vn_arrival, vn_dispatch, vn_store, late_dispatch, late_conversion;
     corr_measurement_t converted;
     PRED_PACKET pred_packet;
@@ -95,6 +102,8 @@ module UKF #(
             assign backend_mac_request = prediction_mac_request;
             assign backend_div_request = prediction_div_request;
             assign correction_spad_response = '0;
+            assign memory_initializing = 1'b0;
+            assign shared_read_valid = 1'b0;
             assign active_measurement_s = noise_snapshot;
             assign ukf_reinit_required = 1'b0;
         end else begin : internal_backend
@@ -111,6 +120,9 @@ module UKF #(
                                    !correction_spad_request.active};
             assign latest_s = correction_s;
             UKF_pred_sequencer #(
+                .SRAM_STORAGE(INTERNAL_SRAM), .USE_SKY130(USE_SKY130),
+                .INITIAL_STATE(INITIAL_STATE), .INITIAL_S(INITIAL_S),
+                .ORIGIN_LATITUDE(ORIGIN_LATITUDE), .ORIGIN_LONGITUDE(ORIGIN_LONGITUDE),
                 .DT(PRED_DT), .SIGMA_SCALE(SIGMA_SCALE), .W_NONCENTRAL(W_NONCENTRAL),
                 .SQRT_W_NONCENTRAL(SQRT_W_NONCENTRAL), .W_MEAN_CENTRAL(W_MEAN_CENTRAL),
                 .SQRT_ABS_W_CENTRAL(SQRT_ABS_W_CENTRAL), .CENTRAL_DOWNDATE(CENTRAL_DOWNDATE),
@@ -125,17 +137,23 @@ module UKF #(
                 .correction_measurement(converted),
                 .correction_spad_request(shared_spad_request),
                 .correction_spad_response(correction_spad_response),
+                .converter_owner(converter_scratch_request.active),
+                .client_read(converter_scratch_request.active ? converter_read : correction_read),
+                .client_read_valid(shared_read_valid), .initializing(memory_initializing),
                 .prior_s(prediction_prior_s), .wheel_velocity(prediction_wheel_velocity),
                 .mac_grant(prediction_mac_grant), .div_grant(prediction_div_grant),
                 .mac_response(prediction_mac_response), .div_response(prediction_div_response),
                 .mac_request(backend_mac_request), .div_request(backend_div_request),
                 .done(backend_done), .prediction(backend_result), .prediction_s(backend_result_s)
+`ifdef USE_POWER_PINS
+                , .vccd1(vccd1), .vssd1(vssd1)
+`endif
             );
         end
     endgenerate
 
     assign reset = ~rst_n;
-    assign ukf_busy = prediction_busy || correction_busy || converter_busy || convert_pending || ukf_valid;
+    assign ukf_busy = memory_initializing || prediction_busy || correction_busy || converter_busy || convert_pending || ukf_valid;
     assign vn_arrival = rst_n && !ukf_reinit_required && ukf_pulse && ukf_vn_valid;
     assign late_dispatch = prediction_busy && !correction_busy;
     assign vn_dispatch = rst_n && !ukf_reinit_required && (vn_pending || vn_arrival) &&
@@ -256,6 +274,7 @@ module UKF #(
                                  converter_scratch_request : correction_spad_request;
 
     vn_to_correction #(
+        .SRAM_STORAGE(INTERNAL_SRAM),
         .SHARED_SCRATCH(!EXTERNAL_PREDICTION),
         .ORIGIN_LATITUDE(ORIGIN_LATITUDE), .ORIGIN_LONGITUDE(ORIGIN_LONGITUDE),
         .EARTH_RADIUS(EARTH_RADIUS)
@@ -263,12 +282,14 @@ module UKF #(
         .clock(clk), .reset(reset), .start(convert_start), .packet(convert_input),
         .busy(converter_busy), .done(convert_done), .measurement(converted),
         .mac_request(converter_mac_request), .mac_response(sensor_mac_response),
-        .scratch_request(converter_scratch_request), .scratch_read(correction_spad_response.a)
+        .scratch_request(converter_scratch_request), .scratch_read(correction_spad_response.a),
+        .scratch_read_valid(shared_read_valid), .scratch_read_enable(converter_read)
     );
 
     UKF_corr_engine #(
         .SHARE_MAC(1'b1), .REPORT_PRED_FAILURE(1'b1),
         .HELD_PREDICTION(!EXTERNAL_PREDICTION), .SHARED_STORAGE(!EXTERNAL_PREDICTION),
+        .SRAM_STORAGE(INTERNAL_SRAM),
         .INITIAL_STATE(INITIAL_STATE), .INITIAL_S(INITIAL_S)
     ) correction (
         .clock(clk), .reset(reset), .corr_packet(correction_packet),
@@ -276,6 +297,7 @@ module UKF #(
         .load_shared_noise(load_shared_noise), .load_shared_measurement(load_shared_measurement),
         .update_failed(correction_update_failed),
         .spad_request(correction_spad_request), .spad_response(correction_spad_response),
+        .spad_read_valid(shared_read_valid), .spad_read(correction_read),
         .convert_start(convert_request), .convert_input(convert_input),
         .convert_done(convert_done), .convert_result(converted),
         .busy(correction_busy), .done(), .failed(correction_failed),
@@ -289,8 +311,7 @@ module UKF #(
         .prediction_failed(prediction_failed)
     );
 
-    // On the built-in path these wires reflect the live bank. Sample
-    // correction results on ukf_valid; the bank can change while busy.
+    // Sample the completed state and factor together on ukf_valid.
     assign {ukf_x, ukf_y, ukf_theta, ukf_omega, ukf_wheelB} =
         {latest_state.ukf_x, latest_state.ukf_y, latest_state.ukf_theta,
          latest_state.ukf_omega, latest_state.ukf_wheelB};

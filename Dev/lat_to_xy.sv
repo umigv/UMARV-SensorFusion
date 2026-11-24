@@ -1,4 +1,5 @@
 module lat_to_xy #(
+    parameter bit SYNC_MEMORY = 1'b0,
     // Six cosine coefficients, from -1/2! through +1/12!.
     parameter logic [6:0] COS_FIRST = 7'd109
 ) (
@@ -10,6 +11,8 @@ module lat_to_xy #(
     input  logic [31:0] mem_rdata,
     output logic [6:0]  mem_addr,
     output logic        mem_we,
+    output logic        mem_re,
+    input  logic        mem_read_valid,
     output logic [31:0] mem_wdata,
     output logic        mac_start,
     output logic        mac_clear,
@@ -61,6 +64,13 @@ module lat_to_xy #(
     assign mac_b = state == SCALE_EAST && mem_rdata[31] ? 32'b0 : mem_rdata;
 
     assign mac_last = mac_start;
+
+    wire synchronous_addr = SYNC_MEMORY &&
+        ((mem_addr >= SAMPLE_LAT && mem_addr <= COSINE) || mem_addr == INIT_X || mem_addr == INIT_Y);
+    wire read_phase = state == READ_EAST || state == PUBLISH ||
+                      (state != IDLE && state != SAVE_LON && phase != WAIT_MAC);
+    wire read_ready = !synchronous_addr || mem_read_valid;
+    assign mem_re = read_phase && !read_ready;
 
     always_comb begin
         src_a = '0;
@@ -165,7 +175,7 @@ module lat_to_xy #(
                 READ_A: mem_addr = src_a;
                 START_MAC: begin
                     mem_addr = src_b;
-                    mac_start = rst_n && !mac_busy;
+                    mac_start = rst_n && !mac_busy && read_ready;
                     mac_clear = mac_start && state != HORNER && state != SUB_LON && state != SUB_LAT;
                     if (state == SUB_LON || state == SUB_LAT)
                         mac_a[31] = ~operand_a[31];
@@ -196,18 +206,18 @@ module lat_to_xy #(
                     state <= SAVE_LON;
                 end
                 SAVE_LON: state <= RAD;
-                READ_EAST: begin
+                READ_EAST: if (read_ready) begin
                     operand_a <= mem_rdata;
                     state <= PUBLISH;
                 end
-                PUBLISH: begin
+                PUBLISH: if (read_ready) begin
                     x_f32 <= operand_a;
                     y_f32 <= mem_rdata;
                     xy_valid <= 1'b1;
                     state <= IDLE;
                 end
                 default: case (phase)
-                    READ_A: begin
+                    READ_A: if (read_ready) begin
                         operand_a <= mem_rdata;
                         phase <= START_MAC;
                     end

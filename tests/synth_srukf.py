@@ -24,15 +24,6 @@ def yosys_source(root):
         qualified = r"\b(" + "|".join(sorted(names - local)) + r")\b"
         rtl = sub(qualified, r"ukf_defs::\1", rtl)
         # Yosys' Verilog frontend requires assignments to function names.
-        if source == "pred_sequencer":
-            head, tail = rtl.split("    function automatic logic [31:0] operand", 1)
-            rtl = head.replace("return ", "read_word = ") + (
-                "    function automatic logic [31:0] operand" + tail
-                .replace("        if (addr >=", "        else if (addr >=")
-                .replace("        if (addr == PROM_", "        else if (addr == PROM_")
-                .replace("        if (addr == ukf_defs::PROM_", "        else if (addr == ukf_defs::PROM_")
-                .replace("return read_word(addr);", "else return read_word(addr);")
-                .replace("return ", "operand = "))
         if source == "int_to_fp32":
             rtl = rtl.replace("integer i;\n", "").replace("for(i = 0;", "for(int i = 0;")
         if source == "vn_to_correction":
