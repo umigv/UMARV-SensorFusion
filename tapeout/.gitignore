@@ -1,0 +1,5 @@
+build/
+csrc/
+simv*
+*.daidir/
+ucli.key
