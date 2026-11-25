@@ -44,6 +44,11 @@ module tt_um_umigv_sensorfusion (
     logic rst_n_s;
     assign rst_n_s = rst_sync[1];
 
+    logic        state_valid, spi_rd;
+    logic [6:0]  spi_raddr;
+    logic [31:0] spi_rword;
+    logic [31:0] state_ts, state_x, state_y, state_theta, state_omega, state_v;
+
     // ---- settings and status, through the host SPI port ---------------------------------
     logic        ts_enable, lidar_enable, lidar_bypass, scale_4mm, corr_rot_en, corr_shift_en, dw_check_turns;
     logic        state_from_filter, bus_we;
@@ -97,6 +102,9 @@ module tt_um_umigv_sensorfusion (
         .dst_ip           (dst_ip),
         .src_port         (src_port),
         .dst_port         (dst_port),
+        .spi_rd           (spi_rd),
+        .spi_raddr        (spi_raddr),
+        .spi_rword        (spi_rword),
         .host_state_valid (host_state_valid),
         .host_state_ts    (host_state_ts),
         .host_state_x     (host_state_x),
@@ -143,12 +151,11 @@ module tt_um_umigv_sensorfusion (
     );
 
     // ---- Kalman filter, and the choice of where the lidar block's state comes from --------
-    logic        state_valid;
-    logic [31:0] state_ts, state_x, state_y, state_theta, state_omega, state_v;
 
 `ifdef WITH_UKF
+    // The filter's six output words are also where the host-written state lives while the
+    // filter is off, so there is one source and no selector for the values.
     logic        kf_valid;
-    logic [31:0] kf_ts, kf_x, kf_y, kf_theta, kf_omega, kf_v;
 
     ukf_top u_ukf (
         .clk         (clk),
@@ -166,23 +173,23 @@ module tt_um_umigv_sensorfusion (
         .cfg_we      (bus_we),
         .cfg_addr    (bus_addr),
         .cfg_wdata   (bus_wdata),
+        .spi_rd      (spi_rd),
+        .spi_raddr   (spi_raddr),
+        .spi_rword   (spi_rword),
         .state_valid (kf_valid),
-        .state_ts    (kf_ts),
-        .state_x     (kf_x),
-        .state_y     (kf_y),
-        .state_theta (kf_theta),
-        .state_omega (kf_omega),
-        .state_v     (kf_v)
+        .state_ts    (state_ts),
+        .state_x     (state_x),
+        .state_y     (state_y),
+        .state_theta (state_theta),
+        .state_omega (state_omega),
+        .state_v     (state_v)
     );
 
     assign state_valid = state_from_filter ? kf_valid : host_state_valid;
-    assign state_ts    = state_from_filter ? kf_ts    : host_state_ts;
-    assign state_x     = state_from_filter ? kf_x     : host_state_x;
-    assign state_y     = state_from_filter ? kf_y     : host_state_y;
-    assign state_theta = state_from_filter ? kf_theta : host_state_theta;
-    assign state_omega = state_from_filter ? kf_omega : host_state_omega;
-    assign state_v     = state_from_filter ? kf_v     : host_state_v;
+    wire _unused_hs = &{host_state_ts, host_state_x, host_state_y, host_state_theta, host_state_omega, host_state_v, 1'b0};
 `else
+    assign spi_rword = 32'd0;
+    wire _unused_spi = &{spi_rd, spi_raddr, 1'b0};
     assign state_valid = host_state_valid;
     assign state_ts    = host_state_ts;
     assign state_x     = host_state_x;

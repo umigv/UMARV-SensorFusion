@@ -35,9 +35,23 @@ V = [41, 42, 43, 44, 45]                                            # a sigma po
 M = [46, 47, 48]                                                    # predicted mean of x, y, theta; later the measurements
 ACC = [49, 50, 51]
 DPHI, LAT0, LON0, KLON, GS = 52, 53, 54, 55, 56
-T = [57, 58, 59, 60, 61, 62, 63]
-WORDS = 64
-CONST_BASE, EXT_BASE = 64, 120
+T = [57, 58, 59, 60, 61]
+WORDS = 62
+CONST_BASE, EXT_BASE = 64, 112
+# Constants the host can replace, in the order of their addresses (CFG_BASE upward). What each is:
+#   RR01, RR2, RR3   measurement noise variance: position (m^2), heading (rad^2), turn rate ((rad/s)^2)
+#   SQ01, SQ3, SQ2   process noise per beat (standard deviation): position, turn rate, heading
+#   CNT2RAD          radians of wheel rotation per encoder count
+#   RNOM             the wheel radius the filter starts from (m)
+#   YAWK, YAW0       heading = YAW0 + YAWK * (the sensor's yaw word)
+#   RATEK            turn rate = RATEK * (the sensor's rate word)
+#   KLONU            metres east per count of the longitude word, at the equator (scaled by cos(latitude) inside)
+#   KLAT             metres north per count of the latitude word
+#   DT, HALFDT, HZ   the beat period in seconds, half of it, and its reciprocal (keep the three consistent)
+TUNABLE = ["RR01", "RR2", "RR3", "SQ01", "SQ3", "SQ2", "CNT2RAD", "RNOM", "YAWK", "YAW0", "RATEK", "KLONU", "KLAT",
+           "DT", "HALFDT", "HZ"]
+CFG_BASE = 96
+# sensor words. 112-115 are the raw halves of latitude and longitude, there only for the host to read
 EXT = dict(YAW=120, RATE=121, LAT=122, LON=123, DW=124, TS=125, LATF=126)
 
 
@@ -78,17 +92,25 @@ def constants(noise="scaled", rate=400.0, site_lat_deg=42.29):
     sl = math.sin(site_lat_deg * DEG)
     r_north = a * (1 - e2) / (1 - e2 * sl * sl) ** 1.5
     r_east = a / math.sqrt(1 - e2 * sl * sl)
-    c = dict(ZERO=0.0, ONE=1.0, MONE=-1.0, GAMMA=gamma, NGAMMA=-gamma, WI=wi, SQRTWI=math.sqrt(wi),
-             W0D=math.sqrt(abs(wc0)) * wi, DT=dt, HALFDT=dt / 2, HZ=rate,
+    fixed = dict(ZERO=0.0, ONE=1.0, MONE=-1.0, GAMMA=gamma, NGAMMA=-gamma, WI=wi, SQRTWI=math.sqrt(wi),
+             W0D=math.sqrt(abs(wc0)) * wi,
              PI=math.pi, NEGPI=-math.pi, TWOPI=2 * math.pi, HALFPI=math.pi / 2,
-             DEG2RAD=DEG, CNT2RAD=2 * math.pi / counts, RNOM=r_nom, EPS=1e-30,
-             # one count of the latitude word is 2^-27 degree; of the longitude word, 2^-26 degree, and
-             # longitude counts grow westward (see ukf_top.sv for the assumptions)
-             KLAT=r_north * DEG * 2.0 ** -27, KLONU=-r_east * DEG * 2.0 ** -26,
+             DEG2RAD=DEG, EPS=1e-30,
              C3=-1 / 6.0, C5=1 / 120.0, C7=-1 / 5040.0, C9=1 / 362880.0, C11=-1 / 39916800.0,
-             SQ01=dQ[0], SQ2=dQ[2], SQ3=dQ[3], SQ4=dQ[4],
-             RR01=dR[0] ** 2, RR2=dR[2] ** 2, RR3=dR[3] ** 2,
-             D01=d0[0], D2=d0[2], D3=d0[3], D4=d0[4])
+             SQ4=dQ[4], D01=d0[0], D2=d0[2], D3=d0[3], D4=d0[4])
+    # The values below can be replaced by the host (see TUNABLE). These are their reset values.
+    # One count of the latitude word is 2^-27 degree; of the longitude word, 2^-26 degree, and
+    # longitude counts grow westward (see ukf_top.sv for the assumptions).
+    tunable = dict(RR01=dR[0] ** 2, RR2=dR[2] ** 2, RR3=dR[3] ** 2,
+                   SQ01=dQ[0], SQ3=dQ[3], SQ2=dQ[2],
+                   CNT2RAD=2 * math.pi / counts, RNOM=r_nom,
+                   YAWK=-DEG, YAW0=math.pi / 2, RATEK=-1.0,
+                   KLONU=-r_east * DEG * 2.0 ** -26, KLAT=r_north * DEG * 2.0 ** -27,
+                   DT=dt, HALFDT=dt / 2, HZ=rate)
+    assert list(tunable) == TUNABLE and len(fixed) <= CFG_BASE - CONST_BASE
+    c = dict(fixed)
+    for i in range(CFG_BASE - CONST_BASE - len(fixed)): c["_PAD%d" % i] = 0.0
+    c.update(tunable)
     return c, dict(r_north=r_north, r_east=r_east, wi=wi, gamma=gamma, wc0=wc0, dQ=dQ, dR=dR, d0=d0, r_nom=r_nom, dt=dt)
 
 
@@ -97,7 +119,7 @@ def constants(noise="scaled", rate=400.0, site_lat_deg=42.29):
 ADD, SUB, MUL, DIV, SQRT, ISUB, RAW, CTL = range(8)
 JMP, CALL, RET, HALT, DONE, SETI = range(6)
 ALWAYS, IF_F, IF_NF, IF_VN, IF_NVN, IF_DW, IF_NDW, IF_NINIT = range(8)
-W_ALWAYS, W_IF_F, W_IF_NF = 0, 2, 3
+W_ALWAYS, W_NEVER, W_IF_F, W_IF_NF = 0, 1, 2, 3
 FN_NAME = ["add", "sub", "mul", "div", "sqrt", "isub", "raw", "ctl"]
 
 
@@ -125,6 +147,7 @@ class Asm:
     def isub(self, d, a, b, **k): self.op(ISUB, d, a, b, **k)
     def raw(self, d, a, **k): self.op(RAW, d, a, "ZERO", **k)
     def mov(self, d, a, **k): self.op(RAW, d, a, "ZERO", **k)
+    def test(self, fn, a, b): self.op(fn, 0, a, b, setf=True, cond=W_NEVER)     # only the sign of the result is kept
     def ctl(self, cop, target=None, cond=ALWAYS): self.code.append(("C", cop, cond, target))
     def jmp(self, t, cond=ALWAYS): self.ctl(JMP, t, cond)
     def call(self, t): self.ctl(CALL, t)
@@ -142,11 +165,11 @@ class Asm:
 
 def build(consts):
     p = Asm(consts)
-    T0, T1, T2, T3, T4, T5, T6 = T
+    T0, T1, T2, T3, T4 = T
 
     def wrap(w):                        # bring an angle within a turn of zero back into (-pi, pi]
-        p.sub(T3, "PI", w, setf=True);  p.sub(w, w, "TWOPI", cond=W_IF_F)      # w > pi
-        p.add(T3, w, "PI", setf=True);  p.add(w, w, "TWOPI", cond=W_IF_F)      # w < -pi
+        p.test(SUB, "PI", w);  p.sub(w, w, "TWOPI", cond=W_IF_F)               # w > pi
+        p.test(ADD, w, "PI");  p.add(w, w, "TWOPI", cond=W_IF_F)               # w < -pi
 
     def outputs():                      # copy the finished state to the words the lidar block sees
         p.mul(T0, XH[4], DPHI); p.mul(T0, T0, "HZ")                           # forward speed
@@ -155,8 +178,8 @@ def build(consts):
         p.raw(OUT_TS, "TS")
         p.ctl(DONE)
 
-    def theta_meas(d):                  # heading: yaw is degrees clockwise from north
-        p.mul(d, "YAW", "DEG2RAD"); p.sub(d, "HALFPI", d)
+    def theta_meas(d):                  # heading from the yaw word (reset values: degrees clockwise from north)
+        p.mul(d, "YAW", "YAWK"); p.add(d, "YAW0", d)
 
     # ---------------- entry ----------------
     p.jmp("init", IF_NINIT)
@@ -199,7 +222,7 @@ def build(consts):
         if m == 0:   p.isub(T2, "LON", LON0); p.mul(T2, T2, KLON)
         elif m == 1: p.isub(T2, "LAT", LAT0); p.mul(T2, T2, "KLAT")
         elif m == 2: theta_meas(T2)
-        else:        p.sub(T2, "ZERO", "RATE")
+        else:        p.mul(T2, "RATE", "RATEK")
         p.sub(T2, T2, XH[m])
         if m == 2: wrap(T2)
         p.add(T0, V[m], ("RR01", "RR01", "RR2", "RR3")[m])
@@ -217,7 +240,7 @@ def build(consts):
     p.mul(T0, "LATF", "DEG2RAD"); p.call("cos"); p.mul(KLON, T1, "KLONU")
     p.mov(XH[0], "ZERO"); p.mov(XH[1], "ZERO")
     theta_meas(XH[2]); wrap(XH[2])
-    p.sub(XH[3], "ZERO", "RATE"); p.mov(XH[4], "RNOM")
+    p.mul(XH[3], "RATE", "RATEK"); p.mov(XH[4], "RNOM")
     for i in range(5):
         for j in range(i + 1):
             p.mov(S(i, j), ("D01", "D01", "D2", "D3", "D4")[i] if i == j else "ZERO")
@@ -232,24 +255,24 @@ def build(consts):
         p.label("sigma%d" % col)
         for i in range(5):
             if i < col: p.mov(V[i], XH[i])
-            else:       p.mul(T6, S(i, col), GS); p.add(V[i], XH[i], T6)
+            else:       p.mul(T0, S(i, col), GS); p.add(V[i], XH[i], T0)
         p.ret()
 
     p.label("model")                    # the point in V through the motion model, in place
-    p.mul(T4, V[3], "HALFDT"); p.add(T4, V[2], T4)
-    p.mul(T5, V[4], DPHI)
-    p.mov(T0, T4); p.call("cos"); p.mul(T6, T5, T1); p.add(V[0], V[0], T6)
-    p.mov(T0, T4); p.call("sin"); p.mul(T6, T5, T1); p.add(V[1], V[1], T6)
-    p.mul(T6, V[3], "DT"); p.add(V[2], V[2], T6)
+    p.mul(T3, V[3], "HALFDT"); p.add(T3, V[2], T3)
+    p.mul(T4, V[4], DPHI)
+    p.mov(T0, T3); p.call("cos"); p.mul(T1, T4, T1); p.add(V[0], V[0], T1)
+    p.mov(T0, T3); p.call("sin"); p.mul(T1, T4, T1); p.add(V[1], V[1], T1)
+    p.mul(T1, V[3], "DT"); p.add(V[2], V[2], T1)
     p.ret()
 
     p.label("cos")                      # T1 = cos(T0), |T0| up to a little over pi
-    p.sub(T3, "ZERO", T0, setf=True); p.mov(T0, T3, cond=W_IF_NF)               # T0 = |T0|
+    p.sub(T1, "ZERO", T0, setf=True); p.mov(T0, T1, cond=W_IF_NF)               # T0 = |T0|
     p.sub(T0, "HALFPI", T0)
     p.jmp("sinpoly")
     p.label("sin")                      # T1 = sin(T0), |T0| up to a little over pi
-    p.sub(T3, "HALFPI", T0, setf=True); p.sub(T0, "PI", T0, cond=W_IF_F)
-    p.add(T3, T0, "HALFPI", setf=True); p.sub(T0, "NEGPI", T0, cond=W_IF_F)
+    p.test(SUB, "HALFPI", T0); p.sub(T0, "PI", T0, cond=W_IF_F)
+    p.test(ADD, T0, "HALFPI"); p.sub(T0, "NEGPI", T0, cond=W_IF_F)
     p.label("sinpoly")                  # T1 = sin(T0) for |T0| up to about pi/2
     p.mul(T2, T0, T0)
     p.mul(T1, T2, "C11")
@@ -283,13 +306,14 @@ def build(consts):
     p.label("chol")                     # SN SN' <- SN SN' + GS * V V'   (GS is +1 or -1); V is used up
     for k in range(5):
         p.mul(T0, SN(k, k), SN(k, k)); p.mul(T1, V[k], V[k]); p.mul(T1, T1, GS); p.add(T0, T0, T1)
-        p.sub(T2, T0, "EPS", setf=True); p.mov(T0, "EPS", cond=W_IF_F)          # keep a failed downdate finite
+        p.test(SUB, T0, "EPS"); p.mov(T0, "EPS", cond=W_IF_F)                   # keep a failed downdate finite
         p.sqrt(T2, T0)
         if k < 4:
-            p.div(T3, T2, SN(k, k)); p.div(T4, V[k], SN(k, k)); p.mul(T5, T4, GS)
+            p.div(T3, T2, SN(k, k)); p.div(T4, V[k], SN(k, k))
         p.mov(SN(k, k), T2)
+        if k < 4: p.mul(T2, T4, GS)
         for j in range(k + 1, 5):
-            p.mul(T0, T5, V[j]); p.add(T0, SN(j, k), T0); p.div(SN(j, k), T0, T3)
+            p.mul(T0, T2, V[j]); p.add(T0, SN(j, k), T0); p.div(SN(j, k), T0, T3)
             p.mul(T1, T3, V[j]); p.mul(T0, T4, SN(j, k)); p.sub(V[j], T1, T0)
     p.ret()
     return p
@@ -328,10 +352,14 @@ def unit(fn, a, b):
 
 class Machine:
     def __init__(self, prog, consts, cnames):
-        self.prog, self.mem = prog, [0] * WORDS
+        self.prog, self.mem, self.cnames = prog, [0] * WORDS, list(cnames)
         self.cbits = [f2b(np.float32(consts[n])) for n in cnames]
         self.inited, self.flag, self.steps, self.ops = False, 0, 0, [0] * 8
         self.written, self.max_depth = set(), 0
+
+    def set_tunable(self, name, value):
+        """What a host write of a tunable word does: the constant is replaced until reset."""
+        self.cbits[self.cnames.index(name)] = f2b(np.float32(value))
 
     def read(self, addr, ext):
         if addr < WORDS: return self.mem[addr]
@@ -339,7 +367,7 @@ class Machine:
         return ext[addr - EXT_BASE]
 
     def beat(self, ext, vn, dw):
-        """ext: list of 8 words (see EXT). Returns True if a new state was produced."""
+        """ext: the 16 sensor words (see ext_words). Returns True if a new state was produced."""
         pc, stack = 0, []
         while True:
             ins = self.prog[pc]; self.steps += 1
@@ -356,7 +384,7 @@ class Machine:
             _, fn, d, a, b, setf, cond = ins
             r = unit(fn, self.read(a, ext), self.read(b, ext))
             self.ops[fn] += 1
-            write = cond == W_ALWAYS or (cond == W_IF_F and self.flag) or (cond == W_IF_NF and not self.flag)
+            write = cond == W_ALWAYS or (cond == W_IF_F and self.flag) or (cond == W_IF_NF and not self.flag)     # W_NEVER: no
             if setf: self.flag = r >> 31
             if write: self.mem[d] = r; self.written.add(d)
             pc += 1
@@ -369,8 +397,11 @@ def double_bits(v): return struct.unpack("<Q", struct.pack("<d", float(v)))[0]
 
 def ext_words(yaw_deg, rate, lat_deg, lon_deg, dw_counts, ts):
     lat, lon = double_bits(lat_deg), double_bits(lon_deg)
-    return [f2b(np.float32(yaw_deg)), f2b(np.float32(rate)), (lat >> 20) & 0x3FFFFFF, (lon >> 20) & 0x3FFFFFF,
-            int(dw_counts) & 0xFFFFFFF, int(ts) & 0xFFFFFFFF, double_to_single_bits(lat), 0]
+    dw = int(dw_counts) & 0xFFFFFFF
+    dw |= 0xF0000000 if dw >> 27 else 0                     # the hardware presents it sign-extended
+    return [lat & 0xFFFFFFFF, lat >> 32, lon & 0xFFFFFFFF, lon >> 32, 0, 0, 0, 0,
+            f2b(np.float32(yaw_deg)), f2b(np.float32(rate)), (lat >> 20) & 0x3FFFFFF, (lon >> 20) & 0x3FFFFFF,
+            dw, int(ts) & 0xFFFFFFFF, double_to_single_bits(lat), 0]
 
 
 def double_to_single_bits(d):
@@ -392,7 +423,7 @@ def encode(ins):
 def write_verilog(prog, consts, cnames, path):
     rom = "\n".join("            10'd%d: word = 26'h%07x;" % (i, encode(x)) for i, x in enumerate(prog))
     cr = "\n".join("            6'd%d: value = 32'h%08x;    // %s = %.9g" % (i, f2b(np.float32(consts[n])), n, consts[n])
-                   for i, n in enumerate(cnames))
+                   for i, n in enumerate(cnames) if not n.startswith("_PAD"))
     open(path, "w").write('''// Generated by ukf_prog.py. Do not edit: change the program there and regenerate.
 // ukf_steps: the filter's %d steps. ukf_consts: its %d constants.
 // Step word: [25:23] operation (0 add, 1 subtract, 2 multiply, 3 divide, 4 square root, 5 integer
@@ -400,6 +431,9 @@ def write_verilog(prog, consts, cnames, path):
 // always / if the flag is set (2) / if it is clear (3), [19:13] first operand, [12:6] second operand,
 // [5:0] destination. For 7: [22:20] jump, call, return, stop, stop with a new state, mark as started;
 // [19:17] condition; [9:0] target.
+// Kept as its own block in synthesis: merged into its surroundings it maps to more cells and
+// the chip does not route.
+(* keep_hierarchy *)
 module ukf_steps (
     input  logic [9:0]  pc,
     output logic [25:0] word
@@ -423,7 +457,7 @@ module ukf_consts (
         endcase
     end
 endmodule
-''' % (len(prog), len(cnames), rom, (CTL << 23) | (HALT << 20), cr))
+''' % (len(prog), sum(not n.startswith('_PAD') for n in cnames), rom, (CTL << 23) | (HALT << 20), cr))
 
 
 if __name__ == "__main__":

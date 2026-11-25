@@ -75,14 +75,27 @@ module lidar_point_buffer (
     wire no_room        = (used > 9'd224) || (bcount == 4'd8);     // need 32 free distances and one block record
     wire drop_now       = first_of_block ? no_room : dropping;
 
+    wire [15:0] mem_rdata;
     lidar_latch_mem u_mem (
         .clk   (clk),
         .we    (pt_valid && !drop_now && !rst),
         .waddr (wr_ptr[7:0]),
         .wdata (pt_distance),
         .raddr (rd_ptr[7:0]),
-        .rdata (rd_data)
+        .rdata (mem_rdata)
     );
+    // Two-clock read. The reader (lidar_xyz) takes a distance at least nine clocks after the pop
+    // that moved rd_ptr, and the way from rd_ptr through the 256-word selector is too long for
+    // one clock at the slow corner, so the timing constraints (project.sdc) give that path two.
+    // In simulation the data is unknown for the clock after rd_ptr moves, so a reader that did
+    // not wait would show up as unknowns in the tests.
+`ifdef SYNTHESIS
+    assign rd_data = mem_rdata;
+`else
+    logic [8:0] rd_ptr_seen;
+    always_ff @(posedge clk) rd_ptr_seen <= rd_ptr;
+    assign rd_data = (rd_ptr_seen === rd_ptr) ? mem_rdata : 16'hxxxx;
+`endif
 
     always_ff @(posedge clk) begin
         if (rst) begin

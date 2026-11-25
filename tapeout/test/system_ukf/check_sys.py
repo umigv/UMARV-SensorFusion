@@ -11,7 +11,8 @@ for line in open(sys.argv[1]):
     if f[0] == "M":
         vn, dw = int(f[1]), int(f[2])
         yaw, rate, lat, lon, delta, ts = (int(v, 16) for v in f[3:9])
-        ext = [yaw, rate, (lat >> 20) & 0x3FFFFFF, (lon >> 20) & 0x3FFFFFF, delta & 0xFFFFFFF, ts, U.double_to_single_bits(lat), 0]
+        ext = [lat & 0xFFFFFFFF, lat >> 32, lon & 0xFFFFFFFF, lon >> 32, 0, 0, 0, 0,
+               yaw, rate, (lat >> 20) & 0x3FFFFFF, (lon >> 20) & 0x3FFFFFF, (delta & 0xFFFFFFF) | (0xF0000000 if (delta >> 27) & 1 else 0), ts, U.double_to_single_bits(lat), 0]
         n_meas += 1
         if mc.beat(ext, bool(vn), bool(dw)):
             want.append(tuple(mc.mem[i] for i in range(6)))

@@ -21,7 +21,6 @@ visibility into what it is doing.
 | `tapeout/docs/lidar_output_format.md` | outgoing packet format (version 3) and a Python receiver |
 | `tapeout/src/ukf_top.sv`, `ukf_tables.sv`, `fp_serial.sv` | the Kalman filter (new on 24 November). `ukf_top.sv`'s header lists what it assumes about the sensors |
 | `tapeout/test/ukf/`, `tapeout/test/system_ukf/` | the filter's tests, its exact Python model and the generator of `ukf_tables.sv` |
-| `tapeout/test/system/` | older whole-chip test with a simulation-only filter stand-in |
 | `lidar_pointcloud_fpga/genesys2/` | an earlier working Genesys 2 prototype. Use its `syn/genesys2.xdc`, `syn/Makefile` and `rtl/fpga.sv` (clocking, IDELAY, PHY reset) as the starting point |
 
 The chip itself is built from a separate repository,
@@ -39,16 +38,24 @@ All of it passes RTL simulation in Synopsys VCS. None of it is proven on hardwar
 - **spi_regs:** SPI slave (mode 0, MSB first, byte 0 = `{write, addr[6:0]}`, address
   auto-increments). Holds all settings, event counters and the latest measurements.
 - **ukf_top (new):** a five-state square-root unscented Kalman filter (x east, y north, theta,
-  omega, wheel radius) in single precision. It is a small stored-program machine: 64 words of
-  storage, one bit-serial arithmetic unit (`fp_serial`), and a table of 544 steps
-  (`ukf_tables.sv`, generated; never edit it by hand). One beat takes up to 85,612 clocks, 68 %
-  of a 2.5 ms beat. In simulation it matches its exact Python model bit for bit, and over the
+  omega, wheel radius) in single precision. It is a small stored-program machine: 62 words of
+  storage (plus 8 for constants the host can replace), one bit-serial arithmetic unit
+  (`fp_serial`), and a table of 544 steps (`ukf_tables.sv`, generated; never edit it by hand).
+  One beat takes up to 89,403 clocks, 72 % of a 2.5 ms beat. In simulation it matches its exact Python model bit for bit, and over the
   whole simulated drive it matches the reference filter (0.876 m against 0.873 m position error).
 - **Top level:** the blocks wired together. **The filter is compiled in only when `WITH_UKF` is
   defined: define it for the FPGA build.** Control register `02` bit 7 then chooses the state
   the lidar block uses: 1 = the filter's, 0 = host-written registers `24`-`3B`, strobed by a
-  write to `3C` (the reset value is 0, so the host must set bit 7 to use the filter).
-- **Tests:** `tapeout/test/{mii_recv,lidar_motion,lidar_top,spi_regs,chip,system,ukf,system_ukf}/run_vcs.sh`.
+  write to `3C` (the reset value is 0, so the host must set bit 7 to use the filter). With the
+  filter built in, `24`-`3B` are held in the filter's own storage and are taken only while bit
+  7 is 0 and the filter is idle (allow 2.5 ms after clearing bit 7).
+- **Filter access over SPI (new on 25 November):** write a filter word's address to `6C`, then
+  read or write the word at `70`-`73` (low byte first). Every word can be read: storage 0-61,
+  constants 64-111, sensor words 112-126. Words 96-103 can be written while the filter is
+  switched off; they are the measurement noise (position, heading, turn rate), the process
+  noise (position, turn rate, heading), radians per encoder count and the starting wheel radius,
+  all single precision. `tapeout/README.md` lists what else changed since the first snapshot.
+- **Tests:** `tapeout/test/{mii_recv,lidar_motion,lidar_top,spi_regs,chip,ukf,system_ukf}/run_vcs.sh`.
   If VCS is not on the machine, use whatever simulator is and say which.
 
 ## Chip pinout (the FPGA top must present these same signals)
@@ -74,13 +81,15 @@ All of it passes RTL simulation in Synopsys VCS. None of it is proven on hardwar
 2. **Point buffer.** `lidar_latch_mem.sv` uses Sky130 latch cells under `` `ifdef SYNTHESIS ``
    and behavioural latches otherwise. Neither suits an FPGA. Add an FPGA variant (flip-flops or
    block RAM) with the same ports and the same two-clock write latency, selected by a define.
-   Do not change the ASIC path.
+   Do not change the ASIC path. (The ASIC path now uses one enable pulse and an AND gate per
+   word; that changes nothing about the ports or the timing.)
 3. **Filter storage.** `ukf_store` (at the bottom of `ukf_top.sv`) is built the same way as the
    point buffer: Sky130 latch cells under `` `ifdef SYNTHESIS ``, behavioural latches otherwise.
    It needs the same treatment: an FPGA variant with the same ports and timing (a write is
    registered, lands half a clock later, and the word may be read two clocks after the write;
    reads are combinational; words 0 to 5 are also wired straight out as the state). Flip-flops
-   are simplest, since six words must be visible at once. Vivado defines `SYNTHESIS` itself, so
+   are simplest, since six words must be visible at once. The store now has 7-bit addresses:
+   words 0-61, and 64 to 64+NCFG-1 for the replaceable constants. Vivado defines `SYNTHESIS` itself, so
    the selection needs its own define. Do not change the ASIC path.
 4. **Clock.** Make 50 MHz from the board's 200 MHz oscillator. The filter's timing budget
    assumes exactly 50 MHz and a 400 Hz beat.
@@ -116,8 +125,9 @@ And for the filter, all of them assumptions written into `ukf_tables.sv` through
 - the encoder gives 16,384 counts per turn, and the nominal wheel radius is 50 mm
 - latitude is between 32 and 64 degrees north and longitude between 64 and 128 degrees west
 - the first beat with a good VN-300 message becomes the origin; x is east and y is north from it
-- the tuning (process and measurement noise) is the simulation's; it is fixed in the table, and
-  the SPI tuning writes at `6C`-`7F` are ignored for now
+- the tuning (process and measurement noise) is the simulation's. Eight values can now be
+  replaced from the host through `6C` and `70`-`73` without rebuilding, which is the quick way
+  to try other noise settings, encoder resolutions or wheel radii on the board
 
 Useful things to look at on the board: the filter's six output words (they are in every lidar
 frame header, and `ukf_top` raises `state_valid` once per beat), its `overruns` counter (a beat
@@ -127,9 +137,12 @@ one lidar frame in 4,000 can carry a header that mixes two beats.
 
 ## Open items on the ASIC side (context only)
 
-- The chip without the filter passes the full Tiny Tapeout build, precheck and gate-level test.
-- The chip with the filter does not route yet (480,000 um^2 of cells, 69 % of the block). That
-  is being worked on separately and does not affect the FPGA port.
+- The chip with the filter and 8 replaceable constants has passed the full Tiny Tapeout build,
+  precheck and gate-level test on trial branches. Timing at the slow corner and the hold margin
+  are still being closed; that does not affect the FPGA port.
+- `src/project.sdc` holds three two-clock timing exceptions for the ASIC flow (the filter's
+  program counter, the SPI read address, the lidar buffer's read pointer). The same three are
+  valid for Vivado if those paths show up as failing there.
 - The two MII clocks have no timing constraints in the ASIC flow.
 
 ## How to work

@@ -17,4 +17,4 @@ vcs -sverilog -full64 -q -timescale=1ns/1ps $S/fp_serial.sv ../tb_fp_serial.sv -
 PYTHONPATH=.. python3 -s ../gen_tb.py 14
 cp ukf_tables.sv $S/ukf_tables.sv
 vcs -sverilog -full64 -q -timescale=1ns/1ps $S/fp_serial.sv $S/ukf_tables.sv $S/ukf_top.sv ../tb_ukf.sv -top tb_ukf -o simv_ukf
-./simv_ukf | grep -a -E "word|HANG|beats,|TEST"
+./simv_ukf | grep -a -E "word|HANG|beats,|TEST|constant"

@@ -42,8 +42,14 @@
 //   50-53    VN-300 yaw, single precision           54-57  VN-300 turn rate, single precision
 //   58-5F    VN-300 latitude, double precision      60-67  VN-300 longitude, double precision
 //   68-6B    encoder travel since the last beat, counts, signed
-//   6C-7F    not held here. Every write, to any address, also appears on bus_we / bus_addr /
-//            bus_wdata, so another block (the Kalman filter) can keep its own registers there.
+//   6C       Kalman filter word address [96]. Held in the filter, write only.
+//   70-73    the filter word at that address. Reads work for any address (0-61 the filter's
+//            storage, 64-111 its constants, 112-126 the sensor words). Writes are taken only for
+//            the tunable constants (addresses 96-111, listed in test/ukf/ukf_prog.py) and only
+//            while the filter is switched off (control bit 7 = 0); a tunable constant keeps its
+//            built-in value until it is written, and goes back to it at reset.
+//   Every write, to any address, also appears on bus_we / bus_addr / bus_wdata; that is how the
+//   filter sees writes to 24-3B, 6C and 70-73.
 //
 // The measurement registers change only at a beat (meas_pulse) and then stay put until the next
 // one, 2.5 ms later. Read them after the pulse and they cannot change under you.
@@ -81,6 +87,13 @@ module spi_regs (
     output logic        host_state_valid,   // one clock
     output logic [31:0] host_state_ts, host_state_x, host_state_y, host_state_theta, host_state_omega, host_state_v,
 
+    // With the Kalman filter built in (WITH_UKF), this block keeps no copy of the host-written
+    // state (24-3B) or of the measurements: writes to 24-3B reach the filter over the bus below and
+    // land in its storage, and reads of 24-3B and 48-6B fetch a word from the filter for one clock.
+    output logic        spi_rd,             // one clock: the word at spi_raddr is wanted now
+    output logic [6:0]  spi_raddr,          // the filter's address for it
+    input  logic [31:0] spi_rword,
+
     // Every host write, for registers kept in other blocks
     output logic        bus_we,             // one clock
     output logic [6:0]  bus_addr,
@@ -113,7 +126,12 @@ module spi_regs (
     wire sck_fall = selected &&  sck_s[2] && !sck_s[1];
 
     // ---- writable registers 00-3B ----------------------------------------------------------------
-    logic [7:0] w [0:59];
+`ifdef WITH_UKF
+    localparam W_COUNT = 36;                // 24-3B are kept in the filter, so there are no registers for them here
+`else
+    localparam W_COUNT = 60;
+`endif
+    logic [7:0] w [0:W_COUNT-1];
 
     function automatic [7:0] reset_value;
         input [5:0] a;
@@ -153,12 +171,17 @@ module spi_regs (
     assign dst_ip         = {w[28], w[29], w[30], w[31]};
     assign src_port       = {w[33], w[32]};
     assign dst_port       = {w[35], w[34]};
+`ifdef WITH_UKF
+    assign host_state_ts = 32'd0; assign host_state_x = 32'd0; assign host_state_y = 32'd0;
+    assign host_state_theta = 32'd0; assign host_state_omega = 32'd0; assign host_state_v = 32'd0;
+`else
     assign host_state_ts    = {w[39], w[38], w[37], w[36]};
     assign host_state_x     = {w[43], w[42], w[41], w[40]};
     assign host_state_y     = {w[47], w[46], w[45], w[44]};
     assign host_state_theta = {w[51], w[50], w[49], w[48]};
     assign host_state_omega = {w[55], w[54], w[53], w[52]};
     assign host_state_v     = {w[59], w[58], w[57], w[56]};
+`endif
 
     // ---- event counters ------------------------------------------------------------------------
     logic [7:0] cnt [0:6];
@@ -175,22 +198,55 @@ module spi_regs (
         end
     endfunction
 
+`ifdef WITH_UKF
+    localparam [6:0] W_END = 7'h24;         // 24-3B are kept in the filter
+`else
+    localparam [6:0] W_END = 7'h3C;
+`endif
     logic [6:0] rd_addr;
     logic [7:0] rd_data;
+    // where a register lives in the filter: 0-5 are its state words, 112 and up its sensor words
+    wire from_filter = (rd_addr >= 7'h24 && rd_addr < 7'h3C) || (rd_addr >= 7'h48 && rd_addr <= 7'h4B)
+                    || (rd_addr >= 7'h50 && rd_addr <= 7'h6B) || (rd_addr >= 7'h70 && rd_addr <= 7'h73);
     always_comb begin
         rd_data = 8'h00;
         if (rd_addr == 7'h00)                           rd_data = 8'hA7;
         else if (rd_addr == 7'h01)                      rd_data = 8'h01;
-        else if (rd_addr < 7'h3C)                       rd_data = w[rd_addr[5:0]];
+        else if (rd_addr < W_END)                       rd_data = w[rd_addr[5:0]];
         else if (rd_addr >= 7'h40 && rd_addr <= 7'h46)  rd_data = cnt[rd_addr[2:0]];
-        else if (rd_addr >= 7'h48 && rd_addr <= 7'h4B)  rd_data = pick({32'd0, beat_ts}, {1'b0, rd_addr[1:0]});
         else if (rd_addr == 7'h4C)                      rd_data = {6'd0, dw_valid, vn_valid};
+`ifdef WITH_UKF
+        else if (from_filter)                           rd_data = spi_rword[8*rd_addr[1:0] +: 8];
+`else
+        else if (rd_addr >= 7'h48 && rd_addr <= 7'h4B)  rd_data = pick({32'd0, beat_ts}, {1'b0, rd_addr[1:0]});
         else if (rd_addr >= 7'h50 && rd_addr <= 7'h53)  rd_data = pick({32'd0, vn_yaw_f32}, {1'b0, rd_addr[1:0]});
         else if (rd_addr >= 7'h54 && rd_addr <= 7'h57)  rd_data = pick({32'd0, vn_rate_f32}, {1'b0, rd_addr[1:0]});
         else if (rd_addr >= 7'h58 && rd_addr <= 7'h5F)  rd_data = pick(vn_lat_f64, rd_addr[2:0]);
         else if (rd_addr >= 7'h60 && rd_addr <= 7'h67)  rd_data = pick(vn_lon_f64, rd_addr[2:0]);
         else if (rd_addr >= 7'h68 && rd_addr <= 7'h6B)  rd_data = pick({32'd0, dw_ext}, {1'b0, rd_addr[1:0]});
+`endif
     end
+
+`ifdef WITH_UKF
+    always_comb begin
+        case (rd_addr[6:2])
+            5'h12:   spi_raddr = 7'd125;                    // 48: beat time
+            5'h14:   spi_raddr = 7'd120;                    // 50: yaw
+            5'h15:   spi_raddr = 7'd121;                    // 54: turn rate
+            5'h16:   spi_raddr = 7'd112;                    // 58: latitude, low half
+            5'h17:   spi_raddr = 7'd113;                    // 5C: latitude, high half
+            5'h18:   spi_raddr = 7'd114;                    // 60: longitude, low half
+            5'h19:   spi_raddr = 7'd115;                    // 64: longitude, high half
+            5'h1A:   spi_raddr = 7'd124;                    // 68: wheel travel
+            5'h1C:   spi_raddr = 7'd127;                    // 70: the filter word picked by register 6C
+            default: spi_raddr = {2'b00, rd_addr[6:2] - 5'd9};   // 24-3B: state words 0-5
+        endcase
+    end
+    wire _unused_meas = &{beat_ts, vn_yaw_f32, vn_rate_f32, vn_lat_f64, vn_lon_f64, dw_ext, 1'b0};
+`else
+    assign spi_raddr = 7'd0;
+    wire _unused_filter = &{spi_rword, from_filter, 1'b0};
+`endif
 
     // ---- the transfer ---------------------------------------------------------------------------
     logic [2:0] bit_cnt;
@@ -203,21 +259,41 @@ module spi_regs (
     wire [7:0] byte_in   = {sh_in, mosi_s[1]};
     wire       byte_done = sck_rise && (bit_cnt == 3'd7);
     wire [6:0] next_addr = got_addr ? (addr + 7'd1) : byte_in[6:0];
-    assign rd_addr = next_addr;
+    // Two-clock read. At the end of a byte the address of the next byte to send is registered
+    // (rd_addr_q), and the byte itself is taken two clocks later (fetch[1]). The way from the
+    // address through the filter's storage to the outgoing byte is too long for one clock at the
+    // slow corner; the timing constraints (project.sdc) give every path that starts at rd_addr_q
+    // two clocks to match. For both clocks the filter's read path is borrowed (spi_rd).
+    logic [6:0] rd_addr_q;
+    logic [1:0] fetch;
+    assign rd_addr = rd_addr_q;
+`ifndef SYNTHESIS
+    // in simulation the byte is unknown in the first of the two clocks, so a use that did not
+    // wait would show up as unknowns in the tests
+    wire [7:0] rd_data_v = fetch[0] ? 8'hxx : rd_data;
+`else
+    wire [7:0] rd_data_v = rd_data;
+`endif
+`ifdef WITH_UKF
+    assign spi_rd = (fetch != 2'b00) && from_filter;
+`else
+    assign spi_rd = 1'b0;
+`endif
 
     integer k;
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            for (k = 0; k < 60; k = k + 1) w[k] <= reset_value(k[5:0]);
+            for (k = 0; k < W_COUNT; k = k + 1) w[k] <= reset_value(k[5:0]);
             for (k = 0; k < 7; k = k + 1)  cnt[k] <= 8'd0;
             bit_cnt <= 3'd0; sh_in <= 7'd0; got_addr <= 1'b0; is_write <= 1'b0; addr <= 7'd0;
-            sh_out <= 8'd0; spi_miso <= 1'b0;
+            sh_out <= 8'd0; spi_miso <= 1'b0; rd_addr_q <= 7'd0; fetch <= 2'b00;
             host_state_valid <= 1'b0; cnt_clear <= 1'b0;
             bus_we <= 1'b0; bus_addr <= 7'd0; bus_wdata <= 8'd0;
         end else begin
             host_state_valid <= 1'b0;
             bus_we           <= 1'b0;
             cnt_clear        <= 1'b0;
+            fetch            <= {fetch[0], 1'b0};
 
             if (!selected) begin
                 bit_cnt <= 3'd0; got_addr <= 1'b0; spi_miso <= 1'b0;
@@ -234,14 +310,18 @@ module spi_regs (
                     end else begin
                         if (is_write) begin
                             bus_we <= 1'b1; bus_addr <= addr; bus_wdata <= byte_in;
-                            if (addr >= 7'h02 && addr < 7'h3C) w[addr[5:0]] <= byte_in;
+                            if (addr >= 7'h02 && addr < W_END) w[addr[5:0]] <= byte_in;
                             if (addr == 7'h3C) host_state_valid <= 1'b1;
                             if (addr == 7'h3D) cnt_clear <= 1'b1;
                         end
                         addr <= addr + 7'd1;
                     end
-                    sh_out <= rd_data;              // the byte the host will clock out next
+                    // the byte the host will clock out next, fetched over the next two clocks (not
+                    // in a write transfer: the filter's read path is needed for the write itself)
+                    rd_addr_q <= next_addr;
+                    if (got_addr ? !is_write : !byte_in[7]) fetch <= 2'b01;
                 end
+                if (fetch[1]) sh_out <= rd_data_v;
                 if (sck_fall) begin
                     spi_miso <= sh_out[7] && got_addr && !is_write;
                     sh_out   <= {sh_out[6:0], 1'b0};

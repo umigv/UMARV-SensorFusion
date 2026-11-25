@@ -3,3 +3,4 @@ csrc/
 simv*
 *.daidir/
 ucli.key
+__pycache__/

@@ -45,20 +45,27 @@ module lidar_latch_mem (
         end
     end
 
-    // one latch enable per word, from a flip-flop on the falling edge
-    logic [255:0] gate;
-    integer n;
-    always_ff @(negedge clk) begin
-        for (n = 0; n < 256; n = n + 1)
-            gate[n] <= we_q && (wa_q == n[7:0]);
-    end
+    // TRIAL: one enable pulse for the whole memory, from a single flip-flop on the falling edge,
+    // ANDed with each word's select. The select is decoded from the held address, so it is steady
+    // from half a clock before the pulse rises until at least a clock and a half after it falls;
+    // the AND of a steady level and a clean pulse is a clean pulse. This replaces 256 flip-flops
+    // (one per word) with 256 AND gates.
+    logic pulse;
+    always_ff @(negedge clk) pulse <= we_q;
 
+    wire [255:0] sel, gate;
     wire [15:0] q [0:255];
     assign rdata = q[raddr];
 
     genvar i;
     generate
         for (i = 0; i < 256; i = i + 1) begin : word
+            assign sel[i] = (wa_q == i);
+`ifdef SYNTHESIS
+            sky130_fd_sc_hd__and2_4 u_gate (.A(sel[i]), .B(pulse), .X(gate[i]));
+`else
+            assign gate[i] = sel[i] & pulse;
+`endif
 `ifdef SYNTHESIS
             genvar b;
             for (b = 0; b < 16; b = b + 1) begin : bit_

@@ -25,6 +25,7 @@ module tb_system_ukf;
     wire [3:0] txd = uio_out[7:4];
 
     int errors = 0, checks = 0;
+    logic [31:0] kept;
     task automatic check(input bit ok, input string what); checks++; if (!ok) begin errors++; $display("WRONG %s", what); end endtask
     localparam real PI = 3.14159265358979, M_PER_COUNT = 0.2 / 16384.0, TF = 55.296e-6;
     localparam int  WHEEL_STEP = 450;                        // counts per beat: 2.197 m/s
@@ -193,8 +194,24 @@ module tb_system_ukf;
         check(states >= beats - 2 && dut.u_ukf.overruns == 0, "a state for every beat, none missed");
 
         // switching the source back to the host registers works
+        // the host's state goes into the filter's own words, so the filter must be off and idle first
+        q = '{8'h73}; wr(8'h02, q); #2_500_000_000;
         q = '{8'h78, 8'h56, 8'h34, 8'h12}; wr(8'h24, q);
-        q = '{8'h73}; wr(8'h02, q); q = '{8'h01}; wr(8'h3C, q);
+        rd(8'h24, 4, q); check({q[3], q[2], q[1], q[0]} == 32'h12345678, "host-written state reads back");
+        // the filter's tunable constants, through the address register 6C and the word at 70-73
+        q = '{8'd96}; wr(8'h6C, q);                           // the first tunable constant
+        rd(8'h70, 4, q); kept = {q[3], q[2], q[1], q[0]};
+        check(kept == 32'h45dd8e86, "a tunable constant reads its built-in value before it is written");
+        q = '{8'hDD, 8'hCC, 8'hBB, 8'h3A}; wr(8'h70, q);
+        rd(8'h70, 4, q); check({q[3], q[2], q[1], q[0]} == 32'h3ABBCCDD, "a tunable constant reads back what the host wrote");
+        q = '{8'd65}; wr(8'h6C, q);                           // a fixed constant (1.0): cannot be written
+        q = '{8'h00, 8'h00, 8'h00, 8'h00}; wr(8'h70, q);
+        rd(8'h70, 4, q); check({q[3], q[2], q[1], q[0]} == 32'h3F800000, "a fixed constant is read-only");
+        q = '{8'd1}; wr(8'h6C, q);                            // any filter word can be read: word 1 is the state's x
+        rd(8'h70, 4, q); check({q[3], q[2], q[1], q[0]} == dut.u_ukf.state_x, "filter storage reads through 70-73");
+        q = '{8'd96}; wr(8'h6C, q);
+        q = '{kept[7:0], kept[15:8], kept[23:16], kept[31:24]}; wr(8'h70, q);
+        q = '{8'h01}; wr(8'h3C, q);
         n = frames; repeat (2) begin send_lidar_packet(); gap(13000); end
         check(frames == n + 4 && host_frames == 4, "state source switched to the host registers");
 
