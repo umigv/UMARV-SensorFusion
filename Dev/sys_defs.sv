@@ -190,8 +190,7 @@ typedef struct packed {
 
 typedef struct packed {
     logic active, write_enable;
-    logic [3:0] read_a, read_b, write_addr;
-    logic [6:0] operand_a, operand_b;
+    logic [6:0] read_addr_a, read_addr_b, write_addr;
     logic [31:0] write_data;
 } ukf_spad_request_t;
 

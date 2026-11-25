@@ -5,8 +5,6 @@ module UKF #(
     parameter logic [31:0] WHEEL_VELOCITY_SCALE = 32'b0,
     parameter logic [160:0] INITIAL_STATE = '0,
     parameter logic [479:0] INITIAL_S = '0,
-    parameter bit SRAM_STORAGE = 1'b1,
-    parameter bit USE_SKY130 = 1'b0,
     parameter bit EXTERNAL_PREDICTION = 1'b0,
     parameter logic [31:0] PRED_DT = 32'h3b23d70a,
     parameter logic [31:0] SIGMA_SCALE = 32'h3f8f1bbd,
@@ -63,28 +61,25 @@ module UKF #(
     input  ukf_divsqrt_request_t  prediction_div_request,
     output ukf_divsqrt_response_t prediction_div_response,
     output logic                  prediction_div_grant
-`ifdef USE_POWER_PINS
-    , inout wire vccd1, vssd1
-`endif
 );
-    localparam bit INTERNAL_SRAM = SRAM_STORAGE && !EXTERNAL_PREDICTION;
     localparam logic [6:0] WHEEL_SCALE_ADDR = 7'd95;
 
     logic reset, prediction_busy, backend_active, correction_busy, prediction_failed, correction_failed;
     logic wheel_mac_owner, converter_busy, convert_request, convert_pending, convert_start, convert_done;
     logic [6:0] wheel_address;
-    logic [31:0] wheel_read_data;
+    logic [31:0] wheel_read_data, wheel_write_data;
+    logic wheel_write, wheel_clear;
     meas_regfile_t time_pack, incoming_packet, vn_pending_packet, correction_packet, convert_input;
     meas_s_factor_t active_measurement_s, noise_snapshot;
     logic load_shared_noise, load_shared_measurement, correction_update_failed;
     ukf_spad_request_t correction_spad_request, converter_scratch_request, shared_spad_request;
     ukf_spad_response_t correction_spad_response;
-    logic memory_initializing, converter_read, correction_read, shared_read_valid;
     logic vn_pending, vn_arrival, vn_dispatch, vn_store, late_dispatch, late_conversion;
     corr_measurement_t converted;
     PRED_PACKET pred_packet;
     UKF_OUT_PACKET result_packet, latest_state;
-    pred_s_factor_t pred_s, latest_s, correction_s;
+    pred_s_factor_t pred_s, latest_s, correction_s, shared_factor;
+    logic [159:0] shared_state;
     ukf_mac_request_t wheel_mac_request, converter_mac_request, sensor_mac_request;
     ukf_mac_response_t sensor_mac_response;
     ukf_divsqrt_response_t shared_div_response;
@@ -102,8 +97,8 @@ module UKF #(
             assign backend_mac_request = prediction_mac_request;
             assign backend_div_request = prediction_div_request;
             assign correction_spad_response = '0;
-            assign memory_initializing = 1'b0;
-            assign shared_read_valid = 1'b0;
+            assign shared_state = '0;
+            assign shared_factor = '0;
             assign active_measurement_s = noise_snapshot;
             assign ukf_reinit_required = 1'b0;
         end else begin : internal_backend
@@ -119,41 +114,137 @@ module UKF #(
                                    !ukf_reinit_required && !correction_update_failed &&
                                    !correction_spad_request.active};
             assign latest_s = correction_s;
+            // One global flop bank. Address 5 is the held wheel input.
+            // The controller hands the read/write ports from prediction
+            // to conversion and then to correction.
+            localparam int SCRATCH_BASE = 21, NOISE_BASE = 37;
+            wire [31:0] registers [0:51];
+            wire [31:0] prior_bank [0:20];
+            wire [31:0] scratch_bank [0:15];
+            wire [31:0] noise_bank [0:14];
+            logic [6:0] pred_read_a, pred_read_b, pred_write_addr;
+            logic [31:0] pred_write_data, read_data_a, read_data_b;
+            logic pred_write, pred_success;
+            wire client_active = shared_spad_request.active;
+            wire [6:0] addr_a = client_active ? shared_spad_request.read_addr_a : pred_read_a;
+            wire [6:0] addr_b = client_active ? shared_spad_request.read_addr_b : pred_read_b;
+            wire [6:0] write_addr = client_active ? shared_spad_request.write_addr : pred_write_addr;
+            wire [31:0] write_data = client_active ? shared_spad_request.write_data : pred_write_data;
+            wire write_enable = client_active ? shared_spad_request.write_enable : pred_write;
+            wire [319:0] staged_noise_words = noise_snapshot;
+            wire [479:0] staged_noise = {160'b0, staged_noise_words};
+            wire [479:0] predicted_factor = pred_s;
+            wire [479:0] retained_factor, working_factor;
+            wire [127:0] converted_words = converted;
+            wire [511:0] measurement_words = {converted_words, 384'b0};
+            wire main_write = correction_spad_request.active && write_enable;
+            wire [31:0] main_write_data = write_data & {32{!pred_packet.pred_valid}};
+
+            assign registers[5] = prediction_wheel_velocity;
+            for (genvar i = 0; i < 21; i++)
+                assign prior_bank[i] = registers[i];
+            assign shared_state = {registers[0], registers[1], registers[2],
+                                   registers[3], registers[4]};
+            assign shared_factor = retained_factor;
+            assign backend_result = {registers[28], registers[29], registers[30],
+                                     registers[31], registers[32], backend_done && pred_success};
+            assign backend_result_s = working_factor;
+            assign active_measurement_s = working_factor[319:0];
+
+            for (genvar i = 0; i < 5; i++) begin : state_words
+                logic [31:0] word;
+                assign registers[i] = word;
+                always_ff @(posedge clk or negedge rst_n)
+                    if (!rst_n)
+                        word <= INITIAL_STATE[160-32*i -: 32];
+                    else if (pred_packet.pred_valid || (main_write && write_addr == 7'(i)))
+                        word <= (pred_packet[160-32*i -: 32] & {32{pred_packet.pred_valid}}) |
+                                main_write_data;
+            end
+            for (genvar i = 0; i < 15; i++) begin : factor_words
+                logic [31:0] word;
+                assign registers[6+i] = word;
+                assign retained_factor[32*i +: 32] = word;
+                always_ff @(posedge clk or negedge rst_n)
+                    if (!rst_n)
+                        word <= INITIAL_S[32*i +: 32];
+                    else if (pred_packet.pred_valid || (main_write && write_addr == 7'(6+i)))
+                        word <= (predicted_factor[32*i +: 32] & {32{pred_packet.pred_valid}}) |
+                                main_write_data;
+            end
+            for (genvar i = 0; i < 16; i++) begin : scratch_words
+                logic [31:0] word;
+                assign registers[SCRATCH_BASE+i] = word;
+                assign scratch_bank[i] = word;
+                always_ff @(posedge clk)
+                    if (rst_n) begin
+                        if (i < 4 && load_shared_measurement)
+                            word <= measurement_words[511-32*i -: 32];
+                        else if (write_enable && write_addr == 7'(SCRATCH_BASE+i))
+                            word <= write_data;
+                    end
+            end
+            for (genvar i = 0; i < 15; i++) begin : noise_words
+                logic [31:0] word;
+                assign registers[NOISE_BASE+i] = word;
+                assign noise_bank[i] = word;
+                assign working_factor[32*i +: 32] = word;
+                always_ff @(posedge clk)
+                    if (rst_n) begin
+                        if (prediction_start)
+                            word <= PROCESS_S[32*i +: 32];
+                        else if (i < 10 && load_shared_noise)
+                            word <= staged_noise[32*i +: 32];
+                        else if (!client_active && write_enable && write_addr == 7'(68+i))
+                            word <= pred_write_data;
+                    end
+            end
+
+            wire [3:0] scratch_index_a = addr_a[3:0] - 4'd5;
+            wire [3:0] scratch_index_b = addr_b[3:0] - 4'd5;
+            wire [3:0] noise_index_a = addr_a[3:0] - (client_active ? PROM_SR_BASE[3:0] : 4'd4);
+            wire [3:0] noise_index_b = addr_b[3:0] - (client_active ? PROM_SR_BASE[3:0] : 4'd4);
+
+            function automatic logic [31:0] read_register(
+                input logic [6:0] addr,
+                input logic correction_port,
+                input logic [31:0] prior_word, scratch_word, noise_word
+            );
+                read_register = (prior_word & {32{addr < 21}}) |
+                    (scratch_word & {32{addr >= 21 && addr <= 36}}) |
+                    (noise_word & {32{
+                        correction_port ? addr >= PROM_SR_BASE && addr < PROM_SR_BASE + 7'd10 :
+                                          addr >= 68 && addr < 83}}) |
+                    prom_math_read(addr);
+            endfunction
+
+            assign read_data_a = read_register(addr_a, client_active, prior_bank[addr_a[4:0]],
+                                               scratch_bank[scratch_index_a], noise_bank[noise_index_a]);
+            assign read_data_b = read_register(addr_b, client_active, prior_bank[addr_b[4:0]],
+                                               scratch_bank[scratch_index_b], noise_bank[noise_index_b]);
+            assign correction_spad_response = {read_data_a, read_data_b, registers[23][31]};
+
             UKF_pred_sequencer #(
-                .SRAM_STORAGE(INTERNAL_SRAM), .USE_SKY130(USE_SKY130),
-                .INITIAL_STATE(INITIAL_STATE), .INITIAL_S(INITIAL_S),
-                .ORIGIN_LATITUDE(ORIGIN_LATITUDE), .ORIGIN_LONGITUDE(ORIGIN_LONGITUDE),
                 .DT(PRED_DT), .SIGMA_SCALE(SIGMA_SCALE), .W_NONCENTRAL(W_NONCENTRAL),
                 .SQRT_W_NONCENTRAL(SQRT_W_NONCENTRAL), .W_MEAN_CENTRAL(W_MEAN_CENTRAL),
-                .SQRT_ABS_W_CENTRAL(SQRT_ABS_W_CENTRAL), .CENTRAL_DOWNDATE(CENTRAL_DOWNDATE),
-                .PROCESS_S(PROCESS_S)
+                .SQRT_ABS_W_CENTRAL(SQRT_ABS_W_CENTRAL), .CENTRAL_DOWNDATE(CENTRAL_DOWNDATE)
             ) sequencer (
                 .clock(clk), .reset(reset), .start(prediction_start),
-                .wheel_valid(prediction_wheel_valid), .prior(prediction_prior),
-                .load_correction_noise(load_shared_noise),
-                .staged_correction_noise(noise_snapshot),
-                .correction_noise(active_measurement_s),
-                .load_correction_measurement(load_shared_measurement),
-                .correction_measurement(converted),
-                .correction_spad_request(shared_spad_request),
-                .correction_spad_response(correction_spad_response),
-                .converter_owner(converter_scratch_request.active),
-                .client_read(converter_scratch_request.active ? converter_read : correction_read),
-                .client_read_valid(shared_read_valid), .initializing(memory_initializing),
-                .prior_s(prediction_prior_s), .wheel_velocity(prediction_wheel_velocity),
+                .wheel_valid(prediction_wheel_valid),
+                .read_addr_a(pred_read_a), .read_addr_b(pred_read_b),
+                .read_data_a(read_data_a), .read_data_b(read_data_b),
+                .wrap_word(registers[int'(PRED_ANGLE_ARG)]),
+                .write_enable(pred_write), .write_addr(pred_write_addr), .write_data(pred_write_data),
                 .mac_grant(prediction_mac_grant), .div_grant(prediction_div_grant),
                 .mac_response(prediction_mac_response), .div_response(prediction_div_response),
                 .mac_request(backend_mac_request), .div_request(backend_div_request),
-                .done(backend_done), .prediction(backend_result), .prediction_s(backend_result_s)
-`ifdef USE_POWER_PINS
-                , .vccd1(vccd1), .vssd1(vssd1)
-`endif
+                .done(backend_done), .success(pred_success)
             );
         end
     endgenerate
 
     assign reset = ~rst_n;
-    assign ukf_busy = memory_initializing || prediction_busy || correction_busy || converter_busy || convert_pending || ukf_valid;
+    assign ukf_busy = prediction_busy || correction_busy || converter_busy || convert_pending || ukf_valid;
     assign vn_arrival = rst_n && !ukf_reinit_required && ukf_pulse && ukf_vn_valid;
     assign late_dispatch = prediction_busy && !correction_busy;
     assign vn_dispatch = rst_n && !ukf_reinit_required && (vn_pending || vn_arrival) &&
@@ -248,18 +339,27 @@ module UKF #(
             convert_pending <= (convert_request || convert_pending) && !convert_start;
     end
 
+    // The wheel value is held in global register 5 for prediction.
+    always_ff @(posedge clk or negedge rst_n)
+        if (!rst_n)
+            prediction_wheel_velocity <= '0;
+        else if (wheel_write)
+            prediction_wheel_velocity <= wheel_write_data;
+        else if (wheel_clear)
+            prediction_wheel_velocity <= '0;
+
     UKF_pred_engine prediction (
         .clock(clk), .reset(reset),
         .corr_packet(latest_state), .corr_s(latest_s), .timestamp_pack(time_pack),
         .backend_start(prediction_start), .backend_active(backend_active),
         .backend_prior(prediction_prior),
         .backend_prior_s(prediction_prior_s), .backend_ts(prediction_ts),
-        .backend_wheel_velocity(prediction_wheel_velocity),
+        .clear_wheel_velocity(wheel_clear),
         .backend_wheel_valid(prediction_wheel_valid),
         .backend_done(backend_done), .backend_prediction(backend_result),
         .backend_prediction_s(backend_result_s),
         .velocity_scale_addr(WHEEL_SCALE_ADDR), .mem_rdata(wheel_read_data),
-        .mem_addr(wheel_address), .mem_we(), .mem_wdata(),
+        .mem_addr(wheel_address), .mem_we(wheel_write), .mem_wdata(wheel_write_data),
         .mac_start(wheel_mac_request.start), .mac_clear(wheel_mac_request.clear),
         .mac_last(wheel_mac_request.last), .mac_a(wheel_mac_request.a), .mac_b(wheel_mac_request.b),
         .mac_busy(sensor_mac_response.busy), .mac_result_valid(sensor_mac_response.valid),
@@ -274,7 +374,6 @@ module UKF #(
                                  converter_scratch_request : correction_spad_request;
 
     vn_to_correction #(
-        .SRAM_STORAGE(INTERNAL_SRAM),
         .SHARED_SCRATCH(!EXTERNAL_PREDICTION),
         .ORIGIN_LATITUDE(ORIGIN_LATITUDE), .ORIGIN_LONGITUDE(ORIGIN_LONGITUDE),
         .EARTH_RADIUS(EARTH_RADIUS)
@@ -282,22 +381,19 @@ module UKF #(
         .clock(clk), .reset(reset), .start(convert_start), .packet(convert_input),
         .busy(converter_busy), .done(convert_done), .measurement(converted),
         .mac_request(converter_mac_request), .mac_response(sensor_mac_response),
-        .scratch_request(converter_scratch_request), .scratch_read(correction_spad_response.a),
-        .scratch_read_valid(shared_read_valid), .scratch_read_enable(converter_read)
+        .scratch_request(converter_scratch_request), .scratch_read(correction_spad_response.a)
     );
 
     UKF_corr_engine #(
         .SHARE_MAC(1'b1), .REPORT_PRED_FAILURE(1'b1),
-        .HELD_PREDICTION(!EXTERNAL_PREDICTION), .SHARED_STORAGE(!EXTERNAL_PREDICTION),
-        .SRAM_STORAGE(INTERNAL_SRAM),
-        .INITIAL_STATE(INITIAL_STATE), .INITIAL_S(INITIAL_S)
+        .HELD_PREDICTION(!EXTERNAL_PREDICTION), .SHARED_STORAGE(!EXTERNAL_PREDICTION)
     ) correction (
         .clock(clk), .reset(reset), .corr_packet(correction_packet),
         .pred_packet(pred_packet), .pred_s(pred_s), .measurement_s(active_measurement_s),
         .load_shared_noise(load_shared_noise), .load_shared_measurement(load_shared_measurement),
         .update_failed(correction_update_failed),
+        .shared_state(shared_state), .shared_factor(shared_factor),
         .spad_request(correction_spad_request), .spad_response(correction_spad_response),
-        .spad_read_valid(shared_read_valid), .spad_read(correction_read),
         .convert_start(convert_request), .convert_input(convert_input),
         .convert_done(convert_done), .convert_result(converted),
         .busy(correction_busy), .done(), .failed(correction_failed),
@@ -311,7 +407,8 @@ module UKF #(
         .prediction_failed(prediction_failed)
     );
 
-    // Sample the completed state and factor together on ukf_valid.
+    // On the built-in path these wires reflect the live bank. Sample
+    // correction results on ukf_valid; the bank can change while busy.
     assign {ukf_x, ukf_y, ukf_theta, ukf_omega, ukf_wheelB} =
         {latest_state.ukf_x, latest_state.ukf_y, latest_state.ukf_theta,
          latest_state.ukf_omega, latest_state.ukf_wheelB};

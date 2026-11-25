@@ -1,6 +1,5 @@
 // Adapt the raw VN packet to the existing FP32 east/north converter.
 module vn_to_correction #(
-    parameter bit SRAM_STORAGE = 1'b0,
     parameter bit SHARED_SCRATCH = 1'b0,
     parameter logic [31:0] ORIGIN_LATITUDE = 32'b0,
     parameter logic [31:0] ORIGIN_LONGITUDE = 32'b0,
@@ -13,8 +12,6 @@ module vn_to_correction #(
     output ukf_mac_request_t mac_request,
     output ukf_spad_request_t scratch_request,
     input logic [31:0] scratch_read,
-    input logic scratch_read_valid,
-    output logic scratch_read_enable,
     input ukf_mac_response_t mac_response
 );
     localparam logic [31:0] ONE = 32'h3f800000;
@@ -68,8 +65,8 @@ module vn_to_correction #(
 
     always_comb begin
         case (address)
-            7'd70: read_data = SRAM_STORAGE ? scratch_read : ORIGIN_LONGITUDE;
-            7'd71: read_data = SRAM_STORAGE ? scratch_read : ORIGIN_LATITUDE;
+            7'd70: read_data = ORIGIN_LONGITUDE;
+            7'd71: read_data = ORIGIN_LATITUDE;
             7'd96: read_data = ONE;
             7'd107: read_data = DEG_TO_RAD;
             7'd108: read_data = EARTH_RADIUS;
@@ -88,10 +85,9 @@ module vn_to_correction #(
     assign sample_coordinate = narrow(sample_longitude ? packet.ukf_vn_lon_f64
                                                         : packet.ukf_vn_lat_f64);
 
-    lat_to_xy #(.SYNC_MEMORY(SRAM_STORAGE)) coordinates (
+    lat_to_xy coordinates (
         .clk(clock), .rst_n(!reset), .start(start && !busy),
         .sample_coordinate(sample_coordinate), .sample_longitude(sample_longitude),
-        .mem_re(scratch_read_enable), .mem_read_valid(scratch_read_valid),
         .mem_rdata(read_data), .mem_addr(address), .mem_we(write_enable), .mem_wdata(write_data),
         .mac_start(xy_mac_request.start), .mac_clear(xy_mac_request.clear),
         .mac_last(xy_mac_request.last), .mac_a(xy_mac_request.a), .mac_b(xy_mac_request.b),
@@ -110,9 +106,7 @@ module vn_to_correction #(
         endcase
     end
 
-    wire [3:0] scratch_index = address[3:0] - 4'd5;
-    assign scratch_request = {busy || start, write_enable, scratch_index, 4'b0,
-                              scratch_index, address, 7'd0, write_data};
+    assign scratch_request = {busy || start, write_enable, address, 7'd0, address, write_data};
     if (!SHARED_SCRATCH) begin : local_scratch
         always_ff @(posedge clock)
             if (write_enable)

@@ -82,38 +82,26 @@ work on reset.
 
 ## Shared storage and handoff
 
-The development UKF uses `ukf_regfile` for built-in prediction, VN
-conversion, and correction by default. The bank accepts a dual-address
-read or a one-word write each cycle. The sequencers capture read operands
-on the following rising edge and retain them through arithmetic completion.
-After reset, `ukf_busy` stays asserted for 22 clocks while the controller
-initializes the prior and coordinate origins.
+The built-in UKF owns one global 52-word FP32 flip-flop bank in
+`UKF.sv`. Prediction, VN conversion, and correction access it through
+shared combinational read ports and addressed writes.
 
-The bank uses addresses 0–4 for state, 5 for wheel velocity, 6–20 for the
-covariance factor, 21–36 for scratch, 37–51 for process and measurement
-noise, and 52–53 for origin longitude and latitude. Prediction commits
-its state and factor before handing the bank to VN conversion. Conversion
-reuses the scratch region for coordinate math. The controller writes
-the four measurement words and ten measurement-noise words before
-correction fetches its first operands. Correction collects its state and
-factor into parallel outputs before each stage strobe. Raw VN packets and
-their pending noise snapshots remain in the input buffering registers.
+| Bank words | Contents |
+| --- | --- |
+| 0–4 | State |
+| 5 | Held wheel velocity |
+| 6–20 | Retained covariance factor |
+| 21–36 | Shared scratch |
+| 37–51 | Working process or measurement-noise factor |
 
-Set `SRAM_STORAGE=0` to use the legacy parallel storage. With SRAM storage
-enabled, `USE_SKY130=0` selects the synchronous RTL memory and
-`USE_SKY130=1` selects `sky130_sram_1kbyte_1rw1r_32x256_8`. The macro
-requires matching Verilog, Liberty, LEF, and GDS views for physical
-implementation. To simulate its interface, run
-`python3 tests/run_srukf_end_to_end.py --sram-model /path/to/openram_model.v`.
-
-The built-in path uses one 16-word scratchpad in the prediction sequencer
-for both engines. Prediction offsets 0–4 hold the current point and then
-its covariance-update vector, offsets 7–11 hold the mean through both
-passes, and offsets 5–6 and 12–15 hold phase-local temporaries. Angle
-argument, square, and result alias offsets 12, 13, and 6. The sign uses
-offset 15. Correction reinterprets the 16 offsets as four residuals plus
-twelve work words. Correction arithmetic owns the scratchpad only after
-prediction has finished.
+During prediction, scratch offsets 0–4 hold the current point and then
+its covariance-update vector. Offsets 7–11 hold the mean through both
+passes. The remaining words hold phase-local temporaries. Angle argument,
+square, and result use offsets 12, 13, and 6. The sign uses offset 15.
+Prediction commits the mean and factor to the retained bank on its done
+edge. VN conversion then uses the first four scratch words. Correction
+uses those four words for residuals and the remaining twelve for its
+temporaries. Correction updates the retained state and factor in place.
 
 A VN sample may arrive while S_Q is still being updated, so the UKF
 captures its ten-word runtime S_R in a separate configuration snapshot.
@@ -179,8 +167,8 @@ A rejected prediction or correction pulses `ukf_failed`. The built-in
 predictor leaves the main prior untouched on prediction failure. A built-in
 correction failure latches `ukf_reinit_required`, discards the pending VN
 transaction, and blocks new wheel and VN input. It publishes no correction
-result. Treat output wires as valid on their corresponding completion strobe.
-A correction failure invalidates the bank until reset. Hold `rst_n` low to
+result. The live output wires must be treated as invalid while correction
+is updating them or the reset-required flag is set. Hold `rst_n` low to
 reload `INITIAL_STATE` and `INITIAL_S` and clear the flag. Only submit fresh
 inputs after reset. The external-backend option keeps the previous
 correction rollback behavior and leaves `ukf_reinit_required` low.
@@ -204,9 +192,9 @@ with the SKY130 HD Liberty, `tests/buffer_srukf_netlist.py` on the mapped
 JSON, and `tests/srukf_timing.tcl` in OpenSTA after exporting the buffered
 JSON as Verilog with Yosys `write_verilog -noattr -noexpr -simple-lhs`.
 
-### Lowest-area map of the legacy parallel-storage UKF
+### Lowest-area integrated UKF map
 
-The legacy parallel-storage SKY130 HD map used flattened synthesis, default ABC
+The lowest-area tested SKY130 HD map uses flattened synthesis, default ABC
 Liberty mapping, and post-map buffer trees with a fanout limit of 32. Run
 these commands from the repository root with `liberty` set to the absolute
 path of `sky130_fd_sc_hd__tt_025C_1v80.lib` and OpenSTA available as `sta`.
@@ -220,7 +208,7 @@ python3 -B tests/report_srukf_area.py "$liberty" "$out/buffered.json" --flattene
 LIBERTY="$liberty" MAPPED_VERILOG="$out/buffered.v" sta -exit tests/srukf_timing.tcl
 ```
 
-The buffered `UKF` netlist measured 190,441.40 µm² and 3,461 DFFs, with
+Before the global-bank move, the buffered `UKF` netlist measured 190,441.40 µm² and 3,461 DFFs, with
 +5.1449 ns pre-placement setup slack at 20 ns. Gate-level simulation matched
 the RTL corrected state, covariance factor, and status timing for one
 staggered wheel/VN transaction. These measurements cover the integrated

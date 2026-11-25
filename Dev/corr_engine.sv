@@ -5,10 +5,7 @@ module UKF_corr_engine #(
     parameter bit SHARE_MAC = 1'b0,
     parameter bit REPORT_PRED_FAILURE = 1'b0,
     parameter bit HELD_PREDICTION = 1'b0,
-    parameter bit SRAM_STORAGE = 1'b0,
-    parameter bit SHARED_STORAGE = 1'b0,
-    parameter logic [160:0] INITIAL_STATE = '0,
-    parameter logic [479:0] INITIAL_S = '0
+    parameter bit SHARED_STORAGE = 1'b0
 ) (
     input  logic clock, reset,
     input  meas_regfile_t corr_packet,
@@ -17,10 +14,10 @@ module UKF_corr_engine #(
     input  meas_s_factor_t measurement_s,
     output logic load_shared_measurement, update_failed,
     output logic load_shared_noise,
+    input logic [159:0] shared_state,
+    input pred_s_factor_t shared_factor,
     output ukf_spad_request_t spad_request,
     input ukf_spad_response_t spad_response,
-    input logic spad_read_valid,
-    output logic spad_read,
     output logic convert_start,
     output meas_regfile_t convert_input,
     input  logic convert_done,
@@ -96,7 +93,7 @@ module UKF_corr_engine #(
         .ENABLE_THIRD_UPDATE(ENABLE_THIRD_UPDATE),
         .ENABLE_FOURTH_UPDATE(ENABLE_FOURTH_UPDATE),
         .SHARE_MAC(SHARE_MAC),
-        .SHARED_STORAGE(SHARED_STORAGE), .SRAM_STORAGE(SRAM_STORAGE), .INITIAL_STATE(INITIAL_STATE), .INITIAL_S(INITIAL_S)
+        .SHARED_STORAGE(SHARED_STORAGE)
     ) correction_program (
         .clock(clock),
         .reset(reset),
@@ -105,10 +102,9 @@ module UKF_corr_engine #(
         .measurement(convert_result),
         .prediction(SHARED_STORAGE ? pred_packet : prediction),
         .prediction_s(prediction_s),
-        .prediction_load(pred_packet.pred_valid),
+        .shared_state(shared_state), .shared_factor(shared_factor),
         .measurement_s(measurement_s),
         .spad_request(spad_request), .spad_response(spad_response),
-        .spad_read_valid(spad_read_valid), .spad_read(spad_read),
         .done(microcode_done),
         .x_update_valid(microcode_x_valid),
         .xy_update_valid(microcode_xy_valid),

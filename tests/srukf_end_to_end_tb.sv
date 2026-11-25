@@ -1,7 +1,4 @@
-`timescale 1ns/1ps
 module srukf_end_to_end_tb #(
-    parameter bit SRAM_STORAGE = 1'b1,
-    parameter bit USE_SKY130 = 1'b0,
     parameter int INVALID_KIND = 0,
     parameter bit POSITIVE_CENTRAL = 0,
     parameter logic [160:0] START_STATE = '0,
@@ -20,7 +17,6 @@ module srukf_end_to_end_tb #(
     pred_s_factor_t corrected_s;
 
     UKF #(
-        .SRAM_STORAGE(SRAM_STORAGE), .USE_SKY130(USE_SKY130),
         .WHEEL_VELOCITY_SCALE(32'h3e000000), .INITIAL_STATE(START_STATE),
         .INITIAL_S(START_FACTOR), .PROCESS_S(PROCESS_FACTOR),
         .CENTRAL_DOWNDATE(!POSITIVE_CENTRAL),
@@ -45,26 +41,21 @@ module srukf_end_to_end_tb #(
     meas_s_factor_t expected_noise;
     corr_measurement_t expected_measurement;
     logic check_shared_handoff = 0;
-    logic correction_wrote_main;
     logic injected = 0, forced_pivot = 0;
     logic [159:0] completed_prediction;
     pred_s_factor_t completed_prediction_s;
     string fixture_path;
     always @(posedge clk) if (rst_n) begin
-        if (!SRAM_STORAGE && check_shared_handoff) begin
+        if (check_shared_handoff) begin
             if (dut.active_measurement_s !== expected_noise ||
-                {dut.internal_backend.sequencer.spad[0], dut.internal_backend.sequencer.spad[1],
-                 dut.internal_backend.sequencer.spad[2], dut.internal_backend.sequencer.spad[3]}
+                {dut.internal_backend.registers[21], dut.internal_backend.registers[22],
+                 dut.internal_backend.registers[23], dut.internal_backend.registers[24]}
                 !== expected_measurement)
                 $fatal(1, "SR or converted sample lost during shared-storage handoff");
         end
         check_shared_handoff = dut.load_shared_noise;
         if (dut.vn_dispatch) expected_noise = dut.selected_noise;
         if (dut.convert_done) expected_measurement = dut.converted;
-        if (dut.load_shared_noise)
-            correction_wrote_main = 0;
-        if (dut.correction_spad_request.write_enable && dut.correction_spad_request.operand_a < 21)
-            correction_wrote_main = 1;
         if (dut.load_shared_noise &&
             (dut.latest_s !== dut.pred_s || dut.noise_snapshot !== expected_noise))
             $fatal(1, "retained S or staged SR incorrect before handoff");
@@ -98,9 +89,9 @@ module srukf_end_to_end_tb #(
             if (dut.internal_backend.sequencer.write_result &&
                 dut.internal_backend.sequencer.uop.dest < 21)
                 $fatal(1, "original state or factor overwritten at PC %0d", pred_pc);
-            if (!SRAM_STORAGE && pred_pc == 0)
+            if (pred_pc == 0)
                 for (int i = 0; i < 15; i++)
-                    if (dut.internal_backend.sequencer.working_sq[i] !==
+                    if (dut.internal_backend.registers[37+i] !==
                         PROCESS_FACTOR[32*i +: 32])
                         $fatal(1, "process factor was not reloaded");
 
@@ -166,7 +157,7 @@ module srukf_end_to_end_tb #(
         check_shared_handoff = 0;
         repeat (3) @(negedge clk);
         rst_n = 1;
-        repeat (24) @(negedge clk);
+        @(negedge clk);
         if (ukf_busy || ukf_valid || ukf_failed || ukf_reinit_required ||
             {ukf_x, ukf_y, ukf_theta, ukf_omega, ukf_wheelB} !== START_STATE[160:1] ||
             corrected_s !== START_FACTOR)
@@ -222,9 +213,8 @@ module srukf_end_to_end_tb #(
                            dut.internal_backend.sequencer.pc);
                 if ((mode == 1 || mode == 4) && INVALID_KIND == 0) begin
                     if (!ukf_reinit_required || dut.vn_pending || (mode == 4 && !injected) ||
-                        (SRAM_STORAGE ? !correction_wrote_main :
-                         ({ukf_x, ukf_y, ukf_theta, ukf_omega, ukf_wheelB} === completed_prediction &&
-                          corrected_s === completed_prediction_s)))
+                        ({ukf_x, ukf_y, ukf_theta, ukf_omega, ukf_wheelB} === completed_prediction &&
+                         corrected_s === completed_prediction_s))
                         $fatal(1, "partial correction did not require reset");
                     // Try both inputs while the invalid bank is quarantined.
                     ukf_dw_valid = 1;

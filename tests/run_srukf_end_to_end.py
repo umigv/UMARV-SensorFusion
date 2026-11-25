@@ -18,7 +18,7 @@ NOISE = [.20, .025, -.01, .012, .18, .017, -.01, .09, .019, .14]
 DT = f32(.0025)
 SOURCES = ("sys_defs FP_MAC FP_SQRTDIV corr_microcode corr_engine int_to_fp32 "
            "deadwheel_velocity lat_to_xy pred_engine pred_microcode pred_sequencer "
-           "vn_to_correction ukf_regfile UKF").split()
+           "vn_to_correction UKF").split()
 
 
 def packed(values):
@@ -109,8 +109,7 @@ def flatten(matrix):
     return [v for row in matrix for v in row]
 
 
-def simulate(root, tmp, initial, positive=False, invalid=0, source_unit=None,
-             *, parallel=False, sram_model=None):
+def simulate(root, tmp, initial, positive=False, invalid=0, source_unit=None):
     fixture = tmp / "fixtures.txt"
     cases = fixtures(fixture, initial, invalid)
     elf = tmp / "full.vvp"
@@ -120,13 +119,9 @@ def simulate(root, tmp, initial, positive=False, invalid=0, source_unit=None,
         "PROCESS_FACTOR": f"480'h{packed([0] * 15 if invalid == 1 else PROCESS_FACTOR)}",
         "INVALID_KIND": invalid,
         "POSITIVE_CENTRAL": int(positive),
-        "SRAM_STORAGE": int(not parallel),
-        "USE_SKY130": int(sram_model is not None),
     }
     testbench = root / "tests/srukf_end_to_end_tb.sv"
     sources = [f"Dev/{name}.sv" for name in SOURCES]
-    if sram_model:
-        sources.append(sram_model.resolve())
     if source_unit:
         sources = [source_unit.resolve()]
         packaged_testbench = tmp / testbench.name
@@ -151,12 +146,7 @@ def simulate(root, tmp, initial, positive=False, invalid=0, source_unit=None,
 def main():
     parser = ArgumentParser(description=__doc__)
     parser.add_argument("--source-unit", type=Path, help="optional generated Verilog compilation unit")
-    storage = parser.add_mutually_exclusive_group()
-    storage.add_argument("--parallel-storage", action="store_true", help="exercise the legacy RTL storage")
-    storage.add_argument("--sram-model", type=Path, help="exercise the SKY130 interface with an OpenRAM model")
     args = parser.parse_args()
-    if args.sram_model and args.source_unit:
-        parser.error("--sram-model requires the Dev RTL sources")
     root = Path(__file__).resolve().parents[1]
     errors = {label: [0.0, 0.0] for label in
               ("predicted state", "predicted covariance", "corrected state", "corrected covariance",
@@ -170,10 +160,7 @@ def main():
             ([.1, -.2, .7, -.8, 0.], False, 1),
             ([.1, -.2, .7, -.8, 0.], False, 2),
         ):
-            cases, output = simulate(
-                root, Path(directory), initial, positive, invalid, args.source_unit,
-                parallel=args.parallel_storage, sram_model=args.sram_model,
-            )
+            cases, output = simulate(root, Path(directory), initial, positive, invalid, args.source_unit)
             prior, factor = list(map(f32, initial)), list(map(f32, INITIAL_FACTOR))
             predicted, corrected, measurements, failed, resets = {}, set(), {}, set(), set()
             for line in output.splitlines():

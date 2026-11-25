@@ -7,6 +7,9 @@ from pathlib import Path
 
 from report_corr_area import library, statistics
 
+GLOBAL_BANK = tuple(f"internal_backend.registers[{i}]" for i in range(52))
+GLOBAL_READ_PORTS = ("internal_backend.read_data_a", "internal_backend.read_data_b")
+
 BANKS = {
     "UKF": {"retained S": ("latest_s",)},
     "UKF_corr_engine": {"correction staging S": ("prediction_s",)},
@@ -98,7 +101,8 @@ def main():
         print(f"{hierarchy}: {cells_total[0]} cells, {cells_total[1]} DFF, {cells_total[3]:.2f} um²")
         sequential_area += sum(lib[cell["type"]][0] for cell in cells.values()
                                if lib[cell["type"]][1] in ("DFF", "latch"))
-        banks = BANKS.get(base, {})
+        has_global_bank = base == "UKF" and any(name in module["netnames"] for name in GLOBAL_BANK)
+        banks = {"global UKF bank": GLOBAL_BANK} if has_global_bank else BANKS.get(base, {})
         for label, words in banks.items():
             bits = {bit for word in words if word in module["netnames"]
                     for bit in module["netnames"][word]["bits"]}
@@ -109,7 +113,9 @@ def main():
         registers = tuple(word for bank in banks.values() for word in bank
                           if word in module["netnames"])
         read_ports = ()
-        if base == "corr_microcode":
+        if has_global_bank:
+            read_ports = tuple(name for name in GLOBAL_READ_PORTS if name in module["netnames"])
+        elif base == "corr_microcode":
             registers = tuple(name for name in module["netnames"] if name.startswith("regfile["))
             read_ports = ("operand_a", "operand_b")
         elif base == "UKF_pred_sequencer":

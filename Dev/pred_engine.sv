@@ -5,7 +5,8 @@ module UKF_pred_engine (
     output logic backend_start, backend_active,
     output UKF_OUT_PACKET backend_prior,
     output pred_s_factor_t backend_prior_s,
-    output logic [31:0] backend_ts, backend_wheel_velocity,
+    output logic [31:0] backend_ts,
+    output logic clear_wheel_velocity,
     output logic backend_wheel_valid,
     input logic backend_done,
     input PRED_PACKET backend_prediction,
@@ -68,6 +69,7 @@ module UKF_pred_engine (
     assign busy = s != IDLE;
     assign accept_snapshot = s == IDLE && timestamp_pack.ukf_pulse &&
                              (timestamp_pack.ukf_dw_valid || timestamp_pack.ukf_vn_valid);
+    assign clear_wheel_velocity = accept_snapshot;
     assign wheel_mac_owner = s == LOAD_INPUTS || s == CALC_WHEEL_V;
     assign backend_start = !reset && s == START_PRED;
     assign backend_active = !reset && (s == START_PRED || s == WAIT_PRED);
@@ -86,17 +88,13 @@ module UKF_pred_engine (
             wheel_delta <= '0;
             backend_ts <= '0;
             backend_wheel_valid <= 1'b0;
-            backend_wheel_velocity <= '0;
         end else begin
             s <= ns;
             if (accept_snapshot) begin
                 wheel_delta <= timestamp_pack.ukf_dw_delta;
                 backend_ts <= timestamp_pack.ukf_beat_ts;
                 backend_wheel_valid <= timestamp_pack.ukf_dw_valid;
-                backend_wheel_velocity <= '0;
             end
-            if (s == CALC_WHEEL_V && wheel_velocity_done)
-                backend_wheel_velocity <= mem_wdata;
         end
     end
 

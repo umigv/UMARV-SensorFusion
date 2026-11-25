@@ -3,10 +3,7 @@ module corr_microcode #(
     parameter bit ENABLE_THIRD_UPDATE = 1'b1,
     parameter bit ENABLE_FOURTH_UPDATE = 1'b1,
     parameter bit SHARE_MAC = 1'b0,
-    parameter bit SRAM_STORAGE = 1'b0,
-    parameter bit SHARED_STORAGE = 1'b0,
-    parameter logic [160:0] INITIAL_STATE = '0,
-    parameter logic [479:0] INITIAL_S = '0
+    parameter bit SHARED_STORAGE = 1'b0
 ) (
     input  logic clock, reset,
     input  logic start,
@@ -15,11 +12,10 @@ module corr_microcode #(
     input  PRED_PACKET prediction,
     input  pred_s_factor_t prediction_s,
     input  meas_s_factor_t measurement_s,
-    input  logic prediction_load,
+    input  logic [159:0] shared_state,
+    input  pred_s_factor_t shared_factor,
     output ukf_spad_request_t spad_request,
     input ukf_spad_response_t spad_response,
-    input logic spad_read_valid,
-    output logic spad_read,
     output logic done, x_update_valid, failed,
     output UKF_OUT_PACKET result,
     output pred_s_factor_t corrected_s,
@@ -117,9 +113,8 @@ module corr_microcode #(
 
     typedef enum logic [1:0] {UPDATE_X, UPDATE_XY, UPDATE_XYZ, UPDATE_XYZW} update_stage_t;
 
-    typedef enum logic [3:0] {
-        IDLE, ISSUE_A, WAIT_A, ISSUE_B, WAIT_B, WAIT_DIVSQRT,
-        FETCH, COLLECT, PUBLISH
+    typedef enum logic [2:0] {
+        IDLE, ISSUE_A, WAIT_A, ISSUE_B, WAIT_B, WAIT_DIVSQRT
     } corr_state_t;
 
     corr_state_t state;
@@ -129,15 +124,9 @@ module corr_microcode #(
     logic third_term, fourth_term, full_update_valid;
     logic [6:0] diag_addr, factor_addr, row_u, col_u, state_addr, meas_addr;
     logic [6:0] second_row_addr, third_row_addr, fourth_row_addr;
-    localparam logic [6:0] RF_LAST = SHARED_STORAGE ? REG_S_BASE + 7'd14 : REG_C;
+    localparam logic [6:0] RF_LAST = REG_C;
     logic [31:0] regfile [RF_LAST:REG_X];
     logic residual_heading_negative;
-    logic [31:0] held_a, held_b;
-    logic [6:0] collect_addr;
-    wire sram_write = SRAM_STORAGE && arithmetic_complete && !arithmetic_failed &&
-                      uop.wb_en && uop.dest <= REG_C;
-    assign spad_read = SRAM_STORAGE && (state == FETCH || state == COLLECT) &&
-                       !spad_read_valid;
     corr_ukf_uop uop;
     logic [31:0] operand_a, operand_b, mac_a, mac_b, mac_result, div_result;
     logic mac_start, mac_busy, mac_done, mac_result_valid;
@@ -148,7 +137,7 @@ module corr_microcode #(
     logic [319:0] measurement_words;
     assign prediction_words = prediction_s;
     assign measurement_words = measurement_s;
-    assign corrected_s = corrected_words;
+    assign corrected_s = SHARED_STORAGE ? shared_factor : corrected_words;
 
     // Packed upper-triangular rows start at offsets 0, 5, 9, 12, 14.
     always_comb begin
@@ -188,7 +177,7 @@ module corr_microcode #(
                 uop.src_a = pc == PC_WRAP_HEADING ? REG_THETA : REG_MEAS_THETA;
                 uop.src_b = PROM_MATH_TWO_PI;
                 uop.dest = uop.src_a;
-                uop.neg_b = pc == PC_WRAP_HEADING ? !regfile[REG_THETA][31]
+                uop.neg_b = pc == PC_WRAP_HEADING ? !result.ukf_theta[31]
                                                   : !residual_heading_negative;
             end
 
@@ -330,22 +319,15 @@ module corr_microcode #(
         else
             assign residual_heading_negative = regfile[REG_MEAS_THETA][31];
     endgenerate
-    // Correction addresses 21..36 map to the same sixteen words as
-    // prediction's scratchpad. The standalone build keeps local storage.
     assign spad_request = {
         SHARED_STORAGE && state != IDLE,
-        SHARED_STORAGE && arithmetic_complete && !arithmetic_failed && uop.wb_en &&
-            uop.dest <= REG_C && (SRAM_STORAGE || uop.dest >= REG_MEAS_X),
-        uop.src_a[3:0] - REG_MEAS_X[3:0],
-        uop.src_b[3:0] - REG_MEAS_X[3:0],
-        uop.dest[3:0] - REG_MEAS_X[3:0],
-        sram_write ? uop.dest : state == COLLECT ? collect_addr : uop.src_a,
-        uop.src_b, arithmetic_result
+        SHARED_STORAGE && arithmetic_complete && !arithmetic_failed && uop.wb_en,
+        uop.src_a, uop.src_b, uop.dest, arithmetic_result
     };
-    assign operand_a = SRAM_STORAGE ? held_a : SHARED_STORAGE ? spad_response.a : read_operand(uop.src_a,
+    assign operand_a = SHARED_STORAGE ? spad_response.a : read_operand(uop.src_a,
                                     uop.src_a <= RF_LAST ? regfile[uop.src_a] : 32'b0,
                                     measurement_words);
-    assign operand_b = wrap_step ? angle_wrap_step(operand_a) : (SRAM_STORAGE ? held_b : SHARED_STORAGE ? spad_response.b : read_operand(uop.src_b,
+    assign operand_b = wrap_step ? angle_wrap_step(operand_a) : (SHARED_STORAGE ? spad_response.b : read_operand(uop.src_b,
                                     uop.src_b <= RF_LAST ? regfile[uop.src_b] : 32'b0,
                                     measurement_words));
 
@@ -413,31 +395,44 @@ module corr_microcode #(
     assign arithmetic_failed = (uop.wb_en && arithmetic_result[30:23] == 8'hff) ||
                                (state == WAIT_DIVSQRT && (div_invalid || div_zero || div_overflow));
 
+    if (SHARED_STORAGE) begin : no_local_storage
+        for (genvar i = 0; i <= RF_LAST; i++)
+            assign regfile[i] = '0;
+    end else begin : standalone_storage
+        always_ff @(posedge clock or posedge reset) begin
+            if (reset) begin
+                for (int addr = REG_X; addr <= RF_LAST; addr++)
+                    regfile[addr] <= '0;
+            end else begin
+                if (state == IDLE && measurement_load) begin
+                    regfile[REG_MEAS_X] <= measurement.x;
+                    regfile[REG_MEAS_Y] <= measurement.y;
+                    regfile[REG_MEAS_THETA] <= measurement.theta;
+                    regfile[REG_MEAS_OMEGA] <= measurement.omega;
+                end
+                if (arithmetic_complete && !arithmetic_failed && uop.wb_en && uop.dest <= RF_LAST)
+                    regfile[uop.dest] <= arithmetic_result;
+                if (state == IDLE && start && prediction.pred_valid) begin
+                    {regfile[REG_X], regfile[REG_Y], regfile[REG_THETA],
+                     regfile[REG_OMEGA], regfile[REG_WHEEL_BIAS]} <= prediction[160:1];
+                    for (int i = 0; i < S_WORDS; i++)
+                        regfile[REG_S_BASE + i] <= prediction_words[i*32 +: 32];
+                end
+            end
+        end
+    end
+
     // Sample the state and factor together on the corresponding stage pulse.
     // UKF validity pulses only on successful completion of the fourth row.
-    assign result = {regfile[REG_X], regfile[REG_Y], regfile[REG_THETA],
-                     regfile[REG_OMEGA], regfile[REG_WHEEL_BIAS], full_update_valid};
+    assign result = {SHARED_STORAGE ? shared_state :
+                     {regfile[REG_X], regfile[REG_Y], regfile[REG_THETA],
+                      regfile[REG_OMEGA], regfile[REG_WHEEL_BIAS]}, full_update_valid};
     for (genvar i = 0; i < S_WORDS; i++) begin : export_factor
         assign corrected_words[i*32 +: 32] = regfile[REG_S_BASE + i];
     end
 
-    // Main-bank loads and correction writebacks are mutually exclusive.
-    // Share the arithmetic-data mask across the bank and decode only
-    // the per-word write enable. Address 5 is reserved for wheel velocity.
-    wire load_main = state == IDLE && prediction_load;
-    wire retire_main = arithmetic_complete && !arithmetic_failed && uop.wb_en;
-    wire [31:0] main_write_data = arithmetic_result & {32{!load_main}};
-
     always_ff @(posedge clock or posedge reset) begin
         if (reset) begin
-            for (int addr = REG_X; addr <= RF_LAST; addr++)
-                regfile[addr] <= '0;
-            if (SHARED_STORAGE) begin
-                {regfile[REG_X], regfile[REG_Y], regfile[REG_THETA],
-                 regfile[REG_OMEGA], regfile[REG_WHEEL_BIAS]} <= INITIAL_STATE[160:1];
-                for (int i = 0; i < S_WORDS; i++)
-                    regfile[REG_S_BASE + i] <= INITIAL_S[32*i +: 32];
-            end
             state <= IDLE;
             pc <= '0;
             wrap_return_pc <= '0;
@@ -457,38 +452,13 @@ module corr_microcode #(
             xyz_update_valid <= 1'b0;
             full_update_valid <= 1'b0;
             failed <= 1'b0;
-            // Prediction owns the main bank until done. Load its completed
-            // pair on that edge, even on a wheel-only beat.
-            if (SHARED_STORAGE) begin
-                for (int i = 0; i <= RF_LAST; i++) begin
-                    if (i != 5 && (load_main || (!SRAM_STORAGE && retire_main && uop.dest == 7'(i)))) begin
-                        if (i < 5)
-                            regfile[i] <= ({32{load_main}} & prediction[160-32*i -: 32]) |
-                                          main_write_data;
-                        else if (i >= 6)
-                            regfile[i] <= ({32{load_main}} & prediction_words[32*(i-6) +: 32]) |
-                                          main_write_data;
-                    end
-                end
-            end
-            if (!SHARED_STORAGE && state == IDLE && measurement_load) begin
-                regfile[REG_MEAS_X] <= measurement.x;
-                regfile[REG_MEAS_Y] <= measurement.y;
-                regfile[REG_MEAS_THETA] <= measurement.theta;
-                regfile[REG_MEAS_OMEGA] <= measurement.omega;
-            end
             if ((arithmetic_complete && arithmetic_failed) || (state == ISSUE_A && bad_operands)) begin
                 // No rollback bank. A failed in-place update is never published.
                 failed <= 1'b1;
                 done <= 1'b1;
                 state <= IDLE;
             end else if (arithmetic_complete || (state == ISSUE_A && uop.dp == UOP_NOP)) begin
-                if (!SHARED_STORAGE && arithmetic_complete && uop.wb_en && uop.dest <= RF_LAST)
-                    regfile[uop.dest] <= arithmetic_result;
-                if (SRAM_STORAGE)
-                    state <= FETCH;
-                else
-                    state <= ISSUE_A;
+                state <= ISSUE_A;
                 pc <= pc + 7'd1;
                 if (uop.seq == SEQ_LOOP) begin
                     if (col == 3'd4) begin
@@ -543,41 +513,15 @@ module corr_microcode #(
             end else begin
                 case (state)
                     IDLE: if (start && (SHARED_STORAGE || prediction.pred_valid)) begin
-                        if (!SHARED_STORAGE) begin
-                            {regfile[REG_X], regfile[REG_Y], regfile[REG_THETA],
-                             regfile[REG_OMEGA], regfile[REG_WHEEL_BIAS]} <= prediction[160:1];
-                            for (int i = 0; i < S_WORDS; i++)
-                                regfile[REG_S_BASE + i] <= prediction_words[i*32 +: 32];
-                        end
                         pc <= '0;
                         row <= '0;
                         col <= '0;
                         update_stage <= UPDATE_X;
-                        if (SRAM_STORAGE)
-                            state <= FETCH;
-                        else
-                            state <= ISSUE_A;
-                    end
-                    FETCH: if (spad_read_valid) begin
-                        held_a <= spad_response.a;
-                        held_b <= spad_response.b;
                         state <= ISSUE_A;
                     end
-                    COLLECT: if (spad_read_valid) begin
-                        regfile[collect_addr[4:0]] <= spad_response.a;
-                        if (collect_addr == RF_LAST)
-                            state <= PUBLISH;
-                        else
-                            collect_addr <= collect_addr == 4 ? 7'd6 : collect_addr + 7'd1;
-                    end
-                    ISSUE_A, PUBLISH: begin
+                    ISSUE_A: begin
                         if (wrap_step && !wrap_needed) begin
                             pc <= wrap_return_pc;
-                            if (SRAM_STORAGE)
-                                state <= FETCH;
-                        end else if (SRAM_STORAGE && state == ISSUE_A && uop.seq == SEQ_HALT) begin
-                            collect_addr <= '0;
-                            state <= COLLECT;
                         end else if (uop.seq == SEQ_HALT) begin
                             x_update_valid <= pc == PC_X_DONE;
                             xy_update_valid <= pc == PC_XY_DONE;
@@ -587,22 +531,16 @@ module corr_microcode #(
                                 row <= '0;
                                 col <= '0;
                                 pc <= PC_WHITEN;
-                                if (SRAM_STORAGE)
-                                    state <= FETCH;
                             end else if (ENABLE_THIRD_UPDATE && pc == PC_XY_DONE) begin
                                 update_stage <= UPDATE_XYZ;
                                 row <= '0;
                                 col <= '0;
                                 pc <= PC_HEADING_WHITEN;
-                                if (SRAM_STORAGE)
-                                    state <= FETCH;
                             end else if (ENABLE_FOURTH_UPDATE && pc == PC_XYZ_DONE) begin
                                 update_stage <= UPDATE_XYZW;
                                 row <= '0;
                                 col <= '0;
                                 pc <= PC_RATE_WHITEN;
-                                if (SRAM_STORAGE)
-                                    state <= FETCH;
                             end else begin
                                 full_update_valid <= pc == PC_FULL_DONE;
                                 done <= 1'b1;

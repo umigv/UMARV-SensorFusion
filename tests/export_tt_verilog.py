@@ -15,15 +15,15 @@ def main():
         output = Path(directory) / "design.v"
         unit.write_text(yosys_source(root) + "\n" + wrapper.read_text())
         commands = (
-            f'read_verilog -sv "{unit}"',
+            f'read_verilog -sv "{unit.name}"',
             f"hierarchy -check -top {top}",
             "proc",
             "opt_clean",
             "check -assert",
-            f'write_verilog -noattr "{output}"',
+            f'write_verilog -noattr "{output.name}"',
         )
         result = run(["yosys", "-Q", "-T", "-p", "; ".join(commands)],
-                     capture_output=True, text=True)
+                     cwd=directory, capture_output=True, text=True)
         if result.returncode:
             raise SystemExit(result.stdout + result.stderr)
         # Remove the temporary source filename from generated identifiers.
