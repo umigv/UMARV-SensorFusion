@@ -37,7 +37,8 @@ module UKF_pred_sequencer #(
     state_t state;
     logic [8:0] pc, return_pc [0:2];
     logic [1:0] depth;
-    logic success;
+    logic [3:0] sigma_idx;
+    logic success, chol_downdate;
     ukf_defs::pred_ukf_uop uop;
     localparam logic [6:0] SPAD_FIRST = 7'd21, SPAD_LAST = 7'd36;
     localparam int ANGLE_INDEX = ukf_defs::PRED_ANGLE_ARG - SPAD_FIRST;
@@ -58,8 +59,10 @@ module UKF_pred_sequencer #(
     assign prior_data[5] = wheel_velocity;
     for (genvar i = 0; i < 15; i++)
         assign prior_data[6+i] = prior_s[i];
+    assign chol_downdate = CENTRAL_DOWNDATE && (depth == 2'd1) && (return_pc[0] == 9'd49);
     pred_microcode_prog rom (
-        .pc(pc), .central_downdate(CENTRAL_DOWNDATE), .wheel_valid(wheel_valid), .uop(uop)
+        .pc(pc), .sigma_idx(sigma_idx), .chol_downdate(chol_downdate),
+        .wheel_valid(wheel_valid), .uop(uop)
     );
 
     function automatic logic [31:0] read_word(input logic [6:0] addr);
@@ -150,6 +153,7 @@ module UKF_pred_sequencer #(
         if (reset) begin
             pc <= '0;
             depth <= '0;
+            sigma_idx <= '0;
             return_pc[0] <= '0;
             return_pc[1] <= '0;
             return_pc[2] <= '0;
@@ -161,6 +165,7 @@ module UKF_pred_sequencer #(
                     working_sq[i] <= PROCESS_S[32*i +: 32];
                 pc <= '0;
                 depth <= '0;
+                sigma_idx <= '0;
                 success <= 1'b0;
                 state <= DT_VALID ? ISSUE : FINISH;
             end else if (load_correction_noise) begin
@@ -204,6 +209,14 @@ module UKF_pred_sequencer #(
                         depth <= depth - 2'd1;
                     end
                     ukf_defs::SEQ_JUMP: pc <= uop.targ_pc;
+                    ukf_defs::SEQ_LOOP: begin
+                        if (sigma_idx == 4'd9)
+                            sigma_idx <= 4'd0;
+                        else begin
+                            sigma_idx <= sigma_idx + 4'd1;
+                            pc <= uop.targ_pc;
+                        end
+                    end
                     ukf_defs::SEQ_FP_LT: if (ukf_defs::fp32_lt(a, b)) pc <= uop.targ_pc;
                     default: begin end
                 endcase

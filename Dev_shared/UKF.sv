@@ -67,10 +67,9 @@ module UKF #(
     assign reset = ~rst_n;
     assign ukf_busy = prediction_busy || correction_busy || converter_busy || convert_pending || ukf_valid;
     assign wheel_read_data = wheel_address == WHEEL_SCALE_ADDR ? WHEEL_VELOCITY_SCALE : '0;
-    assign prediction_mac_grant = backend_active && !wheel_mac_owner && !converter_busy && !convert_start;
+    assign prediction_mac_grant = backend_active && !wheel_mac_owner;
     assign prediction_div_grant = backend_active;
-    assign sensor_mac_request = wheel_mac_owner ? wheel_mac_request :
-                                prediction_mac_grant ? backend_mac_request : converter_mac_request;
+    assign sensor_mac_request = wheel_mac_owner ? wheel_mac_request : backend_mac_request;
     assign prediction_mac_response = prediction_mac_grant ? sensor_mac_response : '0;
     assign prediction_div_response = prediction_div_grant ? shared_div_response : '0;
 
@@ -157,24 +156,22 @@ module UKF #(
         .pred_pack(pred_packet), .pred_s(pred_s)
     );
 
-    vn_to_correction #(
-        .ORIGIN_LATITUDE(ORIGIN_LATITUDE), .ORIGIN_LONGITUDE(ORIGIN_LONGITUDE),
-        .EARTH_RADIUS(EARTH_RADIUS)
-    ) converter (
+    vn_to_correction converter (
         .clock(clk), .reset(reset), .start(convert_start), .packet(convert_input),
-        .busy(converter_busy), .done(convert_done), .measurement(converted),
-        .mac_request(converter_mac_request), .mac_response(sensor_mac_response),
-        .spad_request(converter_spad_request), .spad_response(correction_spad_response)
+        .busy(converter_busy), .done(convert_done),
+        .spad_request(converter_spad_request)
     );
 
     UKF_corr_engine #(
         .SHARE_MAC(1'b1), .REPORT_PRED_FAILURE(1'b1),
         .HELD_PREDICTION(1'b1), .SHARED_STORAGE(1'b1),
+        .ORIGIN_LATITUDE(ORIGIN_LATITUDE), .ORIGIN_LONGITUDE(ORIGIN_LONGITUDE),
+        .EARTH_RADIUS(EARTH_RADIUS),
         .INITIAL_STATE(INITIAL_STATE), .INITIAL_S(INITIAL_S)
     ) correction (
         .clock(clk), .reset(reset), .corr_packet(correction_packet),
         .pred_packet(pred_packet), .pred_s(pred_s), .measurement_s(active_measurement_s),
-        .load_shared_noise(load_shared_noise), .load_shared_measurement(load_shared_measurement),
+        .load_shared_noise(load_shared_noise), .load_shared_measurement(),
         .update_failed(correction_update_failed),
         .spad_request(correction_spad_request), .spad_response(correction_spad_response),
         .convert_start(convert_request), .convert_input(),
@@ -182,13 +179,16 @@ module UKF #(
         .busy(correction_busy), .done(), .failed(correction_failed),
         .x_update_valid(), .xy_update_valid(), .xyz_update_valid(),
         .ukf_output(result_packet), .corrected_s(correction_s),
-        .sensor_mac_owner(wheel_mac_owner || converter_busy || prediction_mac_grant),
+        .sensor_mac_owner(wheel_mac_owner || prediction_mac_grant),
         .prediction_div_owner(prediction_div_grant),
         .prediction_div_request(backend_div_request),
         .prediction_div_response(shared_div_response),
         .sensor_mac_request(sensor_mac_request), .sensor_mac_response(sensor_mac_response),
         .prediction_failed(prediction_failed)
     );
+    assign load_shared_measurement = 1'b0;
+    assign converted = '0;
+    assign converter_mac_request = '0;
 
     assign {ukf_x, ukf_y, ukf_theta, ukf_omega, ukf_wheelB} =
         {latest_state.ukf_x, latest_state.ukf_y, latest_state.ukf_theta,

@@ -4,6 +4,9 @@ module corr_microcode #(
     parameter bit ENABLE_FOURTH_UPDATE = 1'b1,
     parameter bit SHARE_MAC = 1'b0,
     parameter bit SHARED_STORAGE = 1'b0,
+    parameter logic [31:0] ORIGIN_LATITUDE = 32'b0,
+    parameter logic [31:0] ORIGIN_LONGITUDE = 32'b0,
+    parameter logic [31:0] EARTH_RADIUS = 32'h4ac26d70,
     parameter logic [160:0] INITIAL_STATE = '0,
     parameter logic [479:0] INITIAL_S = '0
 ) (
@@ -109,6 +112,13 @@ module corr_microcode #(
     localparam logic [6:0] PC_WRAP_INNOVATION = 7'd89;
     localparam logic [6:0] PC_WRAP_HEADING = 7'd90;
     localparam logic [6:0] PC_WRAP_RESIDUAL = 7'd91;
+    localparam logic [6:0] PC_CONVERT = 7'd92;
+    localparam logic [6:0] SRC_ORIGIN_LON = 7'd115;
+    localparam logic [6:0] SRC_ORIGIN_LAT = 7'd116;
+    localparam logic [6:0] SRC_DEG_TO_RAD = 7'd117;
+    localparam logic [6:0] SRC_EARTH_RADIUS = 7'd118;
+    localparam logic [6:0] SRC_COS_COEFF = 7'd119;
+    localparam logic [6:0] SRC_COS_SEED = 7'd120;
     logic [6:0] wrap_return_pc;
     logic wrap_step, wrap_needed;
 
@@ -310,6 +320,22 @@ module corr_microcode #(
             7'd85: begin uop.dp = ukf_defs::UOP_MAC; uop.src_a = REG_S44; uop.src_b = REG_T4; uop.dest = REG_T4; end
             PC_RATE_VARIANCE: begin uop.dp = ukf_defs::UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = REG_T4; uop.src_b = REG_T4; uop.dest = REG_TEMP; end
             PC_RATE_VECTOR: begin uop.dp = ukf_defs::UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = fourth_row_addr; uop.src_b = REG_T4; uop.dest = REG_TEMP; end
+
+            // Convert SPAD[0..3] from (lat_f32, lon_f32, yaw_f32, -rate_f32) to (x, y, theta, omega).
+            PC_CONVERT: begin uop.dp = ukf_defs::UOP_MAC; uop.src_a = SRC_ORIGIN_LAT; uop.src_b = SRC_DEG_TO_RAD; uop.dest = REG_T1; end
+            7'd93: begin uop.dp = ukf_defs::UOP_MAC; uop.src_a = REG_T1; uop.src_b = REG_T1; uop.dest = REG_T1; end
+            7'd94: begin uop.dp = ukf_defs::UOP_MAC; uop.src_a = SRC_COS_SEED; uop.src_b = ukf_defs::PROM_MATH_ONE; uop.dest = REG_T2; end
+            7'd95: begin uop.dp = ukf_defs::UOP_MAC; uop.src_a = SRC_COS_COEFF; uop.src_b = ukf_defs::PROM_MATH_ONE; uop.wb_en = 1'b0; end
+            7'd96: begin uop.dp = ukf_defs::UOP_MAC; uop.clr_acc = 1'b0; uop.src_a = REG_T2; uop.src_b = REG_T1; uop.dest = REG_T2; end
+            7'd97: begin uop.dp = ukf_defs::UOP_MAC; uop.src_a = SRC_EARTH_RADIUS; uop.src_b = SRC_DEG_TO_RAD; uop.dest = REG_T1; end
+            7'd98: begin uop.dp = ukf_defs::UOP_MAC; uop.src_a = REG_T2; uop.src_b = REG_T1; uop.dest = REG_T2; end
+            7'd99: begin uop.dp = ukf_defs::UOP_ADD; uop.neg_b = 1'b1; uop.src_a = REG_MEAS_Y; uop.src_b = SRC_ORIGIN_LON; uop.dest = REG_T3; end
+            7'd100: begin uop.dp = ukf_defs::UOP_MAC; uop.src_a = REG_T3; uop.src_b = REG_T2; uop.dest = REG_T3; end
+            7'd101: begin uop.dp = ukf_defs::UOP_ADD; uop.neg_b = 1'b1; uop.src_a = REG_MEAS_X; uop.src_b = SRC_ORIGIN_LAT; uop.dest = REG_MEAS_Y; end
+            7'd102: begin uop.dp = ukf_defs::UOP_MAC; uop.src_a = REG_MEAS_Y; uop.src_b = REG_T1; uop.dest = REG_MEAS_Y; end
+            7'd103: begin uop.dp = ukf_defs::UOP_MAC; uop.src_a = REG_T3; uop.src_b = ukf_defs::PROM_MATH_ONE; uop.dest = REG_MEAS_X; end
+            7'd104: begin uop.dp = ukf_defs::UOP_MAC; uop.src_a = ukf_defs::PROM_MATH_PI_2; uop.src_b = ukf_defs::PROM_MATH_ONE; uop.wb_en = 1'b0; end
+            7'd105: begin uop.dp = ukf_defs::UOP_MAC; uop.clr_acc = 1'b0; uop.neg_b = 1'b1; uop.src_a = REG_MEAS_THETA; uop.src_b = SRC_DEG_TO_RAD; uop.dest = REG_MEAS_THETA; end
             default: begin uop.dp = ukf_defs::UOP_NOP; uop.wb_en = 1'b0; end
         endcase
     end
@@ -332,6 +358,19 @@ module corr_microcode #(
             SRC_R24: read_operand = noise_words[6*32 +: 32];
             SRC_R34: read_operand = noise_words[8*32 +: 32];
             SRC_R44: read_operand = noise_words[9*32 +: 32];
+            SRC_ORIGIN_LON: read_operand = ORIGIN_LONGITUDE;
+            SRC_ORIGIN_LAT: read_operand = ORIGIN_LATITUDE;
+            SRC_DEG_TO_RAD: read_operand = 32'h3c8efa35;
+            SRC_EARTH_RADIUS: read_operand = EARTH_RADIUS;
+            SRC_COS_SEED: read_operand = 32'h310f76c7;
+            SRC_COS_COEFF: case (col)
+                3'd0: read_operand = 32'hb493f27e;
+                3'd1: read_operand = 32'h37d00d01;
+                3'd2: read_operand = 32'hbab60b61;
+                3'd3: read_operand = 32'h3d2aaaab;
+                3'd4: read_operand = 32'hbf000000;
+                default: read_operand = 32'h3f800000;
+            endcase
             default: read_operand = addr >= ukf_defs::PROM_MATH_BASE ? ukf_defs::prom_math_read(addr) : register_word;
         endcase
     endfunction
@@ -381,7 +420,8 @@ module corr_microcode #(
                        ((state == ISSUE_A && (uop.dp == ukf_defs::UOP_ADD || uop.dp == ukf_defs::UOP_MAC)) ||
                         state == ISSUE_B);
     assign mac_a = state == ISSUE_B ? {operand_b[31] ^ uop.neg_b, operand_b[30:0]}
-                 : {operand_a[31] ^ (uop.dp == ukf_defs::UOP_MAC && uop.neg_b), operand_a[30:0]};
+                 : (pc == 7'd98 && operand_a[31] ? 32'b0
+                 : {operand_a[31] ^ (uop.dp == ukf_defs::UOP_MAC && uop.neg_b), operand_a[30:0]});
     assign mac_b = uop.dp == ukf_defs::UOP_ADD ? ukf_defs::prom_math_read(ukf_defs::PROM_MATH_ONE) : operand_b;
 
     ukf_defs::ukf_mac_request_t correction_mac_request, active_mac_request;
@@ -533,6 +573,15 @@ module corr_microcode #(
                         pc <= PC_HEADING_VECTOR;
                     PC_HEADING_VECTOR: pc <= fourth_term ? PC_RATE_VECTOR : PC_XY_VECTOR_NEXT;
                     PC_RATE_VECTOR: pc <= PC_XY_VECTOR_NEXT;
+                    7'd96: begin
+                        if (col == 3'd5)
+                            col <= 3'd0;
+                        else begin
+                            col <= col + 3'd1;
+                            pc <= 7'd95;
+                        end
+                    end
+                    7'd105: pc <= 7'd0;
                     default: begin end
                 endcase
             end else begin
@@ -544,7 +593,7 @@ module corr_microcode #(
                             for (int i = 0; i < S_WORDS; i++)
                                 regfile[REG_S_BASE + i] <= prediction_words[i*32 +: 32];
                         end
-                        pc <= '0;
+                        pc <= SHARED_STORAGE ? PC_CONVERT : 7'd0;
                         row <= '0;
                         col <= '0;
                         update_stage <= UPDATE_X;

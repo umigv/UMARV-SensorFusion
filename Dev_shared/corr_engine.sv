@@ -6,6 +6,9 @@ module UKF_corr_engine #(
     parameter bit REPORT_PRED_FAILURE = 1'b0,
     parameter bit HELD_PREDICTION = 1'b0,
     parameter bit SHARED_STORAGE = 1'b0,
+    parameter logic [31:0] ORIGIN_LATITUDE = 32'b0,
+    parameter logic [31:0] ORIGIN_LONGITUDE = 32'b0,
+    parameter logic [31:0] EARTH_RADIUS = 32'h4ac26d70,
     parameter logic [160:0] INITIAL_STATE = '0,
     parameter logic [479:0] INITIAL_S = '0
 ) (
@@ -93,7 +96,10 @@ module UKF_corr_engine #(
         .ENABLE_THIRD_UPDATE(ENABLE_THIRD_UPDATE),
         .ENABLE_FOURTH_UPDATE(ENABLE_FOURTH_UPDATE),
         .SHARE_MAC(SHARE_MAC),
-        .SHARED_STORAGE(SHARED_STORAGE), .INITIAL_STATE(INITIAL_STATE), .INITIAL_S(INITIAL_S)
+        .SHARED_STORAGE(SHARED_STORAGE),
+        .ORIGIN_LATITUDE(ORIGIN_LATITUDE), .ORIGIN_LONGITUDE(ORIGIN_LONGITUDE),
+        .EARTH_RADIUS(EARTH_RADIUS),
+        .INITIAL_STATE(INITIAL_STATE), .INITIAL_S(INITIAL_S)
     ) correction_program (
         .clock(clock),
         .reset(reset),
