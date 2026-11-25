@@ -1,6 +1,7 @@
-// Shared read-only address map. The measurement-noise factor occupies 83..92.
-localparam logic [6:0] PROM_SR_BASE   = 7'd83;
-localparam logic [6:0] PROM_MATH_BASE = 7'd93;
+// Shared read-only address map. SQ (42..56) and SR (42..51) share the same
+// working factor bank because prediction and correction never run together.
+localparam logic [6:0] PROM_SR_BASE   = 7'd42;
+localparam logic [6:0] PROM_MATH_BASE = 7'd57;
 localparam logic [6:0] PROM_MATH_ZERO = PROM_MATH_BASE;
 localparam logic [6:0] PROM_MATH_ONE  = PROM_MATH_BASE + 7'd1;
 
@@ -20,7 +21,7 @@ localparam logic [6:0] PROM_MATH_COS_C4 = PROM_MATH_BASE + 7'd18;
 localparam logic [6:0] PROM_MATH_COS_C6 = PROM_MATH_BASE + 7'd19;
 localparam logic [6:0] PROM_MATH_TWO_PI = PROM_MATH_BASE + 7'd20;
 // Dynamic operand address used by the wrap microcode.
-localparam logic [6:0] PROM_WRAP_STEP = 7'd114;
+localparam logic [6:0] PROM_WRAP_STEP = PROM_MATH_BASE + 7'd21;
 
 function automatic logic [31:0] prom_math_read(input logic [6:0] addr);
     case (addr)

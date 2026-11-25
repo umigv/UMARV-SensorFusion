@@ -23,7 +23,7 @@ module vn_to_correction #(
         logic [53:0] rounded;
         integer unbiased, shift;
         exponent64 = word[62:52];
-        unbiased = int'(exponent64) - 1023;
+        unbiased = {21'b0, exponent64} - 1023;
         significand = {1'b1, word[51:0]};
         if (exponent64 == 11'h7ff)
             return {word[63], 8'hff, (|word[51:0] ? 23'h400000 : 23'b0)};
@@ -39,7 +39,7 @@ module vn_to_correction #(
             rounded = rounded + 1'b1;
         if (unbiased < -126)
             return {word[63], 7'b0, rounded[23:0]};
-        exponent32 = 8'(unbiased + 127 + int'(rounded[24]));
+        exponent32 = 8'(unbiased + 127 + rounded[24]);
         return {word[63], exponent32, rounded[22:0]};
     endfunction
 

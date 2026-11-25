@@ -1,0 +1,17 @@
+/tmp/ukf-trig.gY2G0w/ukf_as_supplied.sv:2516: warning: Port 1 (pc) of pred_microcode_prog expects 9 bits, got 10.
+/tmp/ukf-trig.gY2G0w/ukf_as_supplied.sv:2516:        : Pruning 1 high bits of the expression.
+/tmp/ukf-trig.gY2G0w/ukf_as_supplied.sv:2516: warning: Instantiating module pred_microcode_prog with dangling input port 2 (central_downdate) floating.
+/tmp/ukf-trig.gY2G0w/ukf_as_supplied.sv:2516: warning: Instantiating module pred_microcode_prog with dangling input port 3 (wheel_valid) floating.
+/tmp/ukf-trig.gY2G0w/ukf_as_supplied.sv:2559: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/tmp/ukf-trig.gY2G0w/ukf_as_supplied.sv:2559: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/tmp/ukf-trig.gY2G0w/ukf_as_supplied.sv:2559: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/tmp/ukf-trig.gY2G0w/ukf_as_supplied.sv:2559: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/tmp/ukf-trig.gY2G0w/ukf_as_supplied.sv:2559: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/tmp/ukf-trig.gY2G0w/ukf_as_supplied.sv:1540: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/tmp/ukf-trig.gY2G0w/ukf_as_supplied.sv:1540: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/tmp/ukf-trig.gY2G0w/ukf_as_supplied.sv:1540: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/tmp/ukf-trig.gY2G0w/ukf_as_supplied.sv:1540: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/tmp/ukf-trig.gY2G0w/ukf_as_supplied.sv:1540: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/tmp/ukf-trig.gY2G0w/ukf_as_supplied.sv:1759: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/tmp/ukf-trig.gY2G0w/ukf_as_supplied.sv:926: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/tmp/ukf-trig.gY2G0w/ukf_as_supplied.sv:926: sorry: constant selects in always_* processes are not currently supported (all bits will be included).

@@ -1,0 +1,102 @@
+OpenSTA 2.3.1 4f13a213e1 Copyright (c) 2021, Parallax Software, Inc.
+License GPLv3: GNU GPL version 3 <http://gnu.org/licenses/gpl.html>
+
+This is free software, and you are free to change and redistribute it
+under certain conditions; type `show_copying' for details. 
+This program comes with ABSOLUTELY NO WARRANTY; for details type `show_warranty'.
+Setup paths
+Startpoint: _48756_ (rising edge-triggered flip-flop clocked by core)
+Endpoint: _49240_ (rising edge-triggered flip-flop clocked by core)
+Path Group: core
+Path Type: max
+
+Fanout      Cap     Slew    Delay     Time   Description
+---------------------------------------------------------------------------------
+                   0.000    0.000    0.000   clock core (rise edge)
+                            0.000    0.000   clock network delay (ideal)
+                   0.000    0.000    0.000 ^ _48756_/CLK (sky130_fd_sc_hd__dfrtp_1)
+                   0.097    0.722    0.722 v _48756_/Q (sky130_fd_sc_hd__dfrtp_1)
+     1    0.005                              prediction.s[0] (net)
+                   0.070    0.259    0.981 v _34145_/X (sky130_fd_sc_hd__buf_6)
+     9    0.028                              _07545_ (net)
+                   0.170    0.305    1.286 v _34155_/Y (sky130_fd_sc_hd__xnor2_2)
+     6    0.014                              _07554_ (net)
+                   0.517    0.496    1.782 ^ _34157_/Y (sky130_fd_sc_hd__nor2_1)
+     7    0.017                              _07556_ (net)
+                   0.473    0.585    2.367 ^ _34158_/X (sky130_fd_sc_hd__clkbuf_1)
+    10    0.025                              _07557_ (net)
+                   0.491    0.585    2.952 ^ _34159_/X (sky130_fd_sc_hd__clkbuf_1)
+    10    0.026                              _07558_ (net)
+                   0.155    0.289    3.241 v _38975_/Y (sky130_fd_sc_hd__nand3_1)
+     1    0.003                              _11681_ (net)
+                   0.120    0.498    3.739 v _38982_/X (sky130_fd_sc_hd__a41o_1)
+     4    0.009                              _11688_ (net)
+                   0.107    0.152    3.892 ^ _38983_/Y (sky130_fd_sc_hd__nand2_1)
+     2    0.005                              _11689_ (net)
+                   0.092    0.092    3.983 v _38984_/Y (sky130_fd_sc_hd__nor3_1)
+     1    0.003                              _11690_ (net)
+                   0.138    0.154    4.137 ^ _38985_/Y (sky130_fd_sc_hd__nand4b_1)
+     1    0.003                              _11691_ (net)
+                   0.169    0.237    4.374 v _38998_/Y (sky130_fd_sc_hd__o311ai_1)
+     1    0.003                              _11704_ (net)
+                   0.795    0.782    5.156 ^ _39064_/Y (sky130_fd_sc_hd__a211oi_1)
+     5    0.013                              _11770_ (net)
+                   0.216    0.617    5.772 ^ _39065_/Y (sky130_fd_sc_hd__nor2b_4)
+     6    0.017                              _11771_ (net)
+                   0.912    0.809    6.581 v _39069_/Y (sky130_fd_sc_hd__nand3b_1)
+    10    0.039                              _11775_ (net)
+                   0.691    0.899    7.480 ^ _39630_/Y (sky130_fd_sc_hd__o221ai_1)
+     5    0.014                              _11984_ (net)
+                   0.652    0.754    8.235 ^ _39653_/X (sky130_fd_sc_hd__clkbuf_1)
+    10    0.035                              _11987_ (net)
+                   0.103    0.855    9.090 v _39655_/X (sky130_fd_sc_hd__mux2_1)
+     1    0.002                              _01317_ (net)
+                   0.103    0.003    9.093 v _49240_/D (sky130_fd_sc_hd__dfxtp_1)
+                                     9.093   data arrival time
+
+                   0.000    2.500    2.500   clock core (rise edge)
+                            0.000    2.500   clock network delay (ideal)
+                            0.000    2.500   clock reconvergence pessimism
+                                     2.500 ^ _49240_/CLK (sky130_fd_sc_hd__dfxtp_1)
+                           -0.302    2.198   library setup time
+                                     2.198   data required time
+---------------------------------------------------------------------------------
+                                     2.198   data required time
+                                    -9.093   data arrival time
+---------------------------------------------------------------------------------
+                                    -6.895   slack (VIOLATED)
+
+
+worst slack -6.895
+tns -14135.438
+Hold paths
+Startpoint: ukf_dw_delta[1] (input port clocked by core)
+Endpoint: _48701_ (rising edge-triggered flip-flop clocked by core)
+Path Group: core
+Path Type: min
+
+   Delay     Time   Description
+-----------------------------------------------------------
+   0.000    0.000   clock core (rise edge)
+   0.000    0.000   clock network delay (ideal)
+   0.000    0.000 ^ input external delay
+   0.000    0.000 ^ ukf_dw_delta[1] (in)
+   0.068    0.068 v _36637_/Y (sky130_fd_sc_hd__nand2_1)
+   0.110    0.178 ^ _36638_/Y (sky130_fd_sc_hd__o21ai_1)
+   0.004    0.182 ^ _48701_/D (sky130_fd_sc_hd__dfrtp_1)
+            0.182   data arrival time
+
+   0.000    0.000   clock core (rise edge)
+   0.000    0.000   clock network delay (ideal)
+   0.000    0.000   clock reconvergence pessimism
+            0.000 ^ _48701_/CLK (sky130_fd_sc_hd__dfrtp_1)
+  -0.098   -0.098   library hold time
+           -0.098   data required time
+-----------------------------------------------------------
+           -0.098   data required time
+           -0.182   data arrival time
+-----------------------------------------------------------
+            0.280   slack (MET)
+
+
+worst slack 0.280

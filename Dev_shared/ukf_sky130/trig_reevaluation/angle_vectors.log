@@ -1,0 +1,3 @@
+prediction angle vectors passed; max wrap reductions 7
+zero-angle wrap/sine/cosine cycles: 4/158/185; wrap(pi): 76
+/tmp/ukf-trig.gY2G0w/angle_vectors.sv:5061: $finish called at 8581821 (1s)

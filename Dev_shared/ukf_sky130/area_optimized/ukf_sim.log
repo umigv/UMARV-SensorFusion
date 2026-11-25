@@ -1,0 +1,4 @@
+Beat to prediction start: 35 cycles
+Beat to PC 232: 126 cycles
+Prediction stalled at UOP_TRIG, PC 232. No completed update.
+/tmp/ukf-rtl-test.VODVyM/area_final.sv:2820: $finish called at 2290 (1s)

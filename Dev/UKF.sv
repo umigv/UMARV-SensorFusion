@@ -62,7 +62,7 @@ module UKF #(
     output ukf_divsqrt_response_t prediction_div_response,
     output logic                  prediction_div_grant
 );
-    localparam logic [6:0] WHEEL_SCALE_ADDR = 7'd95;
+    localparam logic [6:0] WHEEL_SCALE_ADDR = PROM_MATH_BASE + 7'd2;
 
     logic reset, prediction_busy, backend_active, correction_busy, prediction_failed, correction_failed;
     logic wheel_mac_owner, converter_busy, convert_request, convert_pending, convert_start, convert_done;

@@ -1,0 +1,2 @@
+result ukf_busy=0 ukf_valid=0 ukf_failed=0 reinit=1
+/tmp/ukf-trig.gY2G0w/user_extended.sv:33: $finish called at 369680000 (1ps)

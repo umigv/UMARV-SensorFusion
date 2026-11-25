@@ -1,0 +1,13 @@
+pred_sequencer.sv:106: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+pred_sequencer.sv:106: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+pred_sequencer.sv:106: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+pred_sequencer.sv:106: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+pred_sequencer.sv:106: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+int_to_fp32.sv:19: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+int_to_fp32.sv:19: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+int_to_fp32.sv:19: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+int_to_fp32.sv:19: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+int_to_fp32.sv:19: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+pred_engine.sv:110: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+corr_microcode.sv:164: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+corr_microcode.sv:164: sorry: constant selects in always_* processes are not currently supported (all bits will be included).

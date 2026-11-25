@@ -1,0 +1,7 @@
+PRED 0 max state error 5.960464477539063e-08 max covariance error 2.3033042265141468e-08
+CORR 0 max state error 7.05240946197172e-08 max covariance error 1.0187881947787414e-08
+PRED 1 max state error 7.052409456420605e-08 max covariance error 5.505817156359338e-09
+CORR 1 max state error 5.9032698951355655e-08 max covariance error 3.7143780481918576e-09
+PRED 2 max state error 8.891947844702486e-08 max covariance error 2.8877051722053793e-09
+CORR 2 max state error 5.050522533522894e-08 max covariance error 2.3896397499667543e-09
+PRED 3 max state error 6.817405795445097e-08 max covariance error 1.5225403845672836e-09

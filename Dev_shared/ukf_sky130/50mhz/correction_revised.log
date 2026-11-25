@@ -1,0 +1,12 @@
+/tmp/ukf-rtl-test.VODVyM/perf_revised/correction_sources.sv:1015: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+/tmp/ukf-rtl-test.VODVyM/perf_revised/correction_sources.sv:1015: sorry: constant selects in always_* processes are not currently supported (all bits will be included).
+PASS stalls 1629710 305710
+case 27: fourth stage rejected at row, PC [3, 14]
+case 28: fourth stage rejected at row, PC [0, 62]
+successful cases: 18
+baseline core stages: [20538, 20779, 22508, 24316]; total 88141
+baseline engine cycles: 88147
+fourth / total core ranges: 24255–24637 / 85860–88405
+max absolute error vs sequential FP32: 0
+max absolute state error vs joint update: 4.59107855e-07
+max absolute covariance error vs joint update: 1.78938516e-06

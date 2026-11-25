@@ -19,8 +19,8 @@ module UKF_TEMP (
     output logic        [31:0] ukf_wheelB
 );
 
-    // SR matrix entries 83 through 92.
-    localparam logic [6:0] PROM_SR_BASE = 7'd83;
+    // SR matrix entries 42 through 51 (shared with prediction SQ 42..56).
+    localparam logic [6:0] PROM_SR_BASE = 7'd42;
 
     logic reset;
     meas_regfile_t time_pack;

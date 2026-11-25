@@ -1,0 +1,108 @@
+OpenSTA 2.3.1 4f13a213e1 Copyright (c) 2021, Parallax Software, Inc.
+License GPLv3: GNU GPL version 3 <http://gnu.org/licenses/gpl.html>
+
+This is free software, and you are free to change and redistribute it
+under certain conditions; type `show_copying' for details. 
+This program comes with ABSOLUTELY NO WARRANTY; for details type `show_warranty'.
+Setup paths
+Startpoint: _46845_ (rising edge-triggered flip-flop clocked by core)
+Endpoint: _46830_ (rising edge-triggered flip-flop clocked by core)
+Path Group: core
+Path Type: max
+
+Fanout      Cap     Slew    Delay     Time   Description
+---------------------------------------------------------------------------------
+                   0.000    0.000    0.000   clock core (rise edge)
+                            0.000    0.000   clock network delay (ideal)
+                   0.000    0.000    0.000 ^ _46845_/CLK (sky130_fd_sc_hd__dfrtp_1)
+                   0.048    0.232    0.232 v _46845_/Q (sky130_fd_sc_hd__dfrtp_1)
+     4    0.009                              correction.correction_program.state[1] (net)
+                   0.035    0.113    0.345 v _29207_/X (sky130_fd_sc_hd__buf_4)
+    10    0.024                              _17023_ (net)
+                   0.050    0.186    0.531 v _29229_/X (sky130_fd_sc_hd__o31a_1)
+     3    0.007                              _17045_ (net)
+                   0.331    0.311    0.841 ^ _29242_/Y (sky130_fd_sc_hd__nor4_1)
+     5    0.010                              _17058_ (net)
+                   0.213    0.184    1.025 ^ _29243_/X (sky130_fd_sc_hd__clkbuf_1)
+    10    0.024                              _17059_ (net)
+                   0.082    0.093    1.118 v _29244_/Y (sky130_fd_sc_hd__o21ai_1)
+     4    0.010                              _17060_ (net)
+                   0.324    0.292    1.410 ^ _29247_/Y (sky130_fd_sc_hd__a211oi_1)
+     5    0.013                              _17063_ (net)
+                   0.228    0.195    1.605 ^ _29248_/X (sky130_fd_sc_hd__clkbuf_1)
+    10    0.026                              _17064_ (net)
+                   0.227    0.196    1.801 ^ _29803_/X (sky130_fd_sc_hd__clkbuf_1)
+    10    0.026                              _17610_ (net)
+                   0.071    0.075    1.876 v _29805_/Y (sky130_fd_sc_hd__a22oi_1)
+     2    0.005                              _17612_ (net)
+                   0.055    0.080    1.956 ^ _29818_/Y (sky130_fd_sc_hd__nand4_1)
+     1    0.003                              _17625_ (net)
+                   0.044    0.082    2.038 ^ _29839_/X (sky130_fd_sc_hd__a21o_1)
+     2    0.005                              _17646_ (net)
+                   0.023    0.028    2.067 v _33420_/Y (sky130_fd_sc_hd__nand2_1)
+     1    0.003                              _06834_ (net)
+                   0.054    0.066    2.133 ^ _33422_/Y (sky130_fd_sc_hd__nor2_1)
+     1    0.003                              _06836_ (net)
+                   0.028    0.044    2.177 v _33425_/Y (sky130_fd_sc_hd__a21oi_1)
+     1    0.003                              _06839_ (net)
+                   0.071    0.078    2.254 ^ _33427_/Y (sky130_fd_sc_hd__o21ai_1)
+     1    0.003                              _06841_ (net)
+                   0.063    0.076    2.331 v _33429_/Y (sky130_fd_sc_hd__a21oi_1)
+     5    0.012                              _06843_ (net)
+                   0.232    0.216    2.547 ^ _33545_/Y (sky130_fd_sc_hd__o211ai_1)
+     4    0.013                              _06956_ (net)
+                   0.065    0.050    2.596 v _33584_/Y (sky130_fd_sc_hd__nor3_1)
+     2    0.006                              _06994_ (net)
+                   0.028    0.097    2.694 v _33586_/Y (sky130_fd_sc_hd__nand2b_1)
+     1    0.003                              _06996_ (net)
+                   0.031    0.150    2.844 v _33623_/X (sky130_fd_sc_hd__a221o_1)
+     1    0.002                              _00260_ (net)
+                   0.031    0.004    2.848 v _46830_/D (sky130_fd_sc_hd__dfxtp_1)
+                                     2.848   data arrival time
+
+                   0.000    2.500    2.500   clock core (rise edge)
+                            0.000    2.500   clock network delay (ideal)
+                            0.000    2.500   clock reconvergence pessimism
+                                     2.500 ^ _46830_/CLK (sky130_fd_sc_hd__dfxtp_1)
+                           -0.073    2.427   library setup time
+                                     2.427   data required time
+---------------------------------------------------------------------------------
+                                     2.427   data required time
+                                    -2.848   data arrival time
+---------------------------------------------------------------------------------
+                                    -0.421   slack (VIOLATED)
+
+
+worst slack -0.421
+tns -362.817
+Hold paths
+Startpoint: ukf_dw_delta[1] (input port clocked by core)
+Endpoint: _48701_ (rising edge-triggered flip-flop clocked by core)
+Path Group: core
+Path Type: min
+
+   Delay     Time   Description
+-----------------------------------------------------------
+   0.000    0.000   clock core (rise edge)
+   0.000    0.000   clock network delay (ideal)
+   0.000    0.000 ^ input external delay
+   0.000    0.000 ^ ukf_dw_delta[1] (in)
+   0.020    0.020 v _36637_/Y (sky130_fd_sc_hd__nand2_1)
+   0.041    0.062 ^ _36638_/Y (sky130_fd_sc_hd__o21ai_1)
+   0.004    0.066 ^ _48701_/D (sky130_fd_sc_hd__dfrtp_1)
+            0.066   data arrival time
+
+   0.000    0.000   clock core (rise edge)
+   0.000    0.000   clock network delay (ideal)
+   0.000    0.000   clock reconvergence pessimism
+            0.000 ^ _48701_/CLK (sky130_fd_sc_hd__dfrtp_1)
+  -0.021   -0.021   library hold time
+           -0.021   data required time
+-----------------------------------------------------------
+           -0.021   data required time
+           -0.066   data arrival time
+-----------------------------------------------------------
+            0.087   slack (MET)
+
+
+worst slack 0.087

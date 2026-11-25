@@ -41,10 +41,11 @@ module UKF_pred_sequencer #(
     logic success;
     pred_ukf_uop uop;
     localparam logic [6:0] SPAD_FIRST = 7'd21, SPAD_LAST = 7'd36;
-    localparam int ANGLE_INDEX = int'(PRED_ANGLE_ARG) - int'(SPAD_FIRST);
+    localparam int ANGLE_INDEX = PRED_ANGLE_ARG - SPAD_FIRST;
     logic [31:0] spad [0:15];
     logic [31:0] prior_data [0:20];
     logic [3:0] spad_addr_a, spad_addr_b;
+    logic [6:0] sq_addr_a, sq_addr_b, sq_dest;
     logic [31:0] working_sq [0:14];
 
     logic [31:0] a, b, signed_b, result_word;
@@ -58,20 +59,19 @@ module UKF_pred_sequencer #(
     assign prior_data[5] = wheel_velocity;
     for (genvar i = 0; i < 15; i++)
         assign prior_data[6+i] = prior_s[i];
-    pred_microcode_prog rom (.pc(pc), .central_downdate(CENTRAL_DOWNDATE),
-                            .wheel_valid(wheel_valid), .uop(uop));
+    pred_microcode_prog rom (.pc({1'b0, pc}), .uop(uop));
 
     function automatic logic [31:0] read_word(input logic [6:0] addr);
         case (addr)
-            7'd64: return SIGMA_SCALE;
-            7'd65: return W_NONCENTRAL;
-            7'd66: return W_MEAN_CENTRAL;
-            7'd67: return SQRT_ABS_W_CENTRAL;
-            7'd83: return SQRT_W_NONCENTRAL;
-            7'd95: return DT;
+            7'd37: return SQRT_W_NONCENTRAL;
+            7'd38: return SIGMA_SCALE;
+            7'd39: return W_NONCENTRAL;
+            7'd40: return W_MEAN_CENTRAL;
+            7'd41: return SQRT_ABS_W_CENTRAL;
+            PROM_MATH_BASE + 7'd2: return DT;
             // Normal positive sample intervals are required. Scaling by
             // one half is exact for normal inputs above the minimum exponent.
-            7'd96: return {1'b0, DT[30:23] - 8'd1, DT[22:0]};
+            PROM_MATH_BASE + 7'd3: return {1'b0, DT[30:23] - 8'd1, DT[22:0]};
             default: return prom_math_read(addr);
         endcase
     endfunction
@@ -81,7 +81,7 @@ module UKF_pred_sequencer #(
     );
         if (addr < SPAD_FIRST) return prior_word;
         if (addr >= SPAD_FIRST && addr <= SPAD_LAST) return scratch_word;
-        if (addr >= 68 && addr < 83) return sq_word;
+        if (addr >= 7'd42 && addr < 7'd57) return sq_word;
         if (addr == PROM_WRAP_STEP) return angle_wrap_step(wrap_word);
         return read_word(addr);
     endfunction
@@ -91,12 +91,15 @@ module UKF_pred_sequencer #(
     assign spad_addr_b = correction_spad_request.active ? correction_spad_request.read_b :
                          uop.src_b[3:0] - SPAD_FIRST[3:0];
     assign correction_spad_response = {spad[spad_addr_a], spad[spad_addr_b], spad[2][31]};
+    assign sq_addr_a = uop.src_a - 7'd42;
+    assign sq_addr_b = uop.src_b - 7'd42;
+    assign sq_dest = uop.dest - 7'd42;
     assign a = operand(uop.src_a, prior_data[uop.src_a[4:0]],
                        spad[spad_addr_a],
-                       working_sq[uop.src_a[3:0] - 4'd4], spad[ANGLE_INDEX]);
+                       working_sq[sq_addr_a[3:0]], spad[ANGLE_INDEX]);
     assign b = operand(uop.src_b, prior_data[uop.src_b[4:0]],
                        spad[spad_addr_b],
-                       working_sq[uop.src_b[3:0] - 4'd4], spad[ANGLE_INDEX]);
+                       working_sq[sq_addr_b[3:0]], spad[ANGLE_INDEX]);
     assign signed_b = {b[31] ^ uop.neg_b, b[30:0]};
 
     always_comb begin
@@ -178,8 +181,8 @@ module UKF_pred_sequencer #(
                 if (write_result) begin
                     if (uop.dest >= SPAD_FIRST && uop.dest <= SPAD_LAST)
                         spad[uop.dest[3:0] - SPAD_FIRST[3:0]] <= result_word;
-                    else if (uop.dest >= 68 && uop.dest < 83)
-                        working_sq[uop.dest[3:0] - 4'd4] <= result_word;
+                    else if (uop.dest >= 7'd42 && uop.dest < 7'd57)
+                        working_sq[sq_dest[3:0]] <= result_word;
                 end
                 state <= ISSUE;
                 pc <= pc + 9'd1;
