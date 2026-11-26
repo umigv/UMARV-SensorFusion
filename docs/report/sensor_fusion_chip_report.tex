@@ -500,7 +500,7 @@ extra clock, and the constraints declare a two-clock path (\texttt{set\_multicyc
 named nets and the named buffer pins. In simulation the value is forced unknown during the wait,
 so any logic that used it early would fail the tests.
 
-\section{Future-proofing and next steps}
+\section{Future-proofing}
 
 The filter's program is fixed in the layout, so flexibility was put where it costs little.
 \begin{itemize}
@@ -520,13 +520,5 @@ writes the state.
 sixth state would need an update of roughly 3.2\,ms (estimate), which does not fit 400\,Hz, and a
 host-writable step table would need about 45--50\,kbit of latches (estimate), which does not fit
 the area.
-
-\textbf{Next steps.}
-\begin{itemize}
-\item Finish the Genesys~2 FPGA tests against the real VN-300, AMT22 and VLP-16; the message
-layout, CRC byte order, encoder check bits and heading conventions come from datasheets.
-\item Bring up the silicon: ID register, sensor reads, filter words, then lidar frames end to end.
-\item With more area in a next revision: a writable step table and a host measurement input.
-\end{itemize}
 
 \end{document}
