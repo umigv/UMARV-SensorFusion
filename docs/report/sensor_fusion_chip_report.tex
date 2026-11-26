@@ -125,7 +125,6 @@ Wheel radius as fifth state & Additive speed-bias state &
 A wrong radius gives a speed error proportional to speed. A bias models a constant offset, which
 fits at one speed only.\\
 Unscented filter & Extended Kalman filter &
-Accuracy is the same in simulation (Table~\ref{tab:acc}), so the choice rests on implementation.
 The extended filter needs the Jacobian of the motion model: a second set of expressions to derive,
 program and verify. The unscented filter reuses the one model routine, at the cost of 22 model
 evaluations per update, which the time budget covers.\\
@@ -531,8 +530,7 @@ The step table that is in the chip was executed in single precision on a simulat
 six runs with different sensor errors, at 400\,Hz. The VN-300's position and heading errors
 drift slowly (1\,m RMS with a 14\,s correlation time; $1^\circ$ with 72\,s), the encoder is
 quantised to 14 bits, and the true wheel radius is 1.5\,\% larger than the nominal value the
-filter starts from. A double-precision square-root unscented filter and a double-precision
-extended Kalman filter were given the same samples and the same $Q$ and $R$
+filter starts from. A double-precision square-root unscented filter was given the same samples and the same $Q$ and $R$
 (Table~\ref{tab:acc}, Fig.~\ref{fig:eval}).
 
 \begin{table}[!htb]
@@ -545,7 +543,6 @@ extended Kalman filter were given the same samples and the same $Q$ and $R$
  & (m) & (deg) & at end (\%)\\
 \midrule
 VN-300 alone & 0.937 & 0.629 & 1.48 (fixed)\\
-Extended, 64-bit float & 0.872 & 0.545 & $\le0.67$\\
 Unscented, 64-bit float & 0.873 & 0.546 & $\le0.67$\\
 Chip program, 32-bit float & 0.876 & 0.552 & $\le0.67$\\
 \bottomrule
