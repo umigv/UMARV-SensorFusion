@@ -371,19 +371,26 @@ main difficulty: the chip is limited by routing congestion, not by timing.
 \begin{center}\small
 \begin{tabular}{@{}lr@{\qquad\qquad}lr@{}}
 \toprule
+Die & $1.378\times0.511$\,mm & Clock & 50\,MHz (20\,ns)\\
 Core area & 0.694\,mm$^2$ & Setup slack, typical (1.80\,V, 25\,\textdegree C) & $+8.94$\,ns\\
 Placement utilisation & 78.2\,\% & Setup slack, slow (1.60\,V, 100\,\textdegree C) & $+3.33$\,ns\\
 Logic cells & 58,100 & Worst hold slack, nine corners & $+0.10$\,ns\\
-Flip-flops / latches & 3,747 / 6,484 & Antenna violations & 0\\
-Routed wire & 2.1\,m & DRC, LVS, Tiny Tapeout precheck & clean\\
+Flip-flops / latches & 3,747 / 6,484 & Routed wire & 2.1\,m\\
 \bottomrule
 \end{tabular}
 \end{center}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.66\linewidth]{layout.jpg}
-\caption{The routed layout, $8\times4$ tiles, as rendered by the Tiny Tapeout flow.}
+\includegraphics[width=0.6\linewidth]{floorplan.png}\\[3pt]
+{\scriptsize
+\newcommand{\sw}[2]{\tikz[baseline=-0.6ex]\fill[#1] (0,-0.9mm) rectangle (2.6mm,0.9mm);\,#2\quad}
+\definecolor{fpA}{HTML}{90CDF4}\definecolor{fpB}{HTML}{2B6CB0}\definecolor{fpC}{HTML}{C05621}\definecolor{fpD}{HTML}{F6AD55}
+\definecolor{fpE}{HTML}{F6E05E}\definecolor{fpF}{HTML}{68D391}\definecolor{fpG}{HTML}{B794F4}
+\sw{fpA}{lidar logic 41\,\%}\sw{fpB}{lidar point buffer 23\,\%}\sw{fpC}{filter storage 14\,\%}\sw{fpD}{step table 4\,\%}\\[1pt]
+\sw{fpE}{filter arithmetic and sequencer 7\,\%}\sw{fpF}{host registers 7\,\%}\sw{fpG}{timestamper 4\,\%}}
+\caption{Placement by block, drawn from the final layout. Each cell is one rectangle; shares are of
+logic cell area. Cells without a block name are assigned by connectivity, so boundaries are approximate.}
 \label{fig:layout}
 \end{figure}
 
