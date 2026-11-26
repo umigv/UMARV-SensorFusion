@@ -57,13 +57,19 @@ Jimmy Xu, Adam Marrakchi, Will Kletzka}
 \section{Overview}
 
 The chip is the sensor front end of a ground robot. On a fixed 400\,Hz beat it triggers a VectorNav
-VN-300 (GNSS and inertial) and reads an encoder on a free-rolling dead wheel, so both measurements
-belong to the same instant. A five-state square-root unscented Kalman filter (SR-UKF) fuses them
-in IEEE single precision. The chip also sits in line between a Velodyne lidar and the computer:
-it converts every return to $x,y,z$, removes the smear caused by the robot moving during a sweep,
-and stamps each outgoing packet with the filter state. A microcontroller configures it over SPI.
+VN-300 (satellite positioning plus inertial sensors) and reads an encoder on a free-rolling dead
+wheel. A five-state square-root unscented Kalman filter (SR-UKF) fuses them in IEEE single
+precision. The chip also sits in line between a Velodyne lidar and the computer: it converts every
+return to $x,y,z$, removes the distortion caused by the robot moving during a sweep, and stamps
+each outgoing packet with the filter state (Fig.~\ref{fig:system}).
 
-\begin{figure}[H]
+Two facts shaped every decision. \textbf{Area is the scarce resource:} the design fills
+$8\times4$ Tiny Tapeout tiles and is limited by routing congestion. \textbf{Time is plentiful in
+the filter and scarce in the lidar path:} a 400\,Hz beat is 125,000 clocks, while lidar returns
+arrive every 172 clocks. So the filter is built to be as small as possible and merely fast
+enough, and dedicated arithmetic is spent only on the lidar path.
+
+\begin{figure}[!htb]
 \centering
 \begin{tikzpicture}[node distance=5mm and 14mm]
   % chip blocks
@@ -94,21 +100,24 @@ and stamps each outgoing packet with the filter state. A microcontroller configu
   \draw[ctrl,<->] (reg.west) -| (ts.south);
   \draw[ctrl,<->] (reg.east) -| (lb.south);
 \end{tikzpicture}
-\caption{System. Solid: data. Dashed: settings in, status out.}
+\caption{System. Solid: data. Dashed: settings in, status out. PHY: Ethernet physical-layer transceiver. MII: media-independent interface, the 4-bit link between a PHY and the chip. SPI: serial peripheral interface.}
 \label{fig:system}
 \end{figure}
 
 \section{Architecture}
 
-\subsection{Timestamper}
-A microsecond counter produces a beat every 2,500\,\textmu s. On each beat the block pulses the
-VN-300's SyncIn pin for 10\,\textmu s and reads the AMT22 encoder over SPI. It parses the VN-300's
-56-byte binary reply at 921,600 baud (yaw, turn rate, latitude, longitude, status), checks its
-CRC, and checks the encoder's parity bits. When both have answered, or at a 2,000\,\textmu s
-deadline, it raises one pulse with a valid bit per sensor. Values are passed on as the sensors
-send them; conversion to the filter's units is done by the filter.
+\subsection{Timestamper: one instant for every measurement}
+A filter that fuses two sensors needs to know they describe the same moment. Left free-running,
+the VN-300 and the encoder would be sampled up to one period (2.5\,ms) apart, and the lidar would
+have no clock in common with either. The timestamper therefore owns time for the whole chip
+(Fig.~\ref{fig:ts}). Every 2,500\,\textmu s it pulses the VN-300's sync input, which triggers that
+sensor's measurement, and starts the encoder read in the same clock. It checks the VN-300
+message's CRC (cyclic redundancy check) and the encoder's parity bits, and hands the filter one
+pulse with a valid bit per sensor. A deadline of 2,000\,\textmu s bounds the wait: a late or
+corrupted sensor costs that sensor's update for one beat and never stalls the filter. The same
+microsecond counter stamps lidar sweeps.
 
-\begin{figure}[H]
+\begin{figure}[!htb]
 \centering
 \begin{tikzpicture}[node distance=3.5mm and 9mm]
   \node[box] (tb) {Time base\\\textmu s tick, beat};
@@ -140,36 +149,77 @@ send them; conversion to the filter's units is done by the filter.
 
 \subsection{Kalman filter}
 
-\textbf{Model.} The state is $\mathbf{x}=[x,\;y,\;\theta,\;\omega,\;r]^{\mathsf T}$: position east
-and north of the first fix, heading, turn rate, and the dead wheel's radius. Estimating $r$ lets
-the filter calibrate the odometry against GNSS. With $\Delta\phi$ the wheel rotation in one beat
-and $\Delta t=2.5$\,ms,
+\textbf{Conventions.} Position is $x$ east and $y$ north of the first position fix, in metres.
+Heading $\theta$ is measured from east and is positive anticlockwise, so turning from east towards
+north increases $\theta$; the turn rate $\omega$ has the same sign. The state is
+$\mathbf{x}=[x,\;y,\;\theta,\;\omega,\;r]^{\mathsf T}$, where $r$ is the dead wheel's radius.
+
+\textbf{Prediction} carries the estimate from beat $k-1$ to beat $k$ using the wheel rotation
+$\Delta\phi_k$ measured in that beat and $\Delta t=2.5$\,ms. A superscript minus marks a value
+predicted before the measurements of beat $k$ are applied:
+\begin{align*}
+\bar\theta &= \theta_{k-1}+\tfrac12\,\omega_{k-1}\Delta t &&\text{heading at the middle of the beat}\\
+x_k^- &= x_{k-1}+r_{k-1}\,\Delta\phi_k\cos\bar\theta, \qquad
+y_k^- = y_{k-1}+r_{k-1}\,\Delta\phi_k\sin\bar\theta &&\text{distance rolled, along that heading}\\
+\theta_k^- &= \theta_{k-1}+\omega_{k-1}\Delta t, \qquad \omega_k^-=\omega_{k-1}, \qquad r_k^-=r_{k-1}
+\end{align*}
+\textbf{Correction} applies the VN-300's four readings $z_i$ (position east, position north,
+heading, turn rate), each of which measures one state directly, with noise variance $R_i$. With
+$P=S^{\mathsf T}S$ the covariance, for $i=1\ldots4$ in turn:
 \begin{equation*}
-\theta_m=\theta+\tfrac12\omega\Delta t,\qquad
-x' = x + r\,\Delta\phi\cos\theta_m,\qquad
-y' = y + r\,\Delta\phi\sin\theta_m,\qquad
-\theta'=\theta+\omega\Delta t .
+e = z_i - x_i^- \;\;(\text{wrapped to } (-\pi,\pi] \text{ for heading}), \qquad
+\mathbf{k} = \frac{P_{\cdot i}}{P_{ii}+R_i}, \qquad
+\mathbf{x}\leftarrow\mathbf{x}+\mathbf{k}\,e, \qquad
+P\leftarrow P-\mathbf{k}\,P_{i\cdot} .
 \end{equation*}
-The VN-300 supplies $\mathbf{z}=[x,\;y,\;\theta,\;\omega]^{\mathsf T}$, each a direct reading of
-one state. The covariance is carried as a triangular square root $S$ (15 values), never as $P$.
+The VN-300 reports yaw in degrees clockwise from north, so the filter converts it with
+$\theta=\pi/2-\text{yaw}$ (in radians) and flips the sign of the turn rate.
 
-\textbf{Prediction.} There are $2n+1=11$ sigma points ($\alpha=0.5$, $\beta=2$, $\kappa=0$). They
-are generated one at a time from $\hat{\mathbf x}$ and a column of $S$ and never stored. A first
-pass accumulates the mean; a second regenerates each point and folds its weighted deviation into a
-new factor that starts from the process-noise square root. That takes ten rank-one Cholesky
-updates and one downdate for the centre point, whose covariance weight is negative.
+\textbf{Why this filter, built this way.} Each choice below was made against a concrete
+alternative.
 
-\textbf{Correction.} Because each measurement reads one state, the four are applied one after
-another as scalar updates, each ending in a rank-one downdate of $S$. Heading differences are
-wrapped to $(-\pi,\pi]$. A downdate whose radicand would go non-positive is clamped, so the factor
-stays finite. This gives the same result as the reference filter (QR factorisation and a $4\times4$
-solve) to rounding.
+\begin{center}\footnotesize
+\begin{tabularx}{\linewidth}{@{}p{0.2\linewidth}p{0.2\linewidth}X@{}}
+\toprule
+Choice & Alternative & Reason\\
+\midrule
+Wheel radius as the fifth state & Fixed radius, or an additive speed bias &
+Odometry error from a worn or mis-measured wheel is a scale error. Estimating the scale lets
+satellite positioning calibrate the wheel, so dead reckoning stays accurate when the fix is lost.\\
+Unscented filter & Extended Kalman filter &
+No Jacobians: the motion model is one subroutine, called once per sigma point. On this machine
+extra evaluations cost time, which is spare, not area.\\
+Square-root form & Propagating $P$ &
+In single precision $P$ can lose symmetry or go indefinite. Carrying $S$ keeps $P=S^{\mathsf T}S$
+valid by construction and halves the dynamic range of the numbers.\\
+Single precision floating point & 32-bit fixed point &
+Simulation showed fixed point loses the small corrections made at 400\,Hz; single precision
+matches double.\\
+Four scalar corrections & One $4\times4$ update &
+Each measurement reads one state and their noises are independent, so the results are identical,
+and no matrix solve or QR factorisation is needed.\\
+Rank-one updates of $S$ & QR factorisation of all sigma points &
+Same factor, one small routine reused 11 times, and the 11 sigma points need never be stored:
+they are regenerated, which saves 55 words of storage for about twice the model evaluations.\\
+Sine and cosine by series & CORDIC block &
+A six-term Maclaurin series after folding into $\pm\pi/2$ runs on the existing arithmetic unit
+and reaches single-precision resolution (error $6\times10^{-8}$). It adds about 20 steps and no hardware.\\
+\bottomrule
+\end{tabularx}
+\end{center}
 
-\textbf{Machine.} The filter is a small stored-program machine (Fig.~\ref{fig:machine}), not a
-dedicated datapath. One step is $d = a \;\mathrm{op}\; b$ or a jump, call or return. The program and
-its constants are generated by a Python script that also contains a bit-exact model of the machine.
+\textbf{A stored-program machine, not a datapath.} The team's first design used a dedicated
+multiply-accumulate unit and a divide/square-root unit. The filter needs about 3,200 operations
+per beat and has 125,000 clocks to do them in, so any unit faster than about 39 clocks per
+operation buys nothing. The chip instead has one bit-serial unit built around a single 29-bit
+adder (30 to 80 clocks per operation), a table of 545 steps of the form $d=a\;\mathrm{op}\;b$, and
+63 words of latch storage (Fig.~\ref{fig:machine}). An update takes 93,000 clocks, 1.86\,ms of the
+2.5\,ms beat. Two further benefits follow from the program being data: it is generated by a
+Python script that is also a bit-exact model of the machine, so the tested program is the one on
+the chip; and eight of its constants (noise settings, encoder scale, starting radius) are
+host-writable, so the filter can be retuned on the bench without new silicon.
 
-\begin{figure}[H]
+\begin{figure}[!htb]
 \centering
 \begin{tikzpicture}[node distance=6mm and 11mm]
   \node[ctlb,minimum width=24mm] (pc) {Sequencer\\program counter,\\return address, flag};
@@ -194,42 +244,75 @@ its constants are generated by a Python script that also contains a bit-exact mo
 \label{fig:machine}
 \end{figure}
 
-\begin{itemize}
-\item \textbf{Arithmetic.} One single-precision unit does add, subtract, multiply, divide, square
-root and integer-difference-to-float. It shares one 29-bit adder and shifts one place per clock,
-so an operation takes 30 to 80 clocks. Rounding is to nearest even.
-\item \textbf{Sine and cosine.} The angle is folded by quadrant into $\pm\pi/2$ and evaluated
-with a six-term Maclaurin series (up to $\theta^{11}$) on the same unit. The truncation error at
-$\pi/2$ is about $6\times10^{-8}$, at the resolution of single precision.
-\item \textbf{Storage.} State, both factors and scratch share 63 words of latches. The host's
-SPI reads borrow the filter's own read path, so the register file keeps no copy of the state.
-\item \textbf{Budget.} One update is about 3,200 operations and 93,000 clocks: 1.86\,ms of the
-2.5\,ms beat (Fig.~\ref{fig:beat}). A pulse that arrives during an update is counted and ignored.
-\item \textbf{Tuning.} Eight constants can be rewritten from the host without a rebuild: three
-measurement-noise values, three process-noise values, encoder scale and starting wheel radius.
-\end{itemize}
-
-\begin{figure}[H]
-\centering
-\begin{tikzpicture}[x=5.6mm,y=1mm]
-  \draw[line width=0.4pt,->] (0,0) -- (26,0) node[right,font=\scriptsize]{ms};
-  \foreach \t/\l in {0/0,5/0.5,10/1.0,15/1.5,20/2.0,25/2.5}
-     \draw (\t,0) -- (\t,-1.2) node[below,font=\scriptsize]{\l};
-  \fill[ext,draw=rule] (0,2) rectangle (2,7); \node[font=\scriptsize] at (1,4.5) {sensors};
-  \fill[blk,draw=rule] (2,2) rectangle (20.6,7); \node[font=\scriptsize] at (11.3,4.5) {filter update, 1.86\,ms};
-  \draw[draw=rule,dashed] (20.6,2) rectangle (25,7); \node[font=\scriptsize] at (22.8,4.5) {spare};
-  \draw[->,accent] (0,11) node[above,font=\scriptsize,text=accent]{beat, sync pulse} -- (0,7.4);
-  \draw[->,accent] (2,11) node[above right=-1pt and -4pt,font=\scriptsize,text=accent]{measurements ready} -- (2,7.4);
-  \draw[->,accent] (20.6,11) node[above,font=\scriptsize,text=accent]{new state valid} -- (20.6,7.4);
-  \draw[->,accent] (25,11) node[above,font=\scriptsize,text=accent]{next beat} -- (25,7.4);
-\end{tikzpicture}
-\caption{One 2.5\,ms beat. The sensor reply time shown is nominal; the deadline is 2\,ms.}
-\label{fig:beat}
-\end{figure}
-
 \subsection{Lidar block}
 
-\begin{figure}[H]
+\textbf{What the lidar sends.} A Velodyne VLP-16 spins 16 lasers at 10 revolutions per second. It
+streams about 754 UDP packets per second, each a 1,206-byte payload of 12 blocks. A block is one
+azimuth reading followed by 32 returns (two firings of the 16 lasers), each a distance in 2\,mm
+units and a reflectivity:
+
+\begin{center}
+\begin{tikzpicture}[x=1mm,y=1mm,font=\scriptsize]
+  \node[anchor=south west,text=black!70,inner sep=1pt] at (0,6.5) {VLP-16 data packet};
+  \draw[fill=ext,draw=rule] (0,0) rectangle (20,6) node[midway]{Eth, IP, UDP};
+  \foreach \i in {0,1,2} \draw[fill=blk,draw=rule] (20+\i*14,0) rectangle (34+\i*14,6) node[midway]{block \i};
+  \draw[fill=blk,draw=rule] (62,0) rectangle (84,6) node[midway]{$\cdots$};
+  \draw[fill=blk,draw=rule] (84,0) rectangle (100,6) node[midway]{block 11};
+  \draw[fill=ext,draw=rule] (100,0) rectangle (122,6) node[midway]{time, model};
+  \draw[rule,densely dotted] (34,0) -- (22,-5); \draw[rule,densely dotted] (48,0) -- (122,-5);
+  \draw[fill=ctl,draw=rule] (22,-11) rectangle (36,-5) node[midway]{\texttt{FFEE}};
+  \draw[fill=blk,draw=rule] (36,-11) rectangle (54,-5) node[midway]{azimuth};
+  \draw[fill=blk!40,draw=rule] (54,-11) rectangle (122,-5) node[midway]{32 $\times$ (distance \texttt{uint16}, reflectivity \texttt{uint8})};
+\end{tikzpicture}
+\end{center}
+
+That is 290,000 returns per second in polar form, and one sweep of about 29,000 returns takes
+100\,ms to collect.
+
+\textbf{The problem.} Returns are measured relative to wherever the robot is at the instant each
+laser fires, but a sweep is used as if it were taken from one pose (Fig.~\ref{fig:smear}). A
+return at range $R$ taken a time $t$ after the sweep started is misplaced by about
+$R\,\omega\,t$ sideways and $v\,t$ along the direction of travel. For a robot turning at
+$90^\circ$/s (1.57\,rad/s) and driving at 2\,m/s, by the end of a sweep ($t=0.1$\,s) it has turned
+$9^\circ$:
+\begin{equation*}
+R\,\omega\,t = 10\,\text{m}\times1.57\,\text{rad/s}\times0.1\,\text{s}\approx 1.6\,\text{m},
+\qquad v\,t = 2\,\text{m/s}\times0.1\,\text{s}=0.2\,\text{m}.
+\end{equation*}
+The lidar's distance unit is 2\,mm. To keep the error at 10\,m under even 1\,cm the robot would
+have to turn slower than $0.6^\circ$/s, so for a robot that manoeuvres the correction is not
+optional: without it walls bend and obstacles appear up to metres from where they are.
+
+\begin{figure}[!htb]
+\centering
+\begin{tikzpicture}[x=9mm,y=9mm,font=\scriptsize]
+  \foreach \ox/\ttl/\k in {0/{true scene}/0, 6/{as measured, robot turning}/0.28, 12/{after correction}/0} {
+    \begin{scope}[shift={(\ox,0)}]
+      \node[anchor=south] at (0,3.0) {\ttl};
+      \draw[rule,dashed] (0,0) circle (0.5);
+      \fill[accent] (0,0) circle (1.6pt); \draw[accent,->] (0,0) -- (0,0.55);
+      \draw[line width=1.1pt,black!75] plot[domain=-48:48,samples=25] ({2/cos(\x)*sin(\x-\k*(\x+48))},{2/cos(\x)*cos(\x-\k*(\x+48))});
+      \foreach \a in {-40,-20,0,20,40} \draw[rule,very thin] (0,0) -- ({2/cos(\a)*sin(\a-\k*(\a+48))},{2/cos(\a)*cos(\a-\k*(\a+48))});
+    \end{scope}}
+  \draw[->,accent] (6,0) ++(60:0.75) arc (60:120:0.75) node[left,text=accent]{$\omega$};
+  \draw[->,rule] (2.6,1.2) -- (3.4,1.2); \draw[->,rule] (8.9,1.2) -- (9.7,1.2);
+  \node[below,text=black!70] at (6,-0.55) {rays placed with the starting heading};
+  \node[below,text=black!70] at (12,-0.55) {each ray turned back by $\omega t$};
+\end{tikzpicture}
+\caption{Why a sweep needs the filter state. A straight wall, scanned left to right while the
+robot turns, comes out rotated and stretched because later rays are measured from a later heading (turn exaggerated).}
+\label{fig:smear}
+\end{figure}
+
+\textbf{The method.} For every firing the block keeps running totals of how far the robot has
+turned ($\omega$ per firing period) and moved ($v$ per firing period) since the sweep started. A
+CORDIC (shift-and-add rotation) unit gives the sine and cosine of the lidar azimuth minus the
+angle turned, each return is converted to $x,y,z$ and the movement is added
+(Fig.~\ref{fig:lidar}). Every sweep is thus expressed in the robot's frame at the moment the sweep
+started. This path is 16-bit fixed point with its own multiplier, because 172 clocks per return
+is far too few for the filter's serial unit.
+
+\begin{figure}[!htb]
 \centering
 \begin{tikzpicture}[node distance=4mm and 4.2mm]
   \node[box] (rx) {MII receive\\CRC check};
@@ -251,19 +334,168 @@ measurement-noise values, three process-noise values, encoder scale and starting
 \label{fig:lidar}
 \end{figure}
 
-Lidar frames arrive on one 100\,Mbit MII port and leave on another (Fig.~\ref{fig:lidar}). Each
-return is converted to $x,y,z$ in 16-bit fixed point, since the serial floating-point unit is far
-too slow for 290,000 points per second. Every sweep is expressed in the robot's own frame at the
-moment the sweep started: points are turned and moved back by however far the robot has turned
-and travelled since then. The filter state rides in each packet header so the computer can place
-the sweep in the world. Five Velodyne models are selectable; only the VLP-16 has been simulated.
+\textbf{Why the filter and the lidar path share a chip.} The correction needs $\omega$ and $v$ at
+the time of each firing, on the same clock as the lidar data. On the chip the state is at most
+2.5\,ms old (40 updates per sweep) and is timed by the same microsecond counter that stamps the
+sweep, with no network or operating-system delay in between. The alternative is to forward raw
+packets and correct on the computer, which needs the two data streams aligned after Ethernet and
+scheduler jitter, and repeats the trigonometry on the CPU for every return. The cost of the
+tight coupling is that a wrong state bends the point cloud. Three things limit that risk: the
+turning and moving corrections are switched on separately, the host can supply the state
+instead of the filter, and the lidar block can be bypassed so that frames pass through
+untouched. The state used is also carried in every packet header, so the computer can place each
+sweep in the world and can check the correction.
+
+\section{Physical design}
+
+The design was built with the Tiny Tapeout LibreLane flow. Fitting it in $8\times4$ tiles was the
+main difficulty: the chip is limited by routing congestion, not by timing.
+
+\begin{center}\small
+\begin{tabular}{@{}lr@{\qquad\qquad}lr@{}}
+\toprule
+Die & $1.378\times0.511$\,mm & Clock & 50\,MHz (20\,ns)\\
+Core area & 0.694\,mm$^2$ & Setup slack, typical (1.80\,V, 25\,\textdegree C) & $+8.94$\,ns\\
+Placement utilisation & 78.2\,\% & Setup slack, slow (1.60\,V, 100\,\textdegree C) & $+3.33$\,ns\\
+Logic cells & 58,100 & Worst hold slack, nine corners & $+0.10$\,ns\\
+Flip-flops / latches & 3,747 / 6,484 & Routed wire & 2.1\,m\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=0.495\linewidth]{dieshot.jpg}\hfill\includegraphics[width=0.495\linewidth]{floorplan.png}\\[3pt]
+{\scriptsize
+\newcommand{\sw}[2]{\tikz[baseline=-0.6ex]\fill[#1] (0,-0.9mm) rectangle (2.6mm,0.9mm);\,#2\quad}
+\definecolor{fpA}{HTML}{90CDF4}\definecolor{fpB}{HTML}{2B6CB0}\definecolor{fpC}{HTML}{C05621}\definecolor{fpD}{HTML}{F6AD55}
+\definecolor{fpE}{HTML}{F6E05E}\definecolor{fpF}{HTML}{68D391}\definecolor{fpG}{HTML}{B794F4}
+\sw{fpA}{lidar logic 41\,\%}\sw{fpB}{lidar point buffer 23\,\%}\sw{fpC}{filter storage 14\,\%}\sw{fpD}{step table 4\,\%}\\[1pt]
+\sw{fpE}{filter arithmetic and sequencer 7\,\%}\sw{fpF}{host registers 7\,\%}\sw{fpG}{timestamper 4\,\%}}
+\caption{The final layout. Left: metal layers, local interconnect (violet) up to the metal-4 power
+straps (red). Right: the same area with each cell coloured by block; shares are of logic cell
+area. Cells without a block name are assigned by connectivity, so boundaries are approximate.}
+\label{fig:layout}
+\end{figure}
+
+\subsection{Latch storage}
+The filter's 71 words, the lidar's 256-word point buffer and the held sensor words are
+\texttt{dlxtp\_1} latches placed by name: 6,484 bits, each a quarter to 40\,\% smaller than a
+flip-flop. No clock is gated. One flip-flop on the falling edge makes a one-clock pulse for the
+whole memory, and an AND gate per word combines it with that word's select
+(Fig.~\ref{fig:latch}). The select and the data come from registers that hold until the next
+write, so they are steady for half a clock before the enable rises and well after it falls. Both
+margins hold by construction and do not depend on the tools checking latch timing.
+
+\begin{figure}[!htb]
+\centering
+\begin{tikzpicture}[circuit logic US,x=1mm,y=1mm,font=\scriptsize]
+  \newcommand{\cell}[4]{% name, centre, lower-left label, bubble (0/1)
+    \node[ff,minimum width=10mm,minimum height=11mm] (#1) at (#2) {};
+    \node[font=\tiny,anchor=west,inner sep=1pt] at ($(#1.west)+(0,2)$) {D};
+    \node[font=\tiny,anchor=east,inner sep=1pt] at ($(#1.east)+(0,2)$) {Q};
+    #3}
+  \newcommand{\ck}[1]{\draw[rule] ($(#1.west)+(0,-1.6)$) -- ++(1.6,-1) -- ++(-1.6,-1);}
+  \cell{r1}{0,14}{\ck{r1}}{}
+  \cell{r2}{0,0}{\ck{r2}}{}
+  \cell{p}{17,-15}{\ck{p}\draw[rule,fill=white] ($(p.west)+(-0.8,-2.6)$) circle (0.8);}{}
+  \cell{l}{52,8}{\node[font=\tiny,anchor=west,inner sep=1pt] at ($(l.west)+(0,-2)$) {G};}{}
+  \node[draw=rule,fill=ctl,minimum width=11mm,minimum height=7mm] (dec) at (18,2) {decode};
+  \node[and gate,draw=rule,fill=blk,inputs=nn] (g) at (35,-4) {};
+  \node[above=0pt of r1] {data register};
+  \node[below=0pt of r2] {address register};
+  \node[below=0pt of p] {falling-edge flip-flop};
+  \node[anchor=north west,inner sep=1pt] at ($(l.south west)+(1,-1)$) {latch, one per bit};
+  \draw[data] (-13,16) node[left]{\texttt{wdata}} -- ($(r1.west)+(0,2)$);
+  \draw[data] (-13,2) node[left]{\texttt{waddr}} -- ($(r2.west)+(0,2)$);
+  \draw[data] (-13,-13) node[left]{\texttt{we}} -- ($(p.west)+(0,2)$);
+  \draw[data] ($(r1.east)+(0,2)$) -- (43,16) |- ($(l.west)+(0,2)$);
+  \draw[data] ($(r2.east)+(0,2)$) -- (dec.west);
+  \draw[data] (dec.east) -- (28,2) node[above right=-1pt and 0pt]{\texttt{sel[i]}} |- (g.input 1);
+  \draw[data] ($(p.east)+(0,2)$) -- (28,-13) node[below right=-1pt and 0pt]{\texttt{pulse}} |- (g.input 2);
+  \draw[data] (g.output) -- (43,-4) node[below right=-1pt and 0pt]{\texttt{gate[i]}} |- ($(l.west)+(0,-2)$);
+  \draw[data] ($(l.east)+(0,2)$) -- ++(5,0) node[right]{\texttt{q[i]}};
+  % waveforms
+  \begin{scope}[shift={(88,-15)}]
+    \foreach \y/\n in {28/clk,21/data{,} sel,14/pulse,7/gate[i],0/q[i]} \node[left] at (0,\y+1.5) {\texttt{\n}};
+    \draw[wv] (0,28)--(4,28)--(4,31)--(10,31)--(10,28)--(16,28)--(16,31)--(22,31)--(22,28)--(28,28)--(28,31)--(34,31)--(34,28)--(40,28)--(40,31)--(46,31)--(46,28)--(50,28);
+    \draw[wv] (0,21)--(4,21)--(5,24)--(50,24); \draw[wv] (0,24)--(4,24)--(5,21)--(50,21);
+    \draw[wv] (0,14)--(10,14)--(10,17)--(22,17)--(22,14)--(50,14);
+    \draw[wv] (0,7)--(11,7)--(11,10)--(23,10)--(23,7)--(50,7);
+    \draw[wv] (0,0)--(12,0)--(13,3)--(50,3); \draw[wv] (0,3)--(12,3)--(13,0)--(50,0);
+    \draw[accent,densely dotted] (4,-1.5)--(4,33); \draw[accent,densely dotted] (10,-1.5)--(10,33); \draw[accent,densely dotted] (22,-1.5)--(22,33);
+    \draw[accent,<->] (4,-3)--(10,-3); \node[text=accent,anchor=west] at (11,-3) {half a clock of setup};
+  \end{scope}
+\end{tikzpicture}
+\caption{Writing a latch word without a gated clock, and its timing.}
+\label{fig:latch}
+\end{figure}
+
+An earlier version used a clock gate per word. The tools treated the 256 gated clocks as clock
+nets, gave each wide wiring, and could not route the result. The same latches hold the VN-300
+words for the duration of a filter update; doing that in 116 flip-flops instead put utilisation
+at 78.65\,\% and detailed routing never converged, where latches give 78.23\,\% and route cleanly.
+
+\subsection{Read paths and two-clock paths}
+Reading a latch memory is a wide selector. Left alone, the tools build it flat, and wherever its
+words land far apart a small gate is left driving millimetres of wire. The selector is therefore
+built in two levels with \texttt{buf\_4} cells instantiated by name between them
+(Fig.~\ref{fig:read}), which also gives the timing constraints fixed pins to refer to.
+
+\begin{figure}[!htb]
+\centering
+\begin{tikzpicture}[node distance=4mm and 6mm]
+  \node[ctlb] (pc) {Program\\counter};
+  \node[box,right=of pc] (rom) {Step\\table};
+  \node[ctlb,right=of rom] (ra) {Read address\\register};
+  \node[box,right=of ra] (m1) {Selector,\\8 words};
+  \node[box,right=of m1,fill=white] (b) {\texttt{buf\_4}\\by name};
+  \node[box,right=of b] (m2) {Selector,\\groups};
+  \node[ctlb,right=of m2] (fp) {Operand\\register};
+  \foreach \a/\b in {pc/rom,rom/ra,ra/m1,m1/b,b/m2,m2/fp} \draw[data] (\a) -- (\b);
+  \draw[accent,|<->|] ($(pc.south)+(0,-3mm)$) -- node[lab,below,text=accent]{two clocks} ($(ra.south)+(-1mm,-3mm)$);
+  \draw[accent,|<->|] ($(ra.south)+(1mm,-3mm)$) -- node[lab,below,text=accent]{two clocks} ($(fp.south)+(0,-3mm)$);
+\end{tikzpicture}
+\caption{The filter's read path. Yellow: registers. The sequencer waits a clock after the counter changes, and takes a word only after its address has been steady for a full clock.}
+\label{fig:read}
+\end{figure}
+
+Four paths are too long for one 20\,ns clock at the slow corner: the two in
+Fig.~\ref{fig:read}, the lidar buffer read and the SPI read address. On each the logic waits one
+extra clock, and the constraints declare a two-clock path (\texttt{set\_multicycle\_path}) through
+named nets and the named buffer pins. In simulation the value is forced unknown during the wait,
+so any logic that used it early would fail the tests.
+
+\section{Future-proofing}
+
+The filter's program is fixed in the layout, so flexibility was put where it costs little.
+\begin{itemize}
+\item \textbf{Tuning without a respin.} Noise settings, encoder scale and starting wheel radius are
+host-writable, and beat period and deadline are registers.
+\item \textbf{Full observability.} Every storage word, constant and sensor word of the filter can be
+read over SPI, so a wrong result on the bench can be traced to a step.
+\item \textbf{Fallbacks.} The host can supply the state itself (control bit 7), so the lidar
+correction still works if the filter or a sensor assumption turns out wrong. The lidar block can
+be bypassed entirely, and the timestamper works alone.
+\item \textbf{Other sensors.} A different odometry source, such as stereo visual odometry, can be
+fed in by a microcontroller that answers as the AMT22 encoder, or fused in a host-side filter that
+writes the state.
+\end{itemize}
+
+\textbf{Limits of this chip.} Storage uses 63 of 64 words and an update takes 74\,\% of the beat. A
+sixth state would need an update of roughly 3.2\,ms (estimate), which does not fit 400\,Hz, and a
+host-writable step table would need about 45--50\,kbit of latches (estimate), which does not fit
+the area.
+
+\appendix
+\section{Interface reference}
 
 \subsection{Output packets}
 The corrected points leave as ordinary UDP datagrams over 100\,Mbit Ethernet; a normal socket
 receives them. Every datagram carries 1,224 bytes, little-endian (Fig.~\ref{fig:pkt}). The UDP
 checksum is 0 (unused). Addresses and ports are registers (Table~\ref{tab:regs}).
 
-\begin{figure}[H]
+\begin{figure}[!htb]
 \centering
 \begin{tikzpicture}[x=1mm,y=1mm,font=\scriptsize]
   \draw[fill=ext,draw=rule] (0,0) rectangle (22,7) node[midway]{Eth, IP, UDP};
@@ -379,146 +611,5 @@ is 0 and keep their built-in value until written:
 \bottomrule
 \end{tabular}
 \end{center}
-
-\section{Physical design}
-
-The design was built with the Tiny Tapeout LibreLane flow. Fitting it in $8\times4$ tiles was the
-main difficulty: the chip is limited by routing congestion, not by timing.
-
-\begin{center}\small
-\begin{tabular}{@{}lr@{\qquad\qquad}lr@{}}
-\toprule
-Die & $1.378\times0.511$\,mm & Clock & 50\,MHz (20\,ns)\\
-Core area & 0.694\,mm$^2$ & Setup slack, typical (1.80\,V, 25\,\textdegree C) & $+8.94$\,ns\\
-Placement utilisation & 78.2\,\% & Setup slack, slow (1.60\,V, 100\,\textdegree C) & $+3.33$\,ns\\
-Logic cells & 58,100 & Worst hold slack, nine corners & $+0.10$\,ns\\
-Flip-flops / latches & 3,747 / 6,484 & Routed wire & 2.1\,m\\
-\bottomrule
-\end{tabular}
-\end{center}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.495\linewidth]{dieshot.jpg}\hfill\includegraphics[width=0.495\linewidth]{floorplan.png}\\[3pt]
-{\scriptsize
-\newcommand{\sw}[2]{\tikz[baseline=-0.6ex]\fill[#1] (0,-0.9mm) rectangle (2.6mm,0.9mm);\,#2\quad}
-\definecolor{fpA}{HTML}{90CDF4}\definecolor{fpB}{HTML}{2B6CB0}\definecolor{fpC}{HTML}{C05621}\definecolor{fpD}{HTML}{F6AD55}
-\definecolor{fpE}{HTML}{F6E05E}\definecolor{fpF}{HTML}{68D391}\definecolor{fpG}{HTML}{B794F4}
-\sw{fpA}{lidar logic 41\,\%}\sw{fpB}{lidar point buffer 23\,\%}\sw{fpC}{filter storage 14\,\%}\sw{fpD}{step table 4\,\%}\\[1pt]
-\sw{fpE}{filter arithmetic and sequencer 7\,\%}\sw{fpF}{host registers 7\,\%}\sw{fpG}{timestamper 4\,\%}}
-\caption{The final layout. Left: metal layers, local interconnect (violet) up to the metal-4 power
-straps (red). Right: the same area with each cell coloured by block; shares are of logic cell
-area. Cells without a block name are assigned by connectivity, so boundaries are approximate.}
-\label{fig:layout}
-\end{figure}
-
-\subsection{Latch storage}
-The filter's 71 words, the lidar's 256-word point buffer and the held sensor words are
-\texttt{dlxtp\_1} latches placed by name: 6,484 bits, each a quarter to 40\,\% smaller than a
-flip-flop. No clock is gated. One flip-flop on the falling edge makes a one-clock pulse for the
-whole memory, and an AND gate per word combines it with that word's select
-(Fig.~\ref{fig:latch}). The select and the data come from registers that hold until the next
-write, so they are steady for half a clock before the enable rises and well after it falls. Both
-margins hold by construction and do not depend on the tools checking latch timing.
-
-\begin{figure}[H]
-\centering
-\begin{tikzpicture}[circuit logic US,x=1mm,y=1mm,font=\scriptsize]
-  \newcommand{\cell}[4]{% name, centre, lower-left label, bubble (0/1)
-    \node[ff,minimum width=10mm,minimum height=11mm] (#1) at (#2) {};
-    \node[font=\tiny,anchor=west,inner sep=1pt] at ($(#1.west)+(0,2)$) {D};
-    \node[font=\tiny,anchor=east,inner sep=1pt] at ($(#1.east)+(0,2)$) {Q};
-    #3}
-  \newcommand{\ck}[1]{\draw[rule] ($(#1.west)+(0,-1.6)$) -- ++(1.6,-1) -- ++(-1.6,-1);}
-  \cell{r1}{0,14}{\ck{r1}}{}
-  \cell{r2}{0,0}{\ck{r2}}{}
-  \cell{p}{17,-15}{\ck{p}\draw[rule,fill=white] ($(p.west)+(-0.8,-2.6)$) circle (0.8);}{}
-  \cell{l}{52,8}{\node[font=\tiny,anchor=west,inner sep=1pt] at ($(l.west)+(0,-2)$) {G};}{}
-  \node[draw=rule,fill=ctl,minimum width=11mm,minimum height=7mm] (dec) at (18,2) {decode};
-  \node[and gate,draw=rule,fill=blk,inputs=nn] (g) at (35,-4) {};
-  \node[above=0pt of r1] {data register};
-  \node[below=0pt of r2] {address register};
-  \node[below=0pt of p] {falling-edge flip-flop};
-  \node[anchor=north west,inner sep=1pt] at ($(l.south west)+(1,-1)$) {latch, one per bit};
-  \draw[data] (-13,16) node[left]{\texttt{wdata}} -- ($(r1.west)+(0,2)$);
-  \draw[data] (-13,2) node[left]{\texttt{waddr}} -- ($(r2.west)+(0,2)$);
-  \draw[data] (-13,-13) node[left]{\texttt{we}} -- ($(p.west)+(0,2)$);
-  \draw[data] ($(r1.east)+(0,2)$) -- (43,16) |- ($(l.west)+(0,2)$);
-  \draw[data] ($(r2.east)+(0,2)$) -- (dec.west);
-  \draw[data] (dec.east) -- (28,2) node[above right=-1pt and 0pt]{\texttt{sel[i]}} |- (g.input 1);
-  \draw[data] ($(p.east)+(0,2)$) -- (28,-13) node[below right=-1pt and 0pt]{\texttt{pulse}} |- (g.input 2);
-  \draw[data] (g.output) -- (43,-4) node[below right=-1pt and 0pt]{\texttt{gate[i]}} |- ($(l.west)+(0,-2)$);
-  \draw[data] ($(l.east)+(0,2)$) -- ++(5,0) node[right]{\texttt{q[i]}};
-  % waveforms
-  \begin{scope}[shift={(88,-15)}]
-    \foreach \y/\n in {28/clk,21/data{,} sel,14/pulse,7/gate[i],0/q[i]} \node[left] at (0,\y+1.5) {\texttt{\n}};
-    \draw[wv] (0,28)--(4,28)--(4,31)--(10,31)--(10,28)--(16,28)--(16,31)--(22,31)--(22,28)--(28,28)--(28,31)--(34,31)--(34,28)--(40,28)--(40,31)--(46,31)--(46,28)--(50,28);
-    \draw[wv] (0,21)--(4,21)--(5,24)--(50,24); \draw[wv] (0,24)--(4,24)--(5,21)--(50,21);
-    \draw[wv] (0,14)--(10,14)--(10,17)--(22,17)--(22,14)--(50,14);
-    \draw[wv] (0,7)--(11,7)--(11,10)--(23,10)--(23,7)--(50,7);
-    \draw[wv] (0,0)--(12,0)--(13,3)--(50,3); \draw[wv] (0,3)--(12,3)--(13,0)--(50,0);
-    \draw[accent,densely dotted] (4,-1.5)--(4,33); \draw[accent,densely dotted] (10,-1.5)--(10,33); \draw[accent,densely dotted] (22,-1.5)--(22,33);
-    \draw[accent,<->] (4,-3)--(10,-3); \node[text=accent,anchor=west] at (11,-3) {half a clock of setup};
-  \end{scope}
-\end{tikzpicture}
-\caption{Writing a latch word without a gated clock, and its timing.}
-\label{fig:latch}
-\end{figure}
-
-An earlier version used a clock gate per word. The tools treated the 256 gated clocks as clock
-nets, gave each wide wiring, and could not route the result. The same latches hold the VN-300
-words for the duration of a filter update; doing that in 116 flip-flops instead put utilisation
-at 78.65\,\% and detailed routing never converged, where latches give 78.23\,\% and route cleanly.
-
-\subsection{Read paths and two-clock paths}
-Reading a latch memory is a wide selector. Left alone, the tools build it flat, and wherever its
-words land far apart a small gate is left driving millimetres of wire. The selector is therefore
-built in two levels with \texttt{buf\_4} cells instantiated by name between them
-(Fig.~\ref{fig:read}), which also gives the timing constraints fixed pins to refer to.
-
-\begin{figure}[H]
-\centering
-\begin{tikzpicture}[node distance=4mm and 6mm]
-  \node[ctlb] (pc) {Program\\counter};
-  \node[box,right=of pc] (rom) {Step\\table};
-  \node[ctlb,right=of rom] (ra) {Read address\\register};
-  \node[box,right=of ra] (m1) {Selector,\\8 words};
-  \node[box,right=of m1,fill=white] (b) {\texttt{buf\_4}\\by name};
-  \node[box,right=of b] (m2) {Selector,\\groups};
-  \node[ctlb,right=of m2] (fp) {Operand\\register};
-  \foreach \a/\b in {pc/rom,rom/ra,ra/m1,m1/b,b/m2,m2/fp} \draw[data] (\a) -- (\b);
-  \draw[accent,|<->|] ($(pc.south)+(0,-3mm)$) -- node[lab,below,text=accent]{two clocks} ($(ra.south)+(-1mm,-3mm)$);
-  \draw[accent,|<->|] ($(ra.south)+(1mm,-3mm)$) -- node[lab,below,text=accent]{two clocks} ($(fp.south)+(0,-3mm)$);
-\end{tikzpicture}
-\caption{The filter's read path. Yellow: registers. The sequencer waits a clock after the counter changes, and takes a word only after its address has been steady for a full clock.}
-\label{fig:read}
-\end{figure}
-
-Four paths are too long for one 20\,ns clock at the slow corner: the two in
-Fig.~\ref{fig:read}, the lidar buffer read and the SPI read address. On each the logic waits one
-extra clock, and the constraints declare a two-clock path (\texttt{set\_multicycle\_path}) through
-named nets and the named buffer pins. In simulation the value is forced unknown during the wait,
-so any logic that used it early would fail the tests.
-
-\section{Future-proofing}
-
-The filter's program is fixed in the layout, so flexibility was put where it costs little.
-\begin{itemize}
-\item \textbf{Tuning without a respin.} Noise settings, encoder scale and starting wheel radius are
-host-writable, and beat period and deadline are registers.
-\item \textbf{Full observability.} Every storage word, constant and sensor word of the filter can be
-read over SPI, so a wrong result on the bench can be traced to a step.
-\item \textbf{Fallbacks.} The host can supply the state itself (control bit 7), so the lidar
-correction still works if the filter or a sensor assumption turns out wrong. The lidar block can
-be bypassed entirely, and the timestamper works alone.
-\item \textbf{Other sensors.} A different odometry source, such as stereo visual odometry, can be
-fed in by a microcontroller that answers as the AMT22 encoder, or fused in a host-side filter that
-writes the state.
-\end{itemize}
-
-\textbf{Limits of this chip.} Storage uses 63 of 64 words and an update takes 74\,\% of the beat. A
-sixth state would need an update of roughly 3.2\,ms (estimate), which does not fit 400\,Hz, and a
-host-writable step table would need about 45--50\,kbit of latches (estimate), which does not fit
-the area.
 
 \end{document}
