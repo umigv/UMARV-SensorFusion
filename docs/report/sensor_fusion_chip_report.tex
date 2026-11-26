@@ -123,7 +123,8 @@ Accuracy is not given up for this. In simulation the chip's single-precision fil
 
 Three constraints set the architecture. Area is $8\times4$ Tiny Tapeout tiles
 (0.69\,mm$^2$ of core) in SkyWater 130\,nm, and routing congestion limits it before cell area does.
-Storage is built from standard cells, so every stored bit is expensive. Time, at the 50\,MHz
+There is no foundry SRAM macro, so storage is built from standard cells and every stored bit is
+expensive. Time, at the 50\,MHz
 clock, is plentiful for the filter (125,000 clocks per 400\,Hz update) and scarce for the lidar
 (172 clocks per return). The filter is therefore built to spend time in order to save area and
 storage, the lidar path has its own fast arithmetic, and one block owns time for both.
