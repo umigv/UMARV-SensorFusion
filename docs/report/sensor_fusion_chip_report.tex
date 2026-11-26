@@ -118,12 +118,14 @@ lidar path gets dedicated arithmetic.
 Chosen & Alternative & Why the alternative lost\\
 \midrule
 Stored program, one serial arithmetic unit & Dedicated multiplier and divide/square-root datapath &
-The datapath would finish an update with most of the sample period unused, and adds a multiplier array
-and a divider to a chip already at its routing limit. The serial unit trades that spare time for area.\\
+The team's earlier parallel blocks (multiply-accumulate array, sigma-point generator, Cholesky
+downdate) synthesised to 37 tiles of cells before placement, against 32 available. They would also
+finish an update with most of the sample period unused. The serial unit trades that spare time for area.\\
 Wheel radius as fifth state & Additive speed-bias state &
 A wrong radius gives a speed error proportional to speed. A bias models a constant offset, which
 fits at one speed only.\\
 Unscented filter & Extended Kalman filter &
+Accuracy is the same in simulation (Table~\ref{tab:acc}), so the choice rests on implementation.
 The extended filter needs the Jacobian of the motion model: a second set of expressions to derive,
 program and verify. The unscented filter reuses the one model routine, at the cost of 22 model
 evaluations per update, which the time budget covers.\\
@@ -131,8 +133,9 @@ Square-root factor $S$ & Covariance $P$ &
 Rounding in single precision can leave $P$ asymmetric or indefinite after many updates, which
 then needs detection and repair. $S$ cannot represent an invalid covariance.\\
 Single-precision floating point & 32-bit fixed point &
-In simulation, fixed point lost the small per-step corrections at 400\,Hz. It would also need a
-scale chosen for every variable. Floating point matched double precision.\\
+In simulation with 16 fractional bits the covariance downdate failed on about half of all updates
+and two runs diverged. Fixed point also needs a scale chosen for every variable. Single precision
+stays within 28\,mm of double precision (Section~\ref{sec:eval}).\\
 Four scalar corrections & One joint $4\times4$ correction &
 The joint form needs a $4\times4$ factorisation, triangular solves and storage for a $5\times4$
 cross-covariance. The scalar form needs one division per reading. It is equivalent only for
@@ -210,6 +213,7 @@ never stalls the filter.
 \end{figure}
 
 \subsection{Kalman filter}
+\label{sec:filter}
 
 Position is $x$ east and $y$ north of the first position fix. Heading $\theta$ is measured from
 east and is positive anticlockwise (east towards north); turn rate $\omega$ has the same sign. The
@@ -451,6 +455,107 @@ lidar path independent of the filter and lets either be replaced alone. The inte
 was chosen so that the computer receives compensated points with the state attached and needs no
 lidar processing of its own. Some modularity is kept: the corrections can be disabled, the host can supply the state, and the
 block can pass frames through untouched.
+
+\section{Evaluation}
+\label{sec:eval}
+
+No data has been recorded on the robot yet. The results below come from simulation with sensor
+errors modelled from the datasheets, and from tests of the RTL and of the routed netlist.
+
+\subsection{Filter accuracy}
+
+The step table that is in the chip was executed in single precision on a simulated 150\,s drive,
+six runs with different sensor errors, at 400\,Hz. The VN-300's position and heading errors
+drift slowly (1\,m RMS with a 14\,s correlation time; $1^\circ$ with 72\,s), the encoder is
+quantised to 14 bits, and the true wheel radius is 1.5\,\% larger than the nominal value the
+filter starts from. A double-precision square-root unscented filter and a double-precision
+extended Kalman filter were given the same samples and the same $Q$ and $R$
+(Table~\ref{tab:acc}, Fig.~\ref{fig:eval}).
+
+\begin{table}[!htb]
+\centering\footnotesize
+\caption{Simulated accuracy, RMS over six 150\,s runs after a 20\,s start-up.}
+\label{tab:acc}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+ & Position & Heading & Radius error\\
+ & (m) & (deg) & at end (\%)\\
+\midrule
+VN-300 alone & 0.937 & 0.629 & 1.48 (fixed)\\
+Extended, 64-bit float & 0.872 & 0.545 & $\le0.67$\\
+Unscented, 64-bit float & 0.873 & 0.546 & $\le0.67$\\
+Chip program, 32-bit float & 0.876 & 0.552 & $\le0.67$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[!htb]
+\centering
+\includegraphics[width=\linewidth]{filter_eval.pdf}
+\caption{Simulated filter accuracy. Left: position error, RMS of the six runs. Right: the chip
+program's wheel radius estimate in each run.}
+\label{fig:eval}
+\end{figure}
+
+The chip's program stays within 28\,mm and $0.041^\circ$ of the double-precision filter at every
+one of the 360,000 updates, and never produces an invalid value. Single precision and the
+six-term series therefore cost nothing measurable.
+
+Position improves by 7\,\% and heading by 12\,\% over the VN-300 alone. The gain is small because
+the VN-300's error drifts slowly and the wheel cannot observe an absolute position error. The
+filter's contribution is the state the VN-300 does not supply: it finds the wheel radius to
+within 0.7\,\% from a 1.5\,\% starting error (mean 0.36\,\%), and gives the lidar path a turn
+rate and speed every 2.5\,ms on the timestamper's clock.
+
+The inflation of $R$ for time-correlated errors (Section~\ref{sec:filter}) was set from this
+simulation. With the datasheet values used directly the double-precision filter's position error is 74 times the standard deviation
+it reports. With the inflated values the ratio is 1.0 and accuracy is unchanged.
+
+\subsection{Lidar compensation}
+
+A timing model of the VLP-16's firing sequence gives the largest displacement of a return at
+30\,m that remains after compensation, for three assumed manoeuvres (Table~\ref{tab:lidar}).
+Holding the state between filter updates is not enough even at 400\,Hz. Integrating turn rate
+and speed at every firing, as the chip does, leaves under 2\,mm. The model excludes the filter's
+own error and its 1.9\,ms computing delay.
+
+\begin{table}[!htb]
+\centering\footnotesize
+\caption{Largest remaining displacement of a return at 30\,m. Turns are peak rate and peak
+angular acceleration: 0.5\,rad/s and 1\,rad/s$^2$; 1 and 5; 2 and 20.}
+\label{tab:lidar}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+State used for a firing & Gentle & Moderate & Aggressive\\
+\midrule
+100\,Hz, held & 17\,cm & 32\,cm & 62\,cm\\
+400\,Hz, held & 4.3\,cm & 8.1\,cm & 16\,cm\\
+400\,Hz, integrated per firing & 0.01\,cm & 0.05\,cm & 0.19\,cm\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Implementation}
+
+Table~\ref{tab:checks} lists what was measured on the RTL and on the netlist extracted from the
+routed layout. The reference for the filter is a bit-exact model of the machine running the same
+step table as Table~\ref{tab:acc}.
+
+\begin{table}[!htb]
+\centering\footnotesize
+\caption{Measurements on the RTL and the routed netlist.}
+\label{tab:checks}
+\begin{tabularx}{\linewidth}{@{}Xr@{}}
+\toprule
+Arithmetic unit against IEEE single precision & 45,723 operations, 0 differ\\
+Filter against the bit-exact model & 791 stored words, 0 differ\\
+Longest filter update & 93,116 of 125,000 clocks\\
+Motion totals against double precision, 25,170 firings & $0.004^\circ$, 1.1\,mm worst\\
+Lidar path, packet in to packet out, 16,128 points & 0 missing, 2.7\,mm worst\\
+Routed netlist, sensors in to packets out & 8 filter states, 0 differ\\
+\bottomrule
+\end{tabularx}
+\end{table}
 
 \section{Physical design}
 
