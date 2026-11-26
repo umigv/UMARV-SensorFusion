@@ -59,7 +59,7 @@ Bangyan Huang, Dev Veeramani, Thuong Vo, Nabhah Veeramani, Jimmy Xu, Adam Marrak
 \begin{center}
 \begin{tikzpicture}[node distance=5mm and 14mm]
   % chip blocks
-  \node[box,minimum width=31mm] (ts) {Timestamper\\beat, VN-300 parser,\\encoder reader};
+  \node[box,minimum width=31mm] (ts) {Timestamper\\sample trigger, VN-300\\parser, encoder reader};
   \node[box,minimum width=31mm,right=18mm of ts] (kf) {Kalman filter\\five-state SR-UKF,\\single precision};
   \node[box,minimum width=31mm,right=18mm of kf] (lb) {Lidar block\\parse, motion-correct,\\re-frame};
   \node[ctlb,minimum width=31mm,below=9mm of kf] (reg) {Host SPI registers\\settings, counters, filter words};
@@ -118,7 +118,7 @@ lidar path gets dedicated arithmetic.
 Chosen & Alternative & Why the alternative lost\\
 \midrule
 Stored program, one serial arithmetic unit & Dedicated multiplier and divide/square-root datapath &
-The datapath would finish an update with most of the beat unused, and adds a multiplier array
+The datapath would finish an update with most of the sample period unused, and adds a multiplier array
 and a divider to a chip already at its routing limit. The serial unit trades that spare time for area.\\
 Wheel radius as fifth state & Additive speed-bias state &
 A wrong radius gives a speed error proportional to speed. A bias models a constant offset, which
@@ -126,12 +126,12 @@ fits at one speed only.\\
 Unscented filter & Extended Kalman filter &
 The extended filter needs the Jacobian of the motion model: a second set of expressions to derive,
 program and verify. The unscented filter reuses the one model routine, at the cost of 22 model
-evaluations per beat, which the time budget covers.\\
+evaluations per update, which the time budget covers.\\
 Square-root factor $S$ & Covariance $P$ &
 Rounding in single precision can leave $P$ asymmetric or indefinite after many updates, which
 then needs detection and repair. $S$ cannot represent an invalid covariance.\\
 Single-precision floating point & 32-bit fixed point &
-In simulation, fixed point lost the small per-beat corrections at 400\,Hz. It would also need a
+In simulation, fixed point lost the small per-step corrections at 400\,Hz. It would also need a
 scale chosen for every variable. Floating point matched double precision.\\
 Four scalar corrections & One joint $4\times4$ correction &
 The joint form needs a $4\times4$ factorisation, triangular solves and storage for a $5\times4$
@@ -156,7 +156,7 @@ about 20 steps.\\
   \node[ctlb,minimum width=24mm,right=of pc] (rom) {Step table\\545 steps $\times$ 26 bits\\(synthesised logic)};
   \node[box,minimum width=26mm,right=14mm of rom,yshift=11mm] (store) {Storage\\63 words $\times$ 32 bits\\(latches)};
   \node[box,minimum width=26mm,below=3mm of store] (const) {Constants\\48 entries, 8 host-replaceable};
-  \node[box,minimum width=26mm,below=3mm of const] (sens) {Sensor words\\held for the beat (latches)};
+  \node[box,minimum width=26mm,below=3mm of const] (sens) {Sensor words\\held during an update (latches)};
   \node[box,minimum width=27mm,right=16mm of const] (fp) {Arithmetic unit\\$+\;-\;\times\;\div\;\sqrt{\ }$\\one bit per clock};
   \draw[ctrl] (pc) -- (rom);
   \draw[ctrl] (rom.east) -- ++(5mm,0) coordinate (f) |- (store.west);
@@ -178,8 +178,8 @@ about 20 steps.\\
 
 Fusing two sensors requires that they describe the same moment. Free-running, the VN-300 and the
 encoder would be sampled up to 2.5\,ms apart, and the lidar would share no clock with either. The
-timestamper removes both problems by owning time for the whole chip (Fig.~\ref{fig:ts}). On each
-beat it pulses the VN-300's sync input and starts the encoder read in the same clock. It checks
+timestamper removes both problems by owning time for the whole chip (Fig.~\ref{fig:ts}). Every
+2.5\,ms it pulses the VN-300's sync input and starts the encoder read in the same clock. It checks
 the VN-300 message's cyclic redundancy check and the encoder's parity, then starts the filter. A
 2\,ms deadline bounds the wait, so a late or corrupt sensor costs one update of that sensor and
 never stalls the filter. The same microsecond counter stamps lidar sweeps.
@@ -190,7 +190,7 @@ never stalls the filter. The same microsecond counter stamps lidar sweeps.
   \node[extb,font=\scriptsize,minimum height=6mm] (vn) at (0,12) {VN-300};
   \node[extb,font=\scriptsize,minimum height=6mm] (enc) at (0,-12) {AMT22\\encoder};
   \node[sbox] (msg) at (29,12) {Message parser\\serial, check};
-  \node[sbox] (tb) at (29,0) {Time base\\2.5\,ms beat};
+  \node[sbox] (tb) at (29,0) {Time base\\2.5\,ms period};
   \node[sbox] (dw) at (29,-12) {Encoder reader\\SPI, parity};
   \node[sbox,fill=ctl] (col) at (57,6) {Collect\\2\,ms deadline};
   \node[sbox] (kf) at (57,-8) {Kalman\\filter};
@@ -205,7 +205,7 @@ never stalls the filter. The same microsecond counter stamps lidar sweeps.
     \node[draw=accent,line width=0.6pt,rounded corners=3pt,fit=(msg)(tb)(dw)(col),inner sep=4pt] {};
   \end{scope}
 \end{tikzpicture}
-\caption{Timestamper. Dashed: the beat that starts both sensor reads.}
+\caption{Timestamper. Dashed: the trigger that starts both sensor reads.}
 \label{fig:ts}
 \end{figure}
 
@@ -216,12 +216,12 @@ east and is positive anticlockwise (east towards north); turn rate $\omega$ has 
 state is $\mathbf{x}=[x,\,y,\,\theta,\,\omega,\,r]^{\mathsf T}$, with $r$ the wheel radius.
 
 The filter uses the standard notation: $\hat{\mathbf x}_{k-1}$ and $S_{k-1}$ are the estimate
-and the triangular factor of its covariance ($P=S^{\mathsf T}S$) after beat $k-1$;
-$\hat{\mathbf x}_k^-$ and $S_k^-$ are the prediction for beat $k$ before its measurements; and
+and the triangular factor of its covariance ($P=S^{\mathsf T}S$) after time step $k-1$;
+$\hat{\mathbf x}_k^-$ and $S_k^-$ are the prediction for step $k$ before its measurements; and
 $\hat{\mathbf x}_k$, $S_k$ are the result after them.
 
 The process model $\mathbf{x}_k=f(\mathbf{x}_{k-1},\Delta\phi_k)$ moves the robot by the distance
-the wheel rolled in the beat, $r\,\Delta\phi_k$, along the average of the old and new headings
+the wheel rolled during the step, $r\,\Delta\phi_k$, along the average of the old and new headings
 ($\Delta t=2.5$\,ms):
 \begin{align*}
 \theta_k &= \theta_{k-1}+\omega_{k-1}\Delta t\\
@@ -504,7 +504,7 @@ so logic that used it early would fail the tests.
 
 The filter's program is fixed in the layout, so flexibility was put where it costs little.
 \begin{itemize}
-\item Noise settings, encoder scale and starting wheel radius are host-writable, and the beat
+\item Noise settings, encoder scale and starting wheel radius are host-writable, and the sample
 period and deadline are registers, so the filter can be retuned without new silicon.
 \item Every storage word, constant and sensor word of the filter can be read over SPI, so a wrong
 result can be traced to a step.
@@ -514,7 +514,7 @@ works alone, so a fault in one block does not disable the others.
 that answers as the encoder, or fused on the host.
 \end{itemize}
 
-The limits are storage (63 of 64 words used) and time (an update takes 74\,\% of the beat). By
+The limits are storage (63 of 64 words used) and time (an update takes 74\,\% of the sample period). By
 estimate, a sixth state would need about 3.2\,ms per update, and a host-writable step table about
 45 to 50\,kbit of latches. Neither fits. Modelling correlated measurement noise would also need
 a change to the program. The appendix gives the packet format, the register map and the pins.
@@ -594,7 +594,7 @@ sent, buffer overflows, motion overruns, transmit underruns.
 Filter words (\texttt{6C}, \texttt{70}--\texttt{73}): every word can be read (storage 0--62,
 constants 64--111, sensor words 112--126). Words 96--103 can be written while control bit 7 is 0. In
 order they are the measurement noise variances for position (m$^2$), heading (rad$^2$) and turn
-rate ((rad/s)$^2$); the process noise per beat for position (m), turn rate (rad/s) and heading
+rate ((rad/s)$^2$); the process noise per step for position (m), turn rate (rad/s) and heading
 (rad); radians of wheel rotation per encoder count; and the starting wheel radius (m).
 
 \begin{table}[H]
@@ -609,8 +609,8 @@ rate ((rad/s)$^2$); the process noise per beat for position (m), turn rate (rad/
 \texttt{3C}, \texttt{3D} & write: use the host state; clear the counters\\
 \texttt{03} & lidar model [0]: VLP-16, Hi-Res, VLP-32C, HDL-32E &
 \texttt{40}--\texttt{46} & event counters, read only, stop at 255\\
-\texttt{04}--\texttt{05} & beat period, \textmu s [2500] &
-\texttt{48}--\texttt{4B} & time of the last beat, \textmu s\\
+\texttt{04}--\texttt{05} & sample period, \textmu s [2500] &
+\texttt{48}--\texttt{4B} & time of the last sample, \textmu s\\
 \texttt{06}--\texttt{07} & measurement deadline, \textmu s [2000] &
 \texttt{4C} & bit 0 VN-300 valid, bit 1 encoder valid\\
 \texttt{08}--\texttt{09} & UDP port the lidar sends to [2368] &
@@ -618,7 +618,7 @@ rate ((rad/s)$^2$); the process noise per beat for position (m), turn rate (rad/
 \texttt{0A}--\texttt{0B} & lidar mounting angle, 0.01\textdegree, signed [0] &
 \texttt{58}--\texttt{67} & VN-300 latitude and longitude, \texttt{float64}\\
 \texttt{0C}--\texttt{17} & source MAC [\texttt{02:00:00:00:00:01}], destination MAC [broadcast] &
-\texttt{68}--\texttt{6B} & encoder travel since the last beat, counts\\
+\texttt{68}--\texttt{6B} & encoder travel since the last sample, counts\\
 \texttt{18}--\texttt{1F} & source IP [192.168.1.50], destination IP [broadcast] &
 \texttt{6C} & filter word address [96], write only\\
 \texttt{20}--\texttt{23} & source and destination UDP port [2370] &
