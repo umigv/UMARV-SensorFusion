@@ -12,7 +12,7 @@
 \usepackage{enumitem}
 \usepackage[font=small,labelfont=bf,skip=4pt]{caption}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning,fit,calc,backgrounds}
+\usetikzlibrary{arrows.meta,positioning,fit,calc,backgrounds,circuits.logic.US}
 \usepackage[colorlinks,linkcolor=accent,urlcolor=accent]{hyperref}
 
 \definecolor{accent}{HTML}{1F4E79}
@@ -38,6 +38,8 @@
   lab/.style={font=\scriptsize,align=center,text=black!75},
   data/.style={->,draw=black!80,line width=0.5pt},
   ctrl/.style={->,draw=accent,dashed,line width=0.5pt},
+  ff/.style={draw=rule,fill=blk,font=\scriptsize,align=center,minimum width=9mm,minimum height=9mm,inner sep=1pt},
+  wv/.style={line width=0.6pt},
 }
 
 \begin{document}
@@ -94,17 +96,6 @@ and stamps each outgoing packet with the filter state. A microcontroller configu
 \label{fig:system}
 \end{figure}
 
-\vspace{-4pt}
-\begin{center}\small
-\begin{tabular}{@{}llll@{}}
-\toprule
-Process & SkyWater 130\,nm, \texttt{sky130\_fd\_sc\_hd} & Area & $8\times4$ Tiny Tapeout tiles, 0.69\,mm$^2$ core\\
-Clock & 50\,MHz, plus two 25\,MHz MII clocks & I/O & 24 pins\\
-Filter rate & 400\,Hz, 1.86\,ms per update & RTL & 5,300 lines of SystemVerilog\\
-\bottomrule
-\end{tabular}
-\end{center}
-
 \section{Architecture}
 
 \subsection{Timestamper}
@@ -114,6 +105,36 @@ VN-300's SyncIn pin for 10\,\textmu s and reads the AMT22 encoder over SPI. It p
 CRC, and checks the encoder's parity bits. When both have answered, or at a 2,000\,\textmu s
 deadline, it raises one pulse with a valid bit per sensor. Values are passed on as the sensors
 send them; conversion to the filter's units is done by the filter.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=3.5mm and 9mm]
+  \node[box] (tb) {Time base\\\textmu s tick, beat};
+  \node[box,right=of tb,yshift=6.5mm] (uart) {UART receiver\\921,600 baud};
+  \node[box,right=of tb,yshift=-6.5mm] (spi) {SPI master\\mode 0, 1.92\,MHz};
+  \node[box,right=of uart] (msg) {Message layer\\header, CRC, status};
+  \node[box,right=of spi] (dw) {Check bits,\\travel since last read};
+  \node[ctlb,right=9mm of $(msg.east)!0.5!(dw.east)$] (col) {Collect\\deadline};
+  \node[lab,left=7mm of tb] (osc) {50\,MHz};
+  \node[lab,above=4mm of uart] (vn) {VN-300 serial};
+  \node[lab,below=4mm of spi] (enc) {AMT22 pins};
+  \node[lab,above=4mm of tb] (sync) {SyncIn, 10\,\textmu s};
+  \node[lab,right=7mm of col] (out) {pulse +\\valid bits};
+  \node[lab,right=7mm of msg,yshift=4mm] (m1) {yaw, rate, lat, lon};
+  \node[lab,right=7mm of dw,yshift=-4mm] (m2) {wheel travel};
+  \draw[data] (osc) -- (tb); \draw[data] (tb) -- (sync);
+  \draw[data] (vn) -- (uart); \draw[data,<->] (enc) -- (spi);
+  \draw[ctrl] (tb.east) -- ++(4mm,0) |- (spi.west);
+  \draw[data] (uart) -- (msg); \draw[data] (spi) -- (dw);
+  \draw[data] (msg.east) -- ++(3mm,0) |- ($(col.west)+(0,1.5mm)$);
+  \draw[data] (dw.east) -- ++(3mm,0) |- ($(col.west)+(0,-1.5mm)$);
+  \draw[data] (col) -- (out);
+  \draw[data] (msg.north east) ++(-2mm,0) |- (m1.west);
+  \draw[data] (dw.south east) ++(-2mm,0) |- (m2.west);
+\end{tikzpicture}
+\caption{Timestamper. The beat (dashed) starts the encoder read and the sync pulse together.}
+\label{fig:ts}
+\end{figure}
 
 \subsection{Kalman filter}
 
@@ -234,11 +255,111 @@ moment the sweep started: points are turned and moved back by however far the ro
 and travelled since then. The filter state rides in each packet header so the computer can place
 the sweep in the world. Five Velodyne models are selectable; only the VLP-16 has been simulated.
 
+\subsection{Output packets}
+The corrected points leave as ordinary UDP datagrams over 100\,Mbit Ethernet; a normal socket
+receives them. Every datagram carries 1,224 bytes, little-endian (Fig.~\ref{fig:pkt}). The UDP
+checksum is 0 (unused). Addresses and ports are registers (Table~\ref{tab:regs}).
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[x=1mm,y=1mm,font=\scriptsize]
+  \draw[fill=ext,draw=rule] (0,0) rectangle (22,7) node[midway]{Eth, IP, UDP};
+  \draw[fill=ctl,draw=rule] (22,0) rectangle (56,7) node[midway]{header, 48 bytes};
+  \foreach \i in {0,...,5} \draw[fill=blk,draw=rule] (56+\i*17,0) rectangle (73+\i*17,7) node[midway]{block \i};
+  \draw[rule] (22,-1) -- (22,-3) -- (158,-3) -- (158,-1); \node at (90,-5.5) {UDP payload, 1,224 bytes};
+  \draw[rule,densely dotted] (73,7) -- (40,13); \draw[rule,densely dotted] (90,7) -- (158,13);
+  \draw[fill=blk,draw=rule] (40,13) rectangle (58,20) node[midway,align=center]{azimuth};
+  \draw[fill=blk,draw=rule] (58,13) rectangle (74,20) node[midway]{flags};
+  \draw[fill=blk!40,draw=rule] (74,13) rectangle (158,20) node[midway]{32 points $\times$ ($x$, $y$, $z$ as \texttt{int16})};
+  \node[above] at (49,20) {2}; \node[above] at (66,20) {1 + 1}; \node[above] at (116,20) {192 bytes};
+\end{tikzpicture}
+\caption{One output datagram. A block is one azimuth reading of the lidar: 196 bytes.}
+\label{fig:pkt}
+\end{figure}
+
+\begin{center}\footnotesize
+\begin{tabular}{@{}rll@{\qquad}rll@{}}
+\toprule
+Offset & Field & Meaning & Offset & Field & Meaning\\
+\midrule
+0 & \texttt{magic} & ASCII \texttt{PC2X} & 17 & \texttt{point\_step} & bytes per point, 6\\
+4 & \texttt{version} & 3 & 18 & \texttt{num\_blocks} & 6\\
+5 & \texttt{flags} & see below & 19 & \texttt{points\_per\_block} & 32\\
+6 & \texttt{num\_points} & 192 & 20 & \texttt{sweep\_time\_us} & chip time the sweep started\\
+8 & \texttt{seq} & datagram counter & 24 & \texttt{state\_time\_us} & time of the state\\
+12 & \texttt{sweep\_id} & sweep of the first block & 28--40 & \texttt{x}, \texttt{y}, \texttt{theta}, \texttt{omega} & \texttt{float32}: m, m, rad, rad/s\\
+14 & \texttt{first\_azimuth} & 0.01\textdegree & 44 & \texttt{v} & \texttt{float32}, m/s\\
+16 & \texttt{model} & lidar model & & &\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{itemize}
+\item \textbf{Header flags:} bit 0 a state has been received (if 0, points are uncorrected and
+the state fields mean nothing); bit 1 one count is 4\,mm (else 2\,mm); bit 2 a lidar packet
+arrived corrupted; bit 3 lidar data was discarded.
+\item \textbf{Block flags:} bit 0 first block of a new sweep; bit 1 padding, skip the block.
+\item \textbf{Points:} $x$ forward, $y$ left, $z$ up, in counts. $x=y=z=-32768$ means no return.
+\end{itemize}
+
 \subsection{Host interface}
-An SPI slave (mode 0) exposes settings, event counters, the latest measurements and every filter
-word, which gives full visibility into the filter on the bench. A control bit selects whether the
-lidar block uses the filter's state or one written by the host. Reset values let the chip run
-with no host attached.
+The microcontroller is the SPI master: mode 0, most significant bit first, up to 5\,MHz. Byte 0 is
+$\{\textit{write},\ \textit{address}[6{:}0]\}$; data bytes follow and the address counts up, so
+several registers move in one transfer. Multi-byte numbers have the low byte at the lowest
+address. Reset values let the chip run with no host attached.
+
+\begin{table}[h]
+\centering\footnotesize
+\caption{Register map. Addresses in hexadecimal; reset values in brackets.}
+\label{tab:regs}
+\begin{tabularx}{\linewidth}{@{}lX@{\quad}lX@{}}
+\toprule
+\texttt{00}, \texttt{01} & ID (\texttt{A7}) and version (\texttt{01}) &
+\texttt{24}--\texttt{3B} & host-supplied state: time, $x$, $y$, $\theta$, $\omega$, $v$\\
+\texttt{02} & control [\texttt{43}], bits below &
+\texttt{3C}, \texttt{3D} & write: use the host state; clear the counters\\
+\texttt{03} & lidar model [0]: VLP-16, Hi-Res, VLP-32C, HDL-32E &
+\texttt{40}--\texttt{46} & event counters, read only, stop at 255\\
+\texttt{04}--\texttt{05} & beat period, \textmu s [2500] &
+\texttt{48}--\texttt{4B} & time of the last beat, \textmu s\\
+\texttt{06}--\texttt{07} & measurement deadline, \textmu s [2000] &
+\texttt{4C} & bit 0 VN-300 valid, bit 1 encoder valid\\
+\texttt{08}--\texttt{09} & UDP port the lidar sends to [2368] &
+\texttt{50}--\texttt{57} & VN-300 yaw and turn rate, \texttt{float32}\\
+\texttt{0A}--\texttt{0B} & lidar mounting angle, 0.01\textdegree, signed [0] &
+\texttt{58}--\texttt{67} & VN-300 latitude and longitude, \texttt{float64}\\
+\texttt{0C}--\texttt{17} & source MAC [\texttt{02:00:00:00:00:01}], destination MAC [broadcast] &
+\texttt{68}--\texttt{6B} & encoder travel since the last beat, counts\\
+\texttt{18}--\texttt{1F} & source IP [192.168.1.50], destination IP [broadcast] &
+\texttt{6C} & filter word address [96], write only\\
+\texttt{20}--\texttt{23} & source and destination UDP port [2370] &
+\texttt{70}--\texttt{73} & the filter word at that address\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{Control bits (register \texttt{02}).} 0 timestamper on; 1 lidar on; 2 lidar bypass; 3
+output step 4\,mm; 4 correct for turning; 5 correct for moving; 6 check the encoder's turn bits;
+7 lidar state comes from the filter (0: from \texttt{24}--\texttt{3B}). At reset bits 0, 1 and 6
+are set, so the host must set bit 7 to use the filter and bits 4 and 5 to switch on correction.
+
+\textbf{Counters (\texttt{40}--\texttt{46}).} Lidar packets, other frames, bad received checksums,
+frames sent, buffer overflows, motion overruns, transmit underruns.
+
+\textbf{Filter words (\texttt{6C}, \texttt{70}--\texttt{73}).} Every word can be read: storage
+0--62, constants 64--111, sensor words 112--126. Words 96--103 can be written while control bit 7
+is 0 and keep their built-in value until written:
+
+\begin{center}\footnotesize
+\begin{tabular}{@{}ll@{\qquad}ll@{}}
+\toprule
+96 & position measurement noise, variance (m$^2$) & 100 & turn-rate process noise per beat (rad/s)\\
+97 & heading measurement noise (rad$^2$) & 101 & heading process noise per beat (rad)\\
+98 & turn-rate measurement noise ((rad/s)$^2$) & 102 & radians of wheel rotation per encoder count\\
+99 & position process noise per beat (m) & 103 & starting wheel radius (m)\\
+\bottomrule
+\end{tabular}
+\end{center}
 
 \section{Physical design}
 
@@ -257,64 +378,107 @@ Routed wire & 2.1\,m & DRC, LVS, Tiny Tapeout precheck & clean\\
 \end{tabular}
 \end{center}
 
-\textbf{What made it fit.}
+\subsection{Latch storage}
+The filter's 71 words, the lidar's 256-word point buffer and the held sensor words are
+\texttt{dlxtp\_1} latches placed by name: 6,484 bits, each a quarter to 40\,\% smaller than a
+flip-flop. No clock is gated. One flip-flop on the falling edge makes a one-clock pulse for the
+whole memory, and an AND gate per word combines it with that word's select
+(Fig.~\ref{fig:latch}). The select and the data come from registers that hold until the next
+write, so they are steady for half a clock before the enable rises and well after it falls. Both
+margins hold by construction and do not depend on the tools checking latch timing.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[circuit logic US,x=1mm,y=1mm,font=\scriptsize]
+  \newcommand{\cell}[4]{% name, centre, lower-left label, bubble (0/1)
+    \node[ff,minimum width=10mm,minimum height=11mm] (#1) at (#2) {};
+    \node[font=\tiny,anchor=west,inner sep=1pt] at ($(#1.west)+(0,2)$) {D};
+    \node[font=\tiny,anchor=east,inner sep=1pt] at ($(#1.east)+(0,2)$) {Q};
+    #3}
+  \newcommand{\ck}[1]{\draw[rule] ($(#1.west)+(0,-1.6)$) -- ++(1.6,-1) -- ++(-1.6,-1);}
+  \cell{r1}{0,14}{\ck{r1}}{}
+  \cell{r2}{0,0}{\ck{r2}}{}
+  \cell{p}{17,-15}{\ck{p}\draw[rule,fill=white] ($(p.west)+(-0.8,-2.6)$) circle (0.8);}{}
+  \cell{l}{52,8}{\node[font=\tiny,anchor=west,inner sep=1pt] at ($(l.west)+(0,-2)$) {G};}{}
+  \node[draw=rule,fill=ctl,minimum width=11mm,minimum height=7mm] (dec) at (18,2) {decode};
+  \node[and gate,draw=rule,fill=blk,inputs=nn] (g) at (35,-4) {};
+  \node[above=0pt of r1] {data register};
+  \node[below=0pt of r2] {address register};
+  \node[below=0pt of p] {falling-edge flip-flop};
+  \node[anchor=north west,inner sep=1pt] at ($(l.south west)+(1,-1)$) {latch, one per bit};
+  \draw[data] (-13,16) node[left]{\texttt{wdata}} -- ($(r1.west)+(0,2)$);
+  \draw[data] (-13,2) node[left]{\texttt{waddr}} -- ($(r2.west)+(0,2)$);
+  \draw[data] (-13,-13) node[left]{\texttt{we}} -- ($(p.west)+(0,2)$);
+  \draw[data] ($(r1.east)+(0,2)$) -- (43,16) |- ($(l.west)+(0,2)$);
+  \draw[data] ($(r2.east)+(0,2)$) -- (dec.west);
+  \draw[data] (dec.east) -- (28,2) node[above right=-1pt and 0pt]{\texttt{sel[i]}} |- (g.input 1);
+  \draw[data] ($(p.east)+(0,2)$) -- (28,-13) node[below right=-1pt and 0pt]{\texttt{pulse}} |- (g.input 2);
+  \draw[data] (g.output) -- (43,-4) node[below right=-1pt and 0pt]{\texttt{gate[i]}} |- ($(l.west)+(0,-2)$);
+  \draw[data] ($(l.east)+(0,2)$) -- ++(5,0) node[right]{\texttt{q[i]}};
+  % waveforms
+  \begin{scope}[shift={(88,-15)}]
+    \foreach \y/\n in {28/clk,21/data{,} sel,14/pulse,7/gate[i],0/q[i]} \node[left] at (0,\y+1.5) {\texttt{\n}};
+    \draw[wv] (0,28)--(4,28)--(4,31)--(10,31)--(10,28)--(16,28)--(16,31)--(22,31)--(22,28)--(28,28)--(28,31)--(34,31)--(34,28)--(40,28)--(40,31)--(46,31)--(46,28)--(50,28);
+    \draw[wv] (0,21)--(4,21)--(5,24)--(50,24); \draw[wv] (0,24)--(4,24)--(5,21)--(50,21);
+    \draw[wv] (0,14)--(10,14)--(10,17)--(22,17)--(22,14)--(50,14);
+    \draw[wv] (0,7)--(11,7)--(11,10)--(23,10)--(23,7)--(50,7);
+    \draw[wv] (0,0)--(12,0)--(13,3)--(50,3); \draw[wv] (0,3)--(12,3)--(13,0)--(50,0);
+    \draw[accent,densely dotted] (4,-1.5)--(4,33); \draw[accent,densely dotted] (10,-1.5)--(10,33); \draw[accent,densely dotted] (22,-1.5)--(22,33);
+    \draw[accent,<->] (4,-3)--(10,-3); \node[text=accent,anchor=west] at (11,-3) {half a clock of setup};
+  \end{scope}
+\end{tikzpicture}
+\caption{Writing a latch word without a gated clock, and its timing.}
+\label{fig:latch}
+\end{figure}
+
+An earlier version used a clock gate per word. The tools treated the 256 gated clocks as clock
+nets, gave each wide wiring, and could not route the result. The same latches hold the VN-300
+words for the duration of a filter update; doing that in 116 flip-flops instead put utilisation
+at 78.65\,\% and detailed routing never converged, where latches give 78.23\,\% and route cleanly.
+
+\subsection{Read paths and two-clock paths}
+Reading a latch memory is a wide selector. Left alone, the tools build it flat, and wherever its
+words land far apart a small gate is left driving millimetres of wire. The selector is therefore
+built in two levels with \texttt{buf\_4} cells instantiated by name between them
+(Fig.~\ref{fig:read}), which also gives the timing constraints fixed pins to refer to.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[node distance=4mm and 6mm]
+  \node[ctlb] (pc) {Program\\counter};
+  \node[box,right=of pc] (rom) {Step\\table};
+  \node[ctlb,right=of rom] (ra) {Read address\\register};
+  \node[box,right=of ra] (m1) {Selector,\\8 words};
+  \node[box,right=of m1,fill=white] (b) {\texttt{buf\_4}\\by name};
+  \node[box,right=of b] (m2) {Selector,\\groups};
+  \node[ctlb,right=of m2] (fp) {Operand\\register};
+  \foreach \a/\b in {pc/rom,rom/ra,ra/m1,m1/b,b/m2,m2/fp} \draw[data] (\a) -- (\b);
+  \draw[accent,|<->|] ($(pc.south)+(0,-3mm)$) -- node[lab,below,text=accent]{two clocks} ($(ra.south)+(-1mm,-3mm)$);
+  \draw[accent,|<->|] ($(ra.south)+(1mm,-3mm)$) -- node[lab,below,text=accent]{two clocks} ($(fp.south)+(0,-3mm)$);
+\end{tikzpicture}
+\caption{The filter's read path. Yellow: registers. The sequencer waits a clock after the counter changes, and takes a word only after its address has been steady for a full clock.}
+\label{fig:read}
+\end{figure}
+
+Four paths are too long for one 20\,ns clock at the slow corner: the two in
+Fig.~\ref{fig:read}, the lidar buffer read and the SPI read address. On each the logic waits one
+extra clock, and the constraints declare a two-clock path (\texttt{set\_multicycle\_path}) through
+named nets and the named buffer pins. In simulation the value is forced unknown during the wait,
+so any logic that used it early would fail the tests.
+
+\subsection{Flow settings and remaining warnings}
 \begin{itemize}
-\item \textbf{Latches for storage.} The filter's words, the lidar point buffer and the held
-sensor words are latches written by one-clock enable pulses. That is 6,484 bits, each a
-quarter to 40\,\% smaller than a flip-flop.
-\item \textbf{Serial arithmetic and a stored program.} One adder and a table of steps replace a
-multiplier, a divider and their control. The step table is kept as its own block in synthesis;
+\item \textbf{Settings.} Area-oriented synthesis, routability-driven placement off, placement
+wire-length weight 0.12, repair after global routing with a 200\,\textmu m wire limit, three
+corners during placement and routing. The step table is kept as its own block in synthesis;
 merged with its surroundings it maps to more cells and the chip does not route.
-\item \textbf{Two-clock paths.} Four paths are too long for one 20\,ns clock at the slow corner: the
-program counter through the step table, the storage read into the arithmetic unit, the lidar
-buffer read and the SPI read address. The logic waits one extra clock on each, and the timing
-constraints declare them as two-clock paths anchored on named nets.
-\item \textbf{Flow settings.} Area-oriented synthesis, routability-driven placement off, a
-placement wire-length weight of 0.12, repair after global routing with a 200\,\textmu m wire
-limit, and three corners during placement and routing.
+\item \textbf{Slew.} The flow's 0.75\,ns limit is exceeded on 195 pins at the typical corner and
+5,328 at the slow corner. Most are marginal: 59 pins exceed 1.5\,ns at the slow corner and 15
+at typical (worst 4.3 and 2.4\,ns). They are weak buffers on wires that lengthened in detailed
+routing. Static timing includes these edges and passes.
+\item \textbf{MII clocks.} The two 25\,MHz clocks are not constrained in the flow; data crosses
+only through the asynchronous FIFOs.
 \end{itemize}
-
-\textbf{The congestion limit.} Holding the sensor words in 116 flip-flops put utilisation at
-78.65\,\% and detailed routing never converged. The same function in latches gives 78.23\,\% and
-routes cleanly. The margin is about 0.4\,\% of the core.
-
-\textbf{Remaining warnings.} The flow's 0.75\,ns slew limit is exceeded on 195 pins at the typical
-corner and 5,328 at the slow corner. Most are marginal: 59 pins exceed 1.5\,ns at the slow corner
-and 15 at typical (worst 4.3 and 2.4\,ns). They are weak buffers on wires that lengthened in
-detailed routing. Static timing includes these edges and passes. The two MII clocks are not
-constrained in the flow; data crosses only through the asynchronous FIFOs.
-
-\section{Verification}
-
-\begin{center}\small
-\begin{tabularx}{\linewidth}{@{}lXl@{}}
-\toprule
-Level & Check & Result\\
-\midrule
-Arithmetic unit & random vectors against NumPy \texttt{float32}, every operation & bit-exact\\
-Filter & every storage word after every beat against the exact model of the machine & 791 of 791 words\\
-Filter accuracy & simulated drive, position error against the double-precision reference filter & 0.876\,m vs 0.873\,m\\
-Filter in the chip & sensors to lidar header, with replay through the model; overrun pulses & 17 checks, 8 states\\
-Whole chip & pin-to-pin: sensors, lidar frames in and out, SPI & 21 checks\\
-Host registers & register map and filter access over SPI & 34 checks\\
-Lidar & MII receive; motion correction; full path, 16,128 points and bypass & 0 wrong\\
-Gate level & filter test repeated on the routed netlist with SkyWater cell models & identical to RTL\\
-Timing & static analysis after routing, nine corners & no violations\\
-Layout & DRC, LVS, antenna, Tiny Tapeout precheck and its gate-level test & pass\\
-\bottomrule
-\end{tabularx}
-\end{center}
-
-RTL and gate-level simulations ran in Synopsys VCS. The gate-level run is functional (unit delay),
-so timing rests on the static analysis. The Python model that the hardware is compared against
-is the same script that generates the step table, so the tested program is the one on the chip.
-
-\textbf{Not yet proven on hardware.} A Genesys~2 FPGA port is being used to test against real
-sensors. These points come from datasheets and have not met hardware: the VN-300 message layout,
-CRC byte order and SyncIn-triggered output; the AMT22 check bits; real VLP-16 packets; and the
-sensor conventions built into the filter (yaw clockwise from north in degrees, 16,384 encoder
-counts per turn, latitude 32--64\textdegree\,N and longitude 64--128\textdegree\,W). The
-encoder scale is host-replaceable; the others are changed by regenerating the step table.
 
 \section{Pins}
 
@@ -336,7 +500,6 @@ level-shifted), two 100\,Mbit MII Ethernet PHYs, a 50\,MHz oscillator and an SPI
 
 \vfill
 {\footnotesize\color{black!60} RTL and flow: \texttt{umigv/umarv-sensorfusion-tapeout}, commit
-\texttt{e5e746b}. Physical numbers are from the build of the identical sources on a trial branch; test
-results are from those sources in Synopsys VCS.}
+\texttt{e5e746b}. Physical numbers are from the build of the identical sources on a trial branch.}
 
 \end{document}
