@@ -1,6 +1,6 @@
 % UMARV sensor fusion chip: design report.
 % Build: pdflatex sensor_fusion_chip_report.tex   (run twice for references)
-\documentclass[10pt,letterpaper,twocolumn]{article}
+\documentclass[10pt,letterpaper]{article}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage[margin=0.7in,top=0.7in,bottom=0.8in,columnsep=0.28in]{geometry}
@@ -14,6 +14,8 @@
 \usepackage{tikz}
 \usepackage{graphicx}
 \usepackage{float}
+\usepackage{multicol}
+\setlength{\columnsep}{0.28in}\setlength{\multicolsep}{4pt}
 \usetikzlibrary{arrows.meta,positioning,fit,calc,backgrounds,circuits.logic.US}
 \usepackage[colorlinks,linkcolor=black,urlcolor=black]{hyperref}
 
@@ -49,7 +51,6 @@
 
 \begin{document}
 
-\twocolumn[{%
 \begin{center}
 {\LARGE\bfseries A 400\,Hz Sensor Fusion and Lidar Motion-Correction\\[3pt] ASIC in SkyWater 130\,nm}\\[7pt]
 {\large University of Michigan Autonomous Robotic Vehicle Team}\\[5pt]
@@ -90,8 +91,8 @@ Bangyan Huang, Dev Veeramani, Thuong Vo, Nabhah Veeramani, Jimmy Xu, Adam Marrak
 the 4-bit interface between a PHY and the chip. SPI: serial peripheral interface.}
 \label{fig:system}
 \end{center}
-\vspace{6pt}
-}]
+\vspace{2pt}
+\begin{multicols}{2}
 
 \section{Introduction}
 
@@ -139,7 +140,7 @@ message's cyclic redundancy check and the encoder's parity, then starts the filt
 deadline bounds the wait, so a late or corrupt sensor costs one update of that sensor and never
 stalls the filter.
 
-\begin{figure}[!htb]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[x=1mm,y=1mm]
   \node[extb,font=\scriptsize,minimum height=6mm] (vn) at (0,12) {VN-300};
@@ -220,7 +221,64 @@ $\sigma_\omega=5$\,mrad/s (angular acceleration density 0.01\,rad$^2$/s$^3$). Th
 $\sigma_\theta=5$\,\textmu rad and $\sigma_r=0.1$\,\textmu m keep those states adjustable; they
 are not derived and are host-writable for tuning on the robot.
 
-\begin{figure*}[t]
+
+
+
+
+\textit{(c) Correction.}
+The measurement model is $\mathbf{z}_k=H\mathbf{x}_k+\mathbf{v}_k$ with
+$\mathbf{z}=[x,\,y,\,\theta,\,\omega]^{\mathsf T}$ from the VN-300, $H=[\,I_4\;\;\mathbf{0}\,]$ and
+$\mathbf{v}_k\sim\mathcal{N}(0,R)$. Correction is the Kalman update
+\begin{align*}
+K &= P_k^-H^{\mathsf T}\,(HP_k^-H^{\mathsf T}+R)^{-1}\\
+\hat{\mathbf x}_k &= \hat{\mathbf x}_k^-+K\,(\mathbf{z}_k-H\hat{\mathbf x}_k^-)\\
+P_k &= (I-KH)\,P_k^-
+\end{align*}
+with the heading difference wrapped to $(-\pi,\pi]$. Because each reading is one state, the four
+are applied one after another: the gain for a reading is one column of $P$ divided by a scalar,
+and no matrix is inverted. This is exact for a diagonal $R$.
+
+$R$ is a constant diagonal: 0.71\,m per axis for position (the datasheet's 1\,m horizontal RMS),
+$1^\circ$ for heading, and $0.056^\circ$/s for turn rate (gyro noise density over its
+bandwidth). Position and heading are inflated because the VN-300's errors are correlated over
+many samples (about 14\,s and 72\,s) while the filter treats each 400\,Hz sample as independent;
+Section~\ref{sec:eval} shows the effect. Two simplifications remain. The VN-300 can report its
+own uncertainty with every sample and the chip does not request it, so $R$ cannot follow
+satellite conditions: a sample is used with the fixed $R$ or, when the status word reports no
+fix or an error, dropped. And the VN-300's outputs are correlated with each other, which a
+diagonal $R$ ignores. Both would be corrected by parsing the uncertainty fields and decorrelating
+the readings, at the cost of a longer message, more storage and more steps. $R$ is host-writable
+in the meantime.
+
+\textit{(d) Square-root form.}
+The filter carries $S$ in place of $P$. Rounding in single precision can leave $P$ asymmetric or
+indefinite after many updates, which then needs detection and repair; $S$ cannot represent an
+invalid covariance. Every term $W_i^c\,\mathbf{d}_i\mathbf{d}_i^{\mathsf T}$ in (b) and every
+reading in (c) is a rank-one change to $P$, and each is applied to $S$ directly as a Cholesky
+rank-one update or downdate. $S_k^-$ starts as the factor of $Q$; the center point, whose weight
+is negative, is a downdate.
+
+\subsection{Filter hardware}
+\label{sec:fhw}
+
+
+
+The filter is one arithmetic unit, one memory and a program (Fig.~\ref{fig:machine}), where a
+conventional design would be a datapath of multipliers. That is enough because an update is
+3,218 arithmetic operations (Fig.~\ref{fig:pipe}) and has 125,000 clocks, so 39 clocks per
+operation is fast enough. The team's earlier parallel design (multiply-accumulate array, sigma-point generator
+and Cholesky block) synthesized to 37 tiles of cells before placement, against 32 available, and
+would have finished each update with most of the period unused.
+
+A step of the program is $d=a\;\text{op}\;b$, or a jump, call or return. The sequencer fetches a
+step, reads $a$ and then $b$ through one selector that spans the storage, the constants and the
+held sensor words, starts the arithmetic unit, and writes the result back. The unit is IEEE
+single precision on one 29-bit adder, shifting one bit per clock; an operation takes at most 32
+clocks. Fixed point was rejected on simulation: with 16 fractional bits the covariance downdate
+failed on about half of all updates.
+
+\end{multicols}
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[x=1mm,y=1mm,font=\scriptsize]
   \tikzset{w/.style={->,draw=black!80,line width=0.5pt},bl/.style={font=\tiny,text=black!70,inner sep=1pt}}
@@ -260,67 +318,10 @@ are not derived and are host-writable for tuning on the robot.
 \caption{The filter as built. Each step of the table names an operation, two operand addresses and
 a destination. The shaded strip on each memory is its address decoder. Numbers are bus widths in bits.}
 \label{fig:machine}
-\end{figure*}
+\end{figure}
+\begin{multicols}{2}
 
-\begin{figure*}[t]
-\centering
-\begin{tikzpicture}[node distance=4mm and 4.2mm]
-  \node[box] (rx) {MII receive\\CRC check};
-  \node[box,right=of rx] (f1) {Clock-crossing\\FIFO};
-  \node[box,right=of f1] (pp) {Packet\\parser};
-  \node[box,right=of pp] (pb) {Point buffer\\256 distances};
-  \node[box,right=of pb] (xyz) {$x,y,z$\\transform};
-  \node[box,right=of xyz] (fb) {Frame\\builder};
-  \node[box,right=of fb] (f2) {Clock-crossing\\FIFO};
-  \node[box,right=of f2] (tx) {MII transmit\\CRC};
-  \node[box,below=6mm of xyz] (mo) {Motion since sweep start\\(CORDIC sine, cosine)};
-  \node[lab,left=6mm of mo] (st) {filter state\\$\omega$, $v$, time};
-  \foreach \a/\b in {rx/f1,f1/pp,pp/pb,pb/xyz,xyz/fb,fb/f2,f2/tx} \draw[data] (\a) -- (\b);
-  \draw[data] (mo) -- (xyz);
-  \draw[data] (st) -- (mo);
-  \draw[ctrl] (rx.north) -- ++(0,4mm) -| node[lab,pos=0.25,above]{bypass: frames forwarded unchanged} (fb.north);
-\end{tikzpicture}
-\caption{Lidar path. The two MII sides run on their own 25\,MHz clocks.}
-\label{fig:lidar}
-\end{figure*}
-
-\textit{(c) Correction.}
-The measurement model is $\mathbf{z}_k=H\mathbf{x}_k+\mathbf{v}_k$ with
-$\mathbf{z}=[x,\,y,\,\theta,\,\omega]^{\mathsf T}$ from the VN-300, $H=[\,I_4\;\;\mathbf{0}\,]$ and
-$\mathbf{v}_k\sim\mathcal{N}(0,R)$. Correction is the Kalman update
-\begin{align*}
-K &= P_k^-H^{\mathsf T}\,(HP_k^-H^{\mathsf T}+R)^{-1}\\
-\hat{\mathbf x}_k &= \hat{\mathbf x}_k^-+K\,(\mathbf{z}_k-H\hat{\mathbf x}_k^-)\\
-P_k &= (I-KH)\,P_k^-
-\end{align*}
-with the heading difference wrapped to $(-\pi,\pi]$. Because each reading is one state, the four
-are applied one after another: the gain for a reading is one column of $P$ divided by a scalar,
-and no matrix is inverted. This is exact for a diagonal $R$.
-
-$R$ is a constant diagonal: 0.71\,m per axis for position (the datasheet's 1\,m horizontal RMS),
-$1^\circ$ for heading, and $0.056^\circ$/s for turn rate (gyro noise density over its
-bandwidth). Position and heading are inflated because the VN-300's errors are correlated over
-many samples (about 14\,s and 72\,s) while the filter treats each 400\,Hz sample as independent;
-Section~\ref{sec:eval} shows the effect. Two simplifications remain. The VN-300 can report its
-own uncertainty with every sample and the chip does not request it, so $R$ cannot follow
-satellite conditions: a sample is used with the fixed $R$ or, when the status word reports no
-fix or an error, dropped. And the VN-300's outputs are correlated with each other, which a
-diagonal $R$ ignores. Both would be corrected by parsing the uncertainty fields and decorrelating
-the readings, at the cost of a longer message, more storage and more steps. $R$ is host-writable
-in the meantime.
-
-\textit{(d) Square-root form.}
-The filter carries $S$ in place of $P$. Rounding in single precision can leave $P$ asymmetric or
-indefinite after many updates, which then needs detection and repair; $S$ cannot represent an
-invalid covariance. Every term $W_i^c\,\mathbf{d}_i\mathbf{d}_i^{\mathsf T}$ in (b) and every
-reading in (c) is a rank-one change to $P$, and each is applied to $S$ directly as a Cholesky
-rank-one update or downdate. $S_k^-$ starts as the factor of $Q$; the center point, whose weight
-is negative, is a downdate.
-
-\subsection{Filter hardware}
-\label{sec:fhw}
-
-\begin{figure}[!htb]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[x=1mm,y=1mm,font=\scriptsize]
   \foreach \k/\y/\ttl/\sub/\ops in {
@@ -338,20 +339,6 @@ is negative, is a downdate.
 (RTL simulation), of 125,000 available.}
 \label{fig:pipe}
 \end{figure}
-
-The filter is one arithmetic unit, one memory and a program (Fig.~\ref{fig:machine}), where a
-conventional design would be a datapath of multipliers. That is enough because an update is
-3,218 arithmetic operations (Fig.~\ref{fig:pipe}) and has 125,000 clocks, so 39 clocks per
-operation is fast enough. The team's earlier parallel design (multiply-accumulate array, sigma-point generator
-and Cholesky block) synthesized to 37 tiles of cells before placement, against 32 available, and
-would have finished each update with most of the period unused.
-
-A step of the program is $d=a\;\text{op}\;b$, or a jump, call or return. The sequencer fetches a
-step, reads $a$ and then $b$ through one selector that spans the storage, the constants and the
-held sensor words, starts the arithmetic unit, and writes the result back. The unit is IEEE
-single precision on one 29-bit adder, shifting one bit per clock; an operation takes at most 32
-clocks. Fixed point was rejected on simulation: with 16 fractional bits the covariance downdate
-failed on about half of all updates.
 
 Each stage of Section~\ref{sec:filter} is shaped to fit this machine.
 \begin{itemize}
@@ -377,64 +364,9 @@ the program evaluated in Section~\ref{sec:eval} is the one on the chip.
 
 
 
-\begin{figure*}[t]
-\centering
-\includegraphics[width=0.495\linewidth]{dieshot.jpg}\hfill\includegraphics[width=0.495\linewidth]{floorplan.png}\\[3pt]
-{\scriptsize
-\newcommand{\sw}[2]{\tikz[baseline=-0.6ex]\fill[#1] (0,-0.9mm) rectangle (2.6mm,0.9mm);\,#2\quad}
-\definecolor{fpA}{HTML}{90CDF4}\definecolor{fpB}{HTML}{2B6CB0}\definecolor{fpC}{HTML}{C05621}\definecolor{fpD}{HTML}{F6AD55}
-\definecolor{fpE}{HTML}{F6E05E}\definecolor{fpF}{HTML}{68D391}\definecolor{fpG}{HTML}{B794F4}
-\sw{fpA}{lidar logic 41\,\%}\sw{fpB}{lidar point buffer 23\,\%}\sw{fpC}{filter storage 14\,\%}\sw{fpD}{step table 4\,\%}\\[1pt]
-\sw{fpE}{filter arithmetic and sequencer 7\,\%}\sw{fpF}{host registers 7\,\%}\sw{fpG}{timestamper 4\,\%}}
-\caption{The final layout. Left: metal layers, from local interconnect (violet) to the metal-4 power
-straps (red). Right: each cell colored by block, with shares of logic cell area. Cells without
-a block name are assigned by connectivity, so boundaries are approximate.}
-\label{fig:layout}
-\end{figure*}
 
-\begin{figure*}[t]
-\centering
-\begin{tikzpicture}[circuit logic US,x=1mm,y=1mm,font=\scriptsize]
-  \newcommand{\cell}[4]{% name, center, lower-left label, bubble (0/1)
-    \node[ff,minimum width=10mm,minimum height=11mm] (#1) at (#2) {};
-    \node[font=\tiny,anchor=west,inner sep=1pt] at ($(#1.west)+(0,2)$) {D};
-    \node[font=\tiny,anchor=east,inner sep=1pt] at ($(#1.east)+(0,2)$) {Q};
-    #3}
-  \newcommand{\ck}[1]{\draw[rule] ($(#1.west)+(0,-1.6)$) -- ++(1.6,-1) -- ++(-1.6,-1);}
-  \cell{r1}{0,14}{\ck{r1}}{}
-  \cell{r2}{0,0}{\ck{r2}}{}
-  \cell{p}{17,-15}{\ck{p}\draw[rule,fill=white] ($(p.west)+(-0.8,-2.6)$) circle (0.8);}{}
-  \cell{l}{52,8}{\node[font=\tiny,anchor=west,inner sep=1pt] at ($(l.west)+(0,-2)$) {G};}{}
-  \node[draw=rule,fill=ctl,minimum width=11mm,minimum height=7mm] (dec) at (18,2) {decode};
-  \node[and gate,draw=rule,fill=blk,inputs=nn] (g) at (35,-4) {};
-  \node[above=0pt of r1] {data register};
-  \node[below=0pt of r2] {address register};
-  \node[below=0pt of p] {falling-edge flip-flop};
-  \node[anchor=north west,inner sep=1pt] at ($(l.south west)+(1,-1)$) {latch, one per bit};
-  \draw[data] (-13,16) node[left]{\texttt{wdata}} -- ($(r1.west)+(0,2)$);
-  \draw[data] (-13,2) node[left]{\texttt{waddr}} -- ($(r2.west)+(0,2)$);
-  \draw[data] (-13,-13) node[left]{\texttt{we}} -- ($(p.west)+(0,2)$);
-  \draw[data] ($(r1.east)+(0,2)$) -- (43,16) |- ($(l.west)+(0,2)$);
-  \draw[data] ($(r2.east)+(0,2)$) -- (dec.west);
-  \draw[data] (dec.east) -- (28,2) node[above right=-1pt and 0pt]{\texttt{sel[i]}} |- (g.input 1);
-  \draw[data] ($(p.east)+(0,2)$) -- (28,-13) node[below right=-1pt and 0pt]{\texttt{pulse}} |- (g.input 2);
-  \draw[data] (g.output) -- (43,-4) node[below right=-1pt and 0pt]{\texttt{gate[i]}} |- ($(l.west)+(0,-2)$);
-  \draw[data] ($(l.east)+(0,2)$) -- ++(5,0) node[right]{\texttt{q[i]}};
-  % waveforms
-  \begin{scope}[shift={(88,-15)}]
-    \foreach \y/\n in {28/clk,21/data{,} sel,14/pulse,7/gate[i],0/q[i]} \node[left] at (0,\y+1.5) {\texttt{\n}};
-    \draw[wv] (0,28)--(4,28)--(4,31)--(10,31)--(10,28)--(16,28)--(16,31)--(22,31)--(22,28)--(28,28)--(28,31)--(34,31)--(34,28)--(40,28)--(40,31)--(46,31)--(46,28)--(50,28);
-    \draw[wv] (0,21)--(4,21)--(5,24)--(50,24); \draw[wv] (0,24)--(4,24)--(5,21)--(50,21);
-    \draw[wv] (0,14)--(10,14)--(10,17)--(22,17)--(22,14)--(50,14);
-    \draw[wv] (0,7)--(11,7)--(11,10)--(23,10)--(23,7)--(50,7);
-    \draw[wv] (0,0)--(12,0)--(13,3)--(50,3); \draw[wv] (0,3)--(12,3)--(13,0)--(50,0);
-    \draw[accent,densely dotted] (4,-1.5)--(4,33); \draw[accent,densely dotted] (10,-1.5)--(10,33); \draw[accent,densely dotted] (22,-1.5)--(22,33);
-    \draw[accent,<->] (4,-3)--(10,-3); \node[text=accent,anchor=west] at (11,-3) {half a clock of setup};
-  \end{scope}
-\end{tikzpicture}
-\caption{Writing a latch word without a gated clock, and its timing.}
-\label{fig:latch}
-\end{figure*}
+
+
 
 \subsection{Lidar output format}
 
@@ -444,7 +376,7 @@ A Velodyne VLP-16 spins 16 lasers ten times a second and sends about 754 packets
 each a distance in 2\,mm units and a reflectivity. That is 290,000 returns per second, and one
 sweep of about 29,000 returns takes 100\,ms.
 
-\begin{figure}[!htb]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[x=1mm,y=1mm,font=\scriptsize]
   \draw[fill=ext,draw=rule] (0,0) rectangle (12,6) node[midway]{header};
@@ -476,7 +408,7 @@ v\,t &= 2\,\text{m/s}\times0.1\,\text{s}=0.2\,\text{m}
 \end{align*}
 The error from motion is about 50 times the lidar's $\pm3$\,cm range accuracy~\cite{puck}.
 
-\begin{figure}[!htb]
+\begin{figure}[H]
 \centering
 \begin{tikzpicture}[x=5.4mm,y=5.4mm,font=\scriptsize]
   \foreach \ox/\ttl/\k in {0/{true scene}/0, 5.2/{measured while turning}/0.28, 10.4/{corrected}/0} {
@@ -518,6 +450,51 @@ was chosen so that the computer receives compensated points with the state attac
 lidar processing of its own. Some modularity is kept: the corrections can be disabled, the host can supply the state, and the
 block can pass frames through untouched.
 
+\end{multicols}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=0.94mm,y=1mm,font=\scriptsize]
+  \tikzset{w/.style={->,draw=black!80,line width=0.5pt},bl/.style={font=\tiny,text=black!70,inner sep=1pt},
+           b/.style={draw=rule,fill=blk,align=center,inner sep=2pt,minimum height=9mm},
+           dom/.style={font=\tiny\bfseries,text=accent,inner sep=1pt}}
+  % clock domains
+  \fill[ctl!70] (0,2) rectangle (44,23); \fill[ext] (0,-23) rectangle (44,-2);
+  \fill[blk!35] (44,-23) rectangle (176,23);
+  \draw[accent,dashed,line width=0.6pt] (44,-23) -- (44,23);
+  \node[dom,anchor=north west] at (1,22.5) {\texttt{mii\_rx\_clk}, 25\,MHz};
+  \node[dom,anchor=south west] at (1,-22.5) {\texttt{mii\_tx\_clk}, 25\,MHz};
+  \node[dom,anchor=south east] at (175,-22.5) {\texttt{clk}, 50\,MHz};
+  % PHY-side blocks
+  \node[b,minimum width=22mm] (rx) at (17,10) {MII receive\\frame check};
+  \node[b,minimum width=22mm] (tx) at (17,-10) {MII transmit\\frame check};
+  \node[b,fill=white,minimum width=16mm] (f1) at (44,10) {dual-clock\\FIFO};
+  \node[b,fill=white,minimum width=16mm] (f2) at (44,-10) {dual-clock\\FIFO};
+  % core
+  \node[b,minimum width=23mm] (pp) at (75,10) {Header check,\\packet parser};
+  \node[b,minimum width=25mm] (pb) at (104,10) {Point buffer\\256 $\times$ 16, latches};
+  \node[b,minimum width=23mm] (xyz) at (132,10) {$x,y,z$ transform\\16-bit multiplier};
+  \node[b,minimum width=23mm] (fb) at (75,-10) {Frame builder\\header + points};
+  \node[b,minimum width=17mm] (lt) at (135,-8) {Laser angle\\table};
+  \node[b,minimum width=21mm] (mo) at (163,10) {Motion since\\sweep start};
+  \node[b,minimum width=21mm,minimum height=7mm] (co) at (163,-7) {CORDIC};
+  \draw[w] (-11,10) -- node[bl,above,pos=0.3]{lidar PHY} (rx);
+  \draw[w] (tx) -- node[bl,above,pos=0.7]{computer PHY} (-11,-10);
+  \draw[w] (rx) -- (f1); \draw[w] (f1) -- (pp); \draw[w] (pp) -- (pb); \draw[w] (pb) -- (xyz);
+  \draw[w] (mo) -- node[bl,above]{$\sin,\cos$} node[bl,below]{shift} (xyz);
+  \draw[w,<->] (mo) -- (co); \draw[w] (lt) -- (lt|-xyz.south);
+  \draw[w] ($(xyz.south west)+(2.5,0)$) |- node[bl,pos=0.75,above]{points} (fb.east);
+  \draw[w] (fb) -- (f2); \draw[w] (f2) -- (tx);
+  \fill[black!80] (57,10) circle (0.5); \draw[w] (57,10) -- (57,-7.5) -- (fb.west|-0,-7.5);
+  \node[bl,anchor=west] at (58,0) {bypass};
+  \draw[w] (163,21.5) -- (mo.north); \node[bl,anchor=east] at (161.5,19.5) {filter state $\omega$, $v$, time};
+\end{tikzpicture}
+\caption{Lidar path as built. Only the two MII blocks and one side of each FIFO run on the PHY
+clocks; the dashed line is the clock-domain boundary.}
+\label{fig:lidar}
+\end{figure}
+\begin{multicols}{2}
+
+
 
 
 \section{Physical design}
@@ -526,7 +503,25 @@ block can pass frames through untouched.
 
 Table~\ref{tab:pd} and Fig.~\ref{fig:layout} summarize the routed design.
 
-\begin{table}[!htb]
+\end{multicols}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.495\linewidth]{dieshot.jpg}\hfill\includegraphics[width=0.495\linewidth]{floorplan.png}\\[3pt]
+{\scriptsize
+\newcommand{\sw}[2]{\tikz[baseline=-0.6ex]\fill[#1] (0,-0.9mm) rectangle (2.6mm,0.9mm);\,#2\quad}
+\definecolor{fpA}{HTML}{90CDF4}\definecolor{fpB}{HTML}{2B6CB0}\definecolor{fpC}{HTML}{C05621}\definecolor{fpD}{HTML}{F6AD55}
+\definecolor{fpE}{HTML}{F6E05E}\definecolor{fpF}{HTML}{68D391}\definecolor{fpG}{HTML}{B794F4}
+\sw{fpA}{lidar logic 41\,\%}\sw{fpB}{lidar point buffer 23\,\%}\sw{fpC}{filter storage 14\,\%}\sw{fpD}{step table 4\,\%}\\[1pt]
+\sw{fpE}{filter arithmetic and sequencer 7\,\%}\sw{fpF}{host registers 7\,\%}\sw{fpG}{timestamper 4\,\%}}
+\caption{The final layout. Left: metal layers, from local interconnect (violet) to the metal-4 power
+straps (red). Right: each cell colored by block, with shares of logic cell area. Cells without
+a block name are assigned by connectivity, so boundaries are approximate.}
+\label{fig:layout}
+\end{figure}
+\begin{multicols}{2}
+
+
+\begin{table}[H]
 \centering\footnotesize
 \caption{Physical results.}
 \label{tab:pd}
@@ -555,6 +550,53 @@ flip-flop makes a one-clock pulse for the whole memory and an AND gate per word 
 that word's select. Select and data come from registers that hold until the next write, so both
 are steady half a clock before the enable rises and until after it falls. These margins hold by
 construction.
+
+\end{multicols}
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[circuit logic US,x=1mm,y=1mm,font=\scriptsize]
+  \newcommand{\cell}[4]{% name, center, lower-left label, bubble (0/1)
+    \node[ff,minimum width=10mm,minimum height=11mm] (#1) at (#2) {};
+    \node[font=\tiny,anchor=west,inner sep=1pt] at ($(#1.west)+(0,2)$) {D};
+    \node[font=\tiny,anchor=east,inner sep=1pt] at ($(#1.east)+(0,2)$) {Q};
+    #3}
+  \newcommand{\ck}[1]{\draw[rule] ($(#1.west)+(0,-1.6)$) -- ++(1.6,-1) -- ++(-1.6,-1);}
+  \cell{r1}{0,14}{\ck{r1}}{}
+  \cell{r2}{0,0}{\ck{r2}}{}
+  \cell{p}{17,-15}{\ck{p}\draw[rule,fill=white] ($(p.west)+(-0.8,-2.6)$) circle (0.8);}{}
+  \cell{l}{52,8}{\node[font=\tiny,anchor=west,inner sep=1pt] at ($(l.west)+(0,-2)$) {G};}{}
+  \node[draw=rule,fill=ctl,minimum width=11mm,minimum height=7mm] (dec) at (18,2) {decode};
+  \node[and gate,draw=rule,fill=blk,inputs=nn] (g) at (35,-4) {};
+  \node[above=0pt of r1] {data register};
+  \node[below=0pt of r2] {address register};
+  \node[below=0pt of p] {falling-edge flip-flop};
+  \node[anchor=north west,inner sep=1pt] at ($(l.south west)+(1,-1)$) {latch, one per bit};
+  \draw[data] (-13,16) node[left]{\texttt{wdata}} -- ($(r1.west)+(0,2)$);
+  \draw[data] (-13,2) node[left]{\texttt{waddr}} -- ($(r2.west)+(0,2)$);
+  \draw[data] (-13,-13) node[left]{\texttt{we}} -- ($(p.west)+(0,2)$);
+  \draw[data] ($(r1.east)+(0,2)$) -- (43,16) |- ($(l.west)+(0,2)$);
+  \draw[data] ($(r2.east)+(0,2)$) -- (dec.west);
+  \draw[data] (dec.east) -- (28,2) node[above right=-1pt and 0pt]{\texttt{sel[i]}} |- (g.input 1);
+  \draw[data] ($(p.east)+(0,2)$) -- (28,-13) node[below right=-1pt and 0pt]{\texttt{pulse}} |- (g.input 2);
+  \draw[data] (g.output) -- (43,-4) node[below right=-1pt and 0pt]{\texttt{gate[i]}} |- ($(l.west)+(0,-2)$);
+  \draw[data] ($(l.east)+(0,2)$) -- ++(5,0) node[right]{\texttt{q[i]}};
+  % waveforms
+  \begin{scope}[shift={(88,-15)}]
+    \foreach \y/\n in {28/clk,21/data{,} sel,14/pulse,7/gate[i],0/q[i]} \node[left] at (0,\y+1.5) {\texttt{\n}};
+    \draw[wv] (0,28)--(4,28)--(4,31)--(10,31)--(10,28)--(16,28)--(16,31)--(22,31)--(22,28)--(28,28)--(28,31)--(34,31)--(34,28)--(40,28)--(40,31)--(46,31)--(46,28)--(50,28);
+    \draw[wv] (0,21)--(4,21)--(5,24)--(50,24); \draw[wv] (0,24)--(4,24)--(5,21)--(50,21);
+    \draw[wv] (0,14)--(10,14)--(10,17)--(22,17)--(22,14)--(50,14);
+    \draw[wv] (0,7)--(11,7)--(11,10)--(23,10)--(23,7)--(50,7);
+    \draw[wv] (0,0)--(12,0)--(13,3)--(50,3); \draw[wv] (0,3)--(12,3)--(13,0)--(50,0);
+    \draw[accent,densely dotted] (4,-1.5)--(4,33); \draw[accent,densely dotted] (10,-1.5)--(10,33); \draw[accent,densely dotted] (22,-1.5)--(22,33);
+    \draw[accent,<->] (4,-3)--(10,-3); \node[text=accent,anchor=west] at (11,-3) {half a clock of setup};
+  \end{scope}
+\end{tikzpicture}
+\caption{Writing a latch word without a gated clock, and its timing.}
+\label{fig:latch}
+\end{figure}
+\begin{multicols}{2}
+
 
 
 
@@ -586,7 +628,7 @@ quantized to 14 bits, and the true wheel radius is 1.5\,\% larger than the nomin
 filter starts from. A double-precision square-root unscented filter was given the same samples and the same $Q$ and $R$
 (Table~\ref{tab:acc}, Fig.~\ref{fig:eval}).
 
-\begin{table}[!htb]
+\begin{table}[H]
 \centering\footnotesize
 \caption{Simulated accuracy, RMS over six 150\,s runs after a 20\,s start-up.}
 \label{tab:acc}
@@ -602,7 +644,7 @@ Chip program, 32-bit float & 0.876 & 0.552 & $\le0.67$\\
 \end{tabular}
 \end{table}
 
-\begin{figure}[!htb]
+\begin{figure}[H]
 \centering
 \includegraphics[width=\linewidth]{filter_eval.pdf}
 \caption{Simulated filter accuracy. Left: position error, RMS of the six runs. Right: the chip
@@ -640,7 +682,7 @@ Holding the state between filter updates is not enough even at 400\,Hz. Integrat
 and speed at every firing, as the chip does, leaves under 2\,mm. The model excludes the filter's
 own error and its 1.9\,ms computing delay.
 
-\begin{table}[!htb]
+\begin{table}[H]
 \centering\footnotesize
 \caption{Largest remaining displacement of a return at 30\,m. Turns are peak rate and peak
 angular acceleration: 0.5\,rad/s and 1\,rad/s$^2$; 1 and 5; 2 and 20.}
@@ -674,7 +716,7 @@ state or a host-writable step table.
 \bibitem{puck} Velodyne Lidar, \emph{Puck (VLP-16) Datasheet}, 63-9229 Rev.~H: range accuracy up to $\pm3$\,cm (typical).
 \end{thebibliography}
 
-\onecolumn
+\end{multicols}
 \setlength{\intextsep}{4pt}\setlength{\abovecaptionskip}{3pt}
 
 \appendix
