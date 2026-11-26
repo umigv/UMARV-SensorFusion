@@ -483,20 +483,6 @@ extra clock, and the constraints declare a two-clock path (\texttt{set\_multicyc
 named nets and the named buffer pins. In simulation the value is forced unknown during the wait,
 so any logic that used it early would fail the tests.
 
-\subsection{Flow settings and remaining warnings}
-\begin{itemize}
-\item \textbf{Settings.} Area-oriented synthesis, routability-driven placement off, placement
-wire-length weight 0.12, repair after global routing with a 200\,\textmu m wire limit, three
-corners during placement and routing. The step table is kept as its own block in synthesis;
-merged with its surroundings it maps to more cells and the chip does not route.
-\item \textbf{Slew.} The flow's 0.75\,ns limit is exceeded on 195 pins at the typical corner and
-5,328 at the slow corner. Most are marginal: 59 pins exceed 1.5\,ns at the slow corner and 15
-at typical (worst 4.3 and 2.4\,ns). They are weak buffers on wires that lengthened in detailed
-routing. Static timing includes these edges and passes.
-\item \textbf{MII clocks.} The two 25\,MHz clocks are not constrained in the flow; data crosses
-only through the asynchronous FIFOs.
-\end{itemize}
-
 \section{Pins}
 
 \begin{center}\small
