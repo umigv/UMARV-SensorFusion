@@ -1,0 +1,7 @@
+syn/build/
+tb/build/
+**/__pycache__/
+*.pyc
+*.jou
+*.log
+*.str

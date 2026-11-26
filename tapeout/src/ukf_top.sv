@@ -312,6 +312,38 @@ module ukf_store #(
         end
     end
 
+`ifdef FPGA
+    // FPGA variant: rising-edge flip-flops (exact 2-clock write latency, combinational
+    // read, words 0..61 + 64..64+NCFG-1, 0 latches). ASIC path below is untouched.
+    localparam WORDS = 62;
+    logic [31:0] q_main [0:WORDS-1];
+    logic [31:0] q_cfg  [0:NCFG-1];
+    always_ff @(posedge clk) begin
+        if (we_q) begin
+            if (wa_q < WORDS)
+                q_main[wa_q[5:0]] <= wd_q;
+            else if (wa_q[6] && ({1'b0, wa_q[5:0]} < NCFG))
+                q_cfg[wa_q[3:0]] <= wd_q;
+        end
+    end
+    wire [31:0] q [0:127];
+    genvar i;
+    generate
+        for (i = 0; i < 128; i = i + 1) begin : word
+            if (i < WORDS) begin : main_
+                assign q[i] = q_main[i];
+            end else if (i >= 64 && i < 64 + NCFG) begin : cfg_
+                assign q[i] = q_cfg[i - 64];
+            end else begin : none_
+                assign q[i] = 32'd0;
+            end
+        end
+        for (i = 0; i < 6; i = i + 1) begin : outw
+            assign first6[32*i +: 32] = q[i];
+        end
+    endgenerate
+    assign rdata = q[raddr];
+`else
     localparam WORDS = 62;
     // TRIAL: one enable pulse for the whole store, from a single flip-flop on the falling edge,
     // ANDed with each word's select. The select is decoded from the held address, which is steady
@@ -360,4 +392,5 @@ module ukf_store #(
             assign first6[32*i +: 32] = q[i];
         end
     endgenerate
+`endif
 endmodule
