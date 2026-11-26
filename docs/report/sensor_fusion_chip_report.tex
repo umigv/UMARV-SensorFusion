@@ -221,42 +221,6 @@ and the triangular factor of its covariance ($P=S^{\mathsf T}S$) after time step
 $\hat{\mathbf x}_k^-$ and $S_k^-$ are the prediction for step $k$ before its measurements; and
 $\hat{\mathbf x}_k$, $S_k$ are the result after them.
 
-The process model $\mathbf{x}_k=f(\mathbf{x}_{k-1},\Delta\phi_k)$ moves the robot by the distance
-the wheel rolled during the step, $r\,\Delta\phi_k$, along the average of the old and new headings
-($\Delta t=2.5$\,ms):
-\begin{align*}
-\theta_k &= \theta_{k-1}+\omega_{k-1}\Delta t\\
-x_k &= x_{k-1}+r_{k-1}\,\Delta\phi_k\cos\tfrac12(\theta_{k-1}+\theta_k)\\
-y_k &= y_{k-1}+r_{k-1}\,\Delta\phi_k\sin\tfrac12(\theta_{k-1}+\theta_k)\\
-\omega_k &= \omega_{k-1},\qquad r_k=r_{k-1}
-\end{align*}
-
-Prediction passes $2n+1=11$ sigma points ($n=5$) through $f$. With $\mathbf{s}_i$ the $i$th row of
-$S_{k-1}$ and $\gamma=\sqrt{n+\lambda}$:
-\begin{align*}
-\boldsymbol\chi_0 &= \hat{\mathbf x}_{k-1},\qquad
-\boldsymbol\chi_{i,\,n+i} = \hat{\mathbf x}_{k-1}\pm\gamma\,\mathbf{s}_i^{\mathsf T}\\
-\hat{\mathbf x}_k^- &= \textstyle\sum_i W_i^m\,f(\boldsymbol\chi_i)\\
-P_k^- &= \textstyle\sum_i W_i^c\,\mathbf{d}_i\mathbf{d}_i^{\mathsf T}+Q,\qquad
-\mathbf{d}_i=f(\boldsymbol\chi_i)-\hat{\mathbf x}_k^-
-\end{align*}
-$Q$ is the process noise covariance. The scaling parameters are $\alpha=0.5$, $\beta=2$,
-$\kappa=0$, giving $\lambda=-3.75$, $\gamma=1.118$, $W_0^m=-3$, $W_0^c=-0.25$ and
-$W_i^m=W_i^c=0.4$ for $i\ge1$. The chip forms $S_k^-$ directly, starting from the factor of $Q$ and
-applying one rank-one update per $\mathbf{d}_i$.
-
-The measurement model is $\mathbf{z}_k=H\mathbf{x}_k+\mathbf{v}_k$ with
-$\mathbf{z}=[x,\,y,\,\theta,\,\omega]^{\mathsf T}$ from the VN-300, $H=[\,I_4\;\;\mathbf{0}\,]$ and
-$\mathbf{v}_k\sim\mathcal{N}(0,R)$. Correction is the Kalman update
-\begin{align*}
-K &= P_k^-H^{\mathsf T}\,(HP_k^-H^{\mathsf T}+R)^{-1}\\
-\hat{\mathbf x}_k &= \hat{\mathbf x}_k^-+K\,(\mathbf{z}_k-H\hat{\mathbf x}_k^-)\\
-P_k &= (I-KH)\,P_k^-
-\end{align*}
-with the heading difference wrapped to $(-\pi,\pi]$. The chip applies it one reading at a time,
-each as a rank-one downdate of $S$. VN-300 yaw is degrees clockwise from north and is converted
-on entry.
-
 \begin{figure*}[t]
 \centering
 \begin{tikzpicture}[node distance=4mm and 4.2mm]
@@ -294,6 +258,67 @@ a block name are assigned by connectivity, so boundaries are approximate.}
 \label{fig:layout}
 \end{figure*}
 
+The process model $\mathbf{x}_k=f(\mathbf{x}_{k-1},\Delta\phi_k)$ moves the robot by the distance
+the wheel rolled during the step, $r\,\Delta\phi_k$, along the average of the old and new headings
+($\Delta t=2.5$\,ms):
+\begin{align*}
+\theta_k &= \theta_{k-1}+\omega_{k-1}\Delta t\\
+x_k &= x_{k-1}+r_{k-1}\,\Delta\phi_k\cos\tfrac12(\theta_{k-1}+\theta_k)\\
+y_k &= y_{k-1}+r_{k-1}\,\Delta\phi_k\sin\tfrac12(\theta_{k-1}+\theta_k)\\
+\omega_k &= \omega_{k-1},\qquad r_k=r_{k-1}
+\end{align*}
+
+Prediction passes $2n+1=11$ sigma points ($n=5$) through $f$. With $\mathbf{s}_i$ the $i$th row of
+$S_{k-1}$ and $\gamma=\sqrt{n+\lambda}$:
+\begin{align*}
+\boldsymbol\chi_0 &= \hat{\mathbf x}_{k-1},\qquad
+\boldsymbol\chi_{i,\,n+i} = \hat{\mathbf x}_{k-1}\pm\gamma\,\mathbf{s}_i^{\mathsf T}\\
+\hat{\mathbf x}_k^- &= \textstyle\sum_i W_i^m\,f(\boldsymbol\chi_i)\\
+P_k^- &= \textstyle\sum_i W_i^c\,\mathbf{d}_i\mathbf{d}_i^{\mathsf T}+Q,\qquad
+\mathbf{d}_i=f(\boldsymbol\chi_i)-\hat{\mathbf x}_k^-
+\end{align*}
+$Q$ is the process noise covariance, discussed below. The scaling parameters are $\alpha=0.5$, $\beta=2$,
+$\kappa=0$, giving $\lambda=-3.75$, $\gamma=1.118$, $W_0^m=-3$, $W_0^c=-0.25$ and
+$W_i^m=W_i^c=0.4$ for $i\ge1$. The chip forms $S_k^-$ directly, starting from the factor of $Q$ and
+applying one rank-one update per $\mathbf{d}_i$.
+
+$Q$ is diagonal, with per-step standard deviations chosen as in Table~\ref{tab:q}. Position
+uses the encoder's quantisation (uniform over one count on each of the two readings differenced)
+plus an allowance for wheel slip. Turn rate uses the angular acceleration expected of the robot.
+Heading and radius get small allowances that keep those states adjustable. The settings are
+host-writable because the allowances can only be confirmed on the robot.
+
+\begin{table}[!htb]
+\centering\footnotesize
+\caption{Process noise per 2.5\,ms step (standard deviation).}
+\label{tab:q}
+\begin{tabular}{@{}lll@{}}
+\toprule
+State & Value & Basis\\
+\midrule
+$x$, $y$ & 58\,\textmu m & quantisation $\sqrt{2/12}$ count (8\,\textmu m)\\
+ & & + slip allowance 1\,mm/$\sqrt{\text{s}}$ (50\,\textmu m)\\
+$\theta$ & 5\,\textmu rad & allowance, $10^{-4}$\,rad/$\sqrt{\text{s}}$\\
+$\omega$ & 5\,mrad/s & angular acceleration density 0.01\,rad$^2$/s$^3$\\
+$r$ & 0.1\,\textmu m & allowance for slow change of the wheel\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The measurement model is $\mathbf{z}_k=H\mathbf{x}_k+\mathbf{v}_k$ with
+$\mathbf{z}=[x,\,y,\,\theta,\,\omega]^{\mathsf T}$ from the VN-300, $H=[\,I_4\;\;\mathbf{0}\,]$ and
+$\mathbf{v}_k\sim\mathcal{N}(0,R)$. Correction is the Kalman update
+\begin{align*}
+K &= P_k^-H^{\mathsf T}\,(HP_k^-H^{\mathsf T}+R)^{-1}\\
+\hat{\mathbf x}_k &= \hat{\mathbf x}_k^-+K\,(\mathbf{z}_k-H\hat{\mathbf x}_k^-)\\
+P_k &= (I-KH)\,P_k^-
+\end{align*}
+with the heading difference wrapped to $(-\pi,\pi]$. The chip applies it one reading at a time,
+each as a rank-one downdate of $S$. VN-300 yaw is degrees clockwise from north and is converted
+on entry.
+
+
+
 Applying the readings one at a time is exact only if their noises are uncorrelated. The chip
 assumes this (a diagonal $R$). The VN-300's outputs come from one internal estimator and are
 correlated, so this is an approximation. Handling the correlation requires decorrelating the
@@ -309,6 +334,50 @@ program is a table of 545 steps generated by a Python script that is also a bit-
 the machine, so the program that was tested is the one on the chip.
 
 
+
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[circuit logic US,x=1mm,y=1mm,font=\scriptsize]
+  \newcommand{\cell}[4]{% name, centre, lower-left label, bubble (0/1)
+    \node[ff,minimum width=10mm,minimum height=11mm] (#1) at (#2) {};
+    \node[font=\tiny,anchor=west,inner sep=1pt] at ($(#1.west)+(0,2)$) {D};
+    \node[font=\tiny,anchor=east,inner sep=1pt] at ($(#1.east)+(0,2)$) {Q};
+    #3}
+  \newcommand{\ck}[1]{\draw[rule] ($(#1.west)+(0,-1.6)$) -- ++(1.6,-1) -- ++(-1.6,-1);}
+  \cell{r1}{0,14}{\ck{r1}}{}
+  \cell{r2}{0,0}{\ck{r2}}{}
+  \cell{p}{17,-15}{\ck{p}\draw[rule,fill=white] ($(p.west)+(-0.8,-2.6)$) circle (0.8);}{}
+  \cell{l}{52,8}{\node[font=\tiny,anchor=west,inner sep=1pt] at ($(l.west)+(0,-2)$) {G};}{}
+  \node[draw=rule,fill=ctl,minimum width=11mm,minimum height=7mm] (dec) at (18,2) {decode};
+  \node[and gate,draw=rule,fill=blk,inputs=nn] (g) at (35,-4) {};
+  \node[above=0pt of r1] {data register};
+  \node[below=0pt of r2] {address register};
+  \node[below=0pt of p] {falling-edge flip-flop};
+  \node[anchor=north west,inner sep=1pt] at ($(l.south west)+(1,-1)$) {latch, one per bit};
+  \draw[data] (-13,16) node[left]{\texttt{wdata}} -- ($(r1.west)+(0,2)$);
+  \draw[data] (-13,2) node[left]{\texttt{waddr}} -- ($(r2.west)+(0,2)$);
+  \draw[data] (-13,-13) node[left]{\texttt{we}} -- ($(p.west)+(0,2)$);
+  \draw[data] ($(r1.east)+(0,2)$) -- (43,16) |- ($(l.west)+(0,2)$);
+  \draw[data] ($(r2.east)+(0,2)$) -- (dec.west);
+  \draw[data] (dec.east) -- (28,2) node[above right=-1pt and 0pt]{\texttt{sel[i]}} |- (g.input 1);
+  \draw[data] ($(p.east)+(0,2)$) -- (28,-13) node[below right=-1pt and 0pt]{\texttt{pulse}} |- (g.input 2);
+  \draw[data] (g.output) -- (43,-4) node[below right=-1pt and 0pt]{\texttt{gate[i]}} |- ($(l.west)+(0,-2)$);
+  \draw[data] ($(l.east)+(0,2)$) -- ++(5,0) node[right]{\texttt{q[i]}};
+  % waveforms
+  \begin{scope}[shift={(88,-15)}]
+    \foreach \y/\n in {28/clk,21/data{,} sel,14/pulse,7/gate[i],0/q[i]} \node[left] at (0,\y+1.5) {\texttt{\n}};
+    \draw[wv] (0,28)--(4,28)--(4,31)--(10,31)--(10,28)--(16,28)--(16,31)--(22,31)--(22,28)--(28,28)--(28,31)--(34,31)--(34,28)--(40,28)--(40,31)--(46,31)--(46,28)--(50,28);
+    \draw[wv] (0,21)--(4,21)--(5,24)--(50,24); \draw[wv] (0,24)--(4,24)--(5,21)--(50,21);
+    \draw[wv] (0,14)--(10,14)--(10,17)--(22,17)--(22,14)--(50,14);
+    \draw[wv] (0,7)--(11,7)--(11,10)--(23,10)--(23,7)--(50,7);
+    \draw[wv] (0,0)--(12,0)--(13,3)--(50,3); \draw[wv] (0,3)--(12,3)--(13,0)--(50,0);
+    \draw[accent,densely dotted] (4,-1.5)--(4,33); \draw[accent,densely dotted] (10,-1.5)--(10,33); \draw[accent,densely dotted] (22,-1.5)--(22,33);
+    \draw[accent,<->] (4,-3)--(10,-3); \node[text=accent,anchor=west] at (11,-3) {half a clock of setup};
+  \end{scope}
+\end{tikzpicture}
+\caption{Writing a latch word without a gated clock, and its timing.}
+\label{fig:latch}
+\end{figure*}
 
 \subsection{Lidar output format}
 
@@ -377,9 +446,8 @@ Putting the compensation on the same chip as the filter gives up modularity. The
 a chip that forwards raw lidar packets and leaves compensation to the computer, which keeps the
 lidar path independent of the filter and lets either be replaced alone. The integrated design
 was chosen so that the computer receives compensated points with the state attached and needs no
-lidar processing of its own. Some modularity is kept: the two corrections are enabled separately,
-the host can supply the state in place of the filter, and the block can pass frames through
-untouched.
+lidar processing of its own. Some modularity is kept: the corrections can be disabled, the host can supply the state, and the
+block can pass frames through untouched.
 
 \section{Physical design}
 
@@ -399,7 +467,6 @@ Core area & 0.694\,mm$^2$\\
 Placement utilisation & 78.2\,\%\\
 Logic cells & 58,100\\
 Flip-flops / latches & 3,747 / 6,484\\
-Routed wire & 2.1\,m\\
 Clock & 50\,MHz (20\,ns)\\
 Setup slack, 1.80\,V, 25\,\textdegree C & $+8.94$\,ns\\
 Setup slack, 1.60\,V, 100\,\textdegree C & $+3.33$\,ns\\
@@ -409,49 +476,6 @@ Worst hold slack, nine corners & $+0.10$\,ns\\
 \end{table}
 
 
-\begin{figure*}[t]
-\centering
-\begin{tikzpicture}[circuit logic US,x=1mm,y=1mm,font=\scriptsize]
-  \newcommand{\cell}[4]{% name, centre, lower-left label, bubble (0/1)
-    \node[ff,minimum width=10mm,minimum height=11mm] (#1) at (#2) {};
-    \node[font=\tiny,anchor=west,inner sep=1pt] at ($(#1.west)+(0,2)$) {D};
-    \node[font=\tiny,anchor=east,inner sep=1pt] at ($(#1.east)+(0,2)$) {Q};
-    #3}
-  \newcommand{\ck}[1]{\draw[rule] ($(#1.west)+(0,-1.6)$) -- ++(1.6,-1) -- ++(-1.6,-1);}
-  \cell{r1}{0,14}{\ck{r1}}{}
-  \cell{r2}{0,0}{\ck{r2}}{}
-  \cell{p}{17,-15}{\ck{p}\draw[rule,fill=white] ($(p.west)+(-0.8,-2.6)$) circle (0.8);}{}
-  \cell{l}{52,8}{\node[font=\tiny,anchor=west,inner sep=1pt] at ($(l.west)+(0,-2)$) {G};}{}
-  \node[draw=rule,fill=ctl,minimum width=11mm,minimum height=7mm] (dec) at (18,2) {decode};
-  \node[and gate,draw=rule,fill=blk,inputs=nn] (g) at (35,-4) {};
-  \node[above=0pt of r1] {data register};
-  \node[below=0pt of r2] {address register};
-  \node[below=0pt of p] {falling-edge flip-flop};
-  \node[anchor=north west,inner sep=1pt] at ($(l.south west)+(1,-1)$) {latch, one per bit};
-  \draw[data] (-13,16) node[left]{\texttt{wdata}} -- ($(r1.west)+(0,2)$);
-  \draw[data] (-13,2) node[left]{\texttt{waddr}} -- ($(r2.west)+(0,2)$);
-  \draw[data] (-13,-13) node[left]{\texttt{we}} -- ($(p.west)+(0,2)$);
-  \draw[data] ($(r1.east)+(0,2)$) -- (43,16) |- ($(l.west)+(0,2)$);
-  \draw[data] ($(r2.east)+(0,2)$) -- (dec.west);
-  \draw[data] (dec.east) -- (28,2) node[above right=-1pt and 0pt]{\texttt{sel[i]}} |- (g.input 1);
-  \draw[data] ($(p.east)+(0,2)$) -- (28,-13) node[below right=-1pt and 0pt]{\texttt{pulse}} |- (g.input 2);
-  \draw[data] (g.output) -- (43,-4) node[below right=-1pt and 0pt]{\texttt{gate[i]}} |- ($(l.west)+(0,-2)$);
-  \draw[data] ($(l.east)+(0,2)$) -- ++(5,0) node[right]{\texttt{q[i]}};
-  % waveforms
-  \begin{scope}[shift={(88,-15)}]
-    \foreach \y/\n in {28/clk,21/data{,} sel,14/pulse,7/gate[i],0/q[i]} \node[left] at (0,\y+1.5) {\texttt{\n}};
-    \draw[wv] (0,28)--(4,28)--(4,31)--(10,31)--(10,28)--(16,28)--(16,31)--(22,31)--(22,28)--(28,28)--(28,31)--(34,31)--(34,28)--(40,28)--(40,31)--(46,31)--(46,28)--(50,28);
-    \draw[wv] (0,21)--(4,21)--(5,24)--(50,24); \draw[wv] (0,24)--(4,24)--(5,21)--(50,21);
-    \draw[wv] (0,14)--(10,14)--(10,17)--(22,17)--(22,14)--(50,14);
-    \draw[wv] (0,7)--(11,7)--(11,10)--(23,10)--(23,7)--(50,7);
-    \draw[wv] (0,0)--(12,0)--(13,3)--(50,3); \draw[wv] (0,3)--(12,3)--(13,0)--(50,0);
-    \draw[accent,densely dotted] (4,-1.5)--(4,33); \draw[accent,densely dotted] (10,-1.5)--(10,33); \draw[accent,densely dotted] (22,-1.5)--(22,33);
-    \draw[accent,<->] (4,-3)--(10,-3); \node[text=accent,anchor=west] at (11,-3) {half a clock of setup};
-  \end{scope}
-\end{tikzpicture}
-\caption{Writing a latch word without a gated clock, and its timing.}
-\label{fig:latch}
-\end{figure*}
 
 \subsection{Latch storage}
 
@@ -461,8 +485,8 @@ tried first; the tools treated the 256 gated clocks as clock nets, gave each wid
 result did not route. The final design gates no clock (Fig.~\ref{fig:latch}). One falling-edge
 flip-flop makes a one-clock pulse for the whole memory and an AND gate per word combines it with
 that word's select. Select and data come from registers that hold until the next write, so both
-are steady half a clock before the enable rises and until after it falls. The margins hold by
-construction and do not depend on the tools checking latch timing.
+are steady half a clock before the enable rises and until after it falls. These margins hold by
+construction.
 
 The same latches hold the VN-300 words during a filter update. In 116 flip-flops that function
 put utilisation at 78.65\,\% and detailed routing never converged; in latches it is 78.23\,\% and
@@ -478,8 +502,7 @@ which also gives the timing constraints fixed pins to refer to.
 
 Four paths are too long for one 20\,ns clock at the slow corner: the two in Fig.~\ref{fig:read},
 the lidar buffer read and the SPI read address. On each the logic waits one extra clock and the
-constraints declare a two-clock path. In simulation the value is forced unknown during the wait,
-so logic that used it early would fail the tests.
+constraints declare a two-clock path.
 
 \begin{figure}[!htb]
 \centering
@@ -505,21 +528,16 @@ so logic that used it early would fail the tests.
 
 The filter's program is fixed in the layout, so flexibility was put where it costs little.
 \begin{itemize}
-\item Noise settings, encoder scale and starting wheel radius are host-writable, and the sample
-period and deadline are registers, so the filter can be retuned without new silicon.
-\item Every storage word, constant and sensor word of the filter can be read over SPI, so a wrong
-result can be traced to a step.
-\item The host can supply the state itself, the lidar block can be bypassed, and the timestamper
-works alone, so a fault in one block does not disable the others.
-\item Another odometry source, such as stereo visual odometry, can be fed in by a microcontroller
-that answers as the encoder, or fused on the host.
+\item Noise settings, encoder scale, starting wheel radius, sample period and deadline are
+host-writable, so the filter can be retuned without new silicon.
+\item Every filter word can be read over SPI, so a wrong result can be traced to a step.
+\item The host can supply the state, the lidar block can be bypassed and the timestamper works
+alone, so a fault in one block does not disable the others.
 \end{itemize}
 
-The limits are storage (63 of 64 words used) and time (an update takes 74\,\% of the sample period). By
-estimate, a sixth state would need about 3.2\,ms per update, and a host-writable step table about
-45 to 50\,kbit of latches. Neither fits. Modelling correlated measurement noise would also need
-a change to the program. The appendix gives the packet format, the register map and the pins.
-
+Storage (63 of 64 words) and time (74\,\% of the sample period) are the limits. By estimate, a
+sixth state needs about 3.2\,ms per update and a host-writable step table about 45 to 50\,kbit of
+latches; neither fits.
 
 \begin{thebibliography}{1}\footnotesize
 \bibitem{puck} Velodyne Lidar, \emph{Puck (VLP-16) Datasheet}, 63-9229 Rev.~H: range accuracy up to $\pm3$\,cm (typical).
