@@ -86,7 +86,7 @@ Bangyan Huang, Dev Veeramani, Thuong Vo, Nabhah Veeramani, Jimmy Xu, Adam Marrak
   \draw[ctrl,<->] (reg.west) -| (ts.south);
   \draw[ctrl,<->] (reg.east) -| (lb.south);
 \end{tikzpicture}
-\captionof{figure}{System. Solid: data. Dashed: settings in, status out. PHY: Ethernet transceiver. MII:
+\captionof{figure}{System block diagram. Solid: data. Dashed: settings in, status out. PHY: Ethernet transceiver. MII:
 the 4-bit interface between a PHY and the chip. SPI: serial peripheral interface.}
 \label{fig:system}
 \end{center}
@@ -99,7 +99,8 @@ This chip is the sensor front end of a ground robot. Every 2.5\,ms it samples a 
 (satellite positioning and inertial sensors) and a wheel encoder at the same instant, and fuses
 them with a five-state square-root unscented Kalman filter. It also sits between a Velodyne lidar
 and the computer, where it uses the filter's output to remove the distortion that the robot's own
-motion puts into each lidar sweep (Fig.~\ref{fig:system}).
+motion puts into each lidar sweep. Fig.~\ref{fig:system} shows the chip's blocks and its
+connections to the sensors, the lidar, the computer and the host microcontroller.
 
 Two constraints drove the design. Area is fixed at $8\times4$ Tiny Tapeout tiles and is limited
 by routing congestion. Time is plentiful for the filter (125,000 clocks per update) and scarce
