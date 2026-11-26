@@ -99,8 +99,7 @@ This chip is the sensor front end of a ground robot. Every 2.5\,ms it samples a 
 (satellite positioning and inertial sensors) and a wheel encoder at the same instant, and fuses
 them with a five-state square-root unscented Kalman filter. It also sits between a Velodyne lidar
 and the computer, where it uses the filter's output to remove the distortion that the robot's own
-motion puts into each lidar sweep. Fig.~\ref{fig:system} shows the chip's blocks and its
-connections to the sensors, the lidar, the computer and the host microcontroller.
+motion puts into each lidar sweep. Fig.~\ref{fig:system} is the block diagram.
 
 Two constraints drove the design. Area is fixed at $8\times4$ Tiny Tapeout tiles and is limited
 by routing congestion. Time is plentiful for the filter (125,000 clocks per update) and scarce
@@ -183,7 +182,7 @@ timestamper removes both problems by owning time for the whole chip (Fig.~\ref{f
 2.5\,ms it pulses the VN-300's sync input and starts the encoder read in the same clock. It checks
 the VN-300 message's cyclic redundancy check and the encoder's parity, then starts the filter. A
 2\,ms deadline bounds the wait, so a late or corrupt sensor costs one update of that sensor and
-never stalls the filter. The same microsecond counter stamps lidar sweeps.
+never stalls the filter.
 
 \begin{figure}[!htb]
 \centering
@@ -282,28 +281,25 @@ $\kappa=0$, giving $\lambda=-3.75$, $\gamma=1.118$, $W_0^m=-3$, $W_0^c=-0.25$ an
 $W_i^m=W_i^c=0.4$ for $i\ge1$. The chip forms $S_k^-$ directly, starting from the factor of $Q$ and
 applying one rank-one update per $\mathbf{d}_i$.
 
-$Q$ is diagonal, with per-step standard deviations chosen as in Table~\ref{tab:q}. Position
-uses the encoder's quantisation (uniform over one count on each of the two readings differenced)
-plus an allowance for wheel slip. Turn rate uses the angular acceleration expected of the robot.
-Heading and radius get small allowances that keep those states adjustable. The settings are
-host-writable because the allowances can only be confirmed on the robot.
+The process noise has one physical source that the model can place exactly: the error
+$\sigma_d$ in the distance $r\,\Delta\phi_k$ supplied by the wheel. It enters position along the
+direction of travel, so its covariance is $\sigma_d^2\,\mathbf{g}\mathbf{g}^{\mathsf T}$ with
+$\mathbf{g}=[\cos\psi,\,\sin\psi,\,0,\,0,\,0]^{\mathsf T}$ and
+$\psi=\tfrac12(\theta_{k-1}+\theta_k)$, which correlates $x$ and $y$. The chip does not use this
+form. It uses a constant diagonal
+$Q=\operatorname{diag}(\sigma_d^2,\sigma_d^2,\sigma_\theta^2,\sigma_\omega^2,\sigma_r^2)$,
+replacing $\mathbf{g}\mathbf{g}^{\mathsf T}$ by the identity on $x$ and $y$. Since
+$I-\mathbf{g}\mathbf{g}^{\mathsf T}$ is positive semidefinite, this never understates the
+uncertainty: along the direction of travel it is exact, and across it the added variance stands
+in for side slip, which the wheel cannot measure. The cost is a filter that is conservative
+across track and ignores the $x$--$y$ correlation. The exact term would be one more rank-one
+update of $S$ per step and belongs in the next program revision.
 
-\begin{table}[!htb]
-\centering\footnotesize
-\caption{Process noise per 2.5\,ms step (standard deviation).}
-\label{tab:q}
-\begin{tabular}{@{}lll@{}}
-\toprule
-State & Value & Basis\\
-\midrule
-$x$, $y$ & 58\,\textmu m & quantisation $\sqrt{2/12}$ count (8\,\textmu m)\\
- & & + slip allowance 1\,mm/$\sqrt{\text{s}}$ (50\,\textmu m)\\
-$\theta$ & 5\,\textmu rad & allowance, $10^{-4}$\,rad/$\sqrt{\text{s}}$\\
-$\omega$ & 5\,mrad/s & angular acceleration density 0.01\,rad$^2$/s$^3$\\
-$r$ & 0.1\,\textmu m & allowance for slow change of the wheel\\
-\bottomrule
-\end{tabular}
-\end{table}
+The values per 2.5\,ms step are $\sigma_d=58$\,\textmu m (encoder quantisation of
+$\sqrt{2/12}$ count, 8\,\textmu m, plus a slip allowance of 1\,mm$/\sqrt{\text{s}}$),
+$\sigma_\omega=5$\,mrad/s (angular acceleration density 0.01\,rad$^2$/s$^3$), and allowances
+$\sigma_\theta=5$\,\textmu rad and $\sigma_r=0.1$\,\textmu m that keep those states adjustable.
+The allowances are not derived; they are host-writable for tuning on the robot.
 
 The measurement model is $\mathbf{z}_k=H\mathbf{x}_k+\mathbf{v}_k$ with
 $\mathbf{z}=[x,\,y,\,\theta,\,\omega]^{\mathsf T}$ from the VN-300, $H=[\,I_4\;\;\mathbf{0}\,]$ and
@@ -319,16 +315,23 @@ on entry.
 
 
 
-Applying the readings one at a time is exact only if their noises are uncorrelated. The chip
-assumes this (a diagonal $R$). The VN-300's outputs come from one internal estimator and are
-correlated, so this is an approximation. Handling the correlation requires decorrelating the
-readings with a factor of $R$ before the scalar updates, which is left to a later version.
+$R$ is a constant diagonal matrix: 0.71\,m per axis for position (the datasheet's 1\,m
+horizontal RMS), $1^\circ$ for heading, and $0.056^\circ$/s for turn rate (the datasheet's gyro
+noise density over its bandwidth). Position
+and heading are then inflated to allow for the VN-300's errors being correlated over many
+samples (about 14\,s and 72\,s) while the filter treats each 400\,Hz sample as independent. Two
+simplifications follow. First, the VN-300 can report its own uncertainty with every sample, and
+the chip does not request it: its 56-byte message carries only yaw, turn rate, position and
+status, so $R$ cannot follow satellite conditions. A sample is either used with the fixed $R$
+or, when the status word reports no fix or an error, dropped. Second, applying the readings one
+at a time is exact only for a diagonal $R$, and the VN-300's outputs are correlated with each
+other. Both would be corrected by parsing the uncertainty fields and decorrelating the readings
+before the update, at the cost of a longer message, more storage and more steps. $R$ is
+host-writable in the meantime.
 
 Table~\ref{tab:choices} gives the alternatives considered. The largest decision was to build the
 filter as a stored-program machine (Fig.~\ref{fig:machine}). An update needs about 3,200
-arithmetic operations and has 125,000 clocks, so 39 clocks per operation is fast enough. The
-team's first design, with a dedicated multiplier and divide/square-root unit, would finish far
-sooner; the time saved has no use and the area is unavailable. One bit-serial unit built on a single 29-bit adder
+arithmetic operations and has 125,000 clocks, so 39 clocks per operation is fast enough. One bit-serial unit built on a single 29-bit adder
 takes 30 to 80 clocks per operation and completes an update in 93,000 clocks (1.86\,ms). The
 program is a table of 545 steps generated by a Python script that is also a bit-exact model of
 the machine, so the program that was tested is the one on the chip.
@@ -467,7 +470,6 @@ Core area & 0.694\,mm$^2$\\
 Placement utilisation & 78.2\,\%\\
 Logic cells & 58,100\\
 Flip-flops / latches & 3,747 / 6,484\\
-Clock & 50\,MHz (20\,ns)\\
 Setup slack, 1.80\,V, 25\,\textdegree C & $+8.94$\,ns\\
 Setup slack, 1.60\,V, 100\,\textdegree C & $+3.33$\,ns\\
 Worst hold slack, nine corners & $+0.10$\,ns\\
@@ -488,41 +490,21 @@ that word's select. Select and data come from registers that hold until the next
 are steady half a clock before the enable rises and until after it falls. These margins hold by
 construction.
 
-The same latches hold the VN-300 words during a filter update. In 116 flip-flops that function
-put utilisation at 78.65\,\% and detailed routing never converged; in latches it is 78.23\,\% and
-routes cleanly.
+Holding the VN-300 words during an update in 116 flip-flops put utilisation at 78.65\,\% and
+detailed routing never converged; in latches it is 78.23\,\% and routes cleanly.
 
 
 \subsection{Read paths and two-clock paths}
 
 Reading a latch memory is a wide selector. Left alone, the tools build it flat, and where its
 words land far apart a small gate is left driving millimetres of wire. The selector is therefore
-built in two levels with buffer cells instantiated by name between them (Fig.~\ref{fig:read}),
-which also gives the timing constraints fixed pins to refer to.
+built in two levels with buffer cells instantiated by name between them, which also gives the
+timing constraints fixed pins to refer to.
 
-Four paths are too long for one 20\,ns clock at the slow corner: the two in Fig.~\ref{fig:read},
-the lidar buffer read and the SPI read address. On each the logic waits one extra clock and the
+Four paths are too long for one 20\,ns clock at the slow corner: program counter through the step
+table, the filter storage read, the lidar buffer read and the SPI read address. On each the logic waits one extra clock and the
 constraints declare a two-clock path.
 
-\begin{figure}[!htb]
-\centering
-\begin{tikzpicture}[x=1mm,y=1mm]
-  \node[sbox,fill=ctl] (pc) at (0,0) {Program\\counter};
-  \node[sbox] (rom) at (27,0) {Step\\table};
-  \node[sbox,fill=ctl] (ra) at (56,0) {Read address\\register};
-  \node[sbox] (m1) at (0,-17) {Selector,\\8 words};
-  \node[sbox,fill=white] (b) at (21,-17) {buffer\\by name};
-  \node[sbox] (m2) at (42,-17) {Selector,\\groups};
-  \node[sbox,fill=ctl] (fp) at (64,-17) {Operand\\register};
-  \draw[data] (pc) -- (rom); \draw[data] (rom) -- (ra);
-  \draw[data] (ra.south) -- ++(0,-3.2) -| (m1.north);
-  \draw[data] (m1) -- (b); \draw[data] (b) -- (m2); \draw[data] (m2) -- (fp);
-  \draw[accent,|<->|] ($(pc.north)+(0,2)$) -- node[lab,above,text=accent]{two clocks} ($(ra.north)+(0,2)$);
-  \draw[accent,|<->|] ($(m1.south)+(0,-2)$) -- node[lab,below,text=accent]{two clocks, from the read address register} ($(fp.south)+(0,-2)$);
-\end{tikzpicture}
-\caption{The filter's read path. Yellow: registers.}
-\label{fig:read}
-\end{figure}
 
 \section{Future-proofing}
 
@@ -535,9 +517,8 @@ host-writable, so the filter can be retuned without new silicon.
 alone, so a fault in one block does not disable the others.
 \end{itemize}
 
-Storage (63 of 64 words) and time (74\,\% of the sample period) are the limits. By estimate, a
-sixth state needs about 3.2\,ms per update and a host-writable step table about 45 to 50\,kbit of
-latches; neither fits.
+Storage (63 of 64 words used) and time (74\,\% of the sample period) leave no room for a sixth
+state or a host-writable step table.
 
 \begin{thebibliography}{1}\footnotesize
 \bibitem{puck} Velodyne Lidar, \emph{Puck (VLP-16) Datasheet}, 63-9229 Rev.~H: range accuracy up to $\pm3$\,cm (typical).
