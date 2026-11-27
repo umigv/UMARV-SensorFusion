@@ -684,7 +684,9 @@ The same model splits the 2.9\,mm into its sources. With perfect turn rate and s
 them between 400\,Hz updates leaves 1.0\,mm. The 1.86\,ms computing delay raises that to
 2.6\,mm. Sensor and filter error account for the rest. The residual is therefore set by timing,
 which is why the update rate matters: delivering the same states at 100\,Hz doubles the error
-(second row), and this is the measured case for the 400\,Hz design. The lidar block's
+(second row), and this is the measured case for the 400\,Hz design. The budget also points to
+the next improvement: passing the measured turn rate to the lidar block before the filter
+finishes removes the delay term, and the same model gives 1.6\,mm RMS for that arrangement. The lidar block's
 fixed-point rounding is outside this model; in RTL simulation it is at most 1.35 output counts
 (2.7\,mm).
 
