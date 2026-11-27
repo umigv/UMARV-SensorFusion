@@ -566,7 +566,8 @@ construction.
     \node[font=\tiny,anchor=west,inner sep=1pt] at ($(#1.west)+(0,2)$) {D};
     \node[font=\tiny,anchor=east,inner sep=1pt] at ($(#1.east)+(0,2)$) {Q};
     #3}
-  \newcommand{\ck}[1]{\draw[rule] ($(#1.west)+(0,-1.6)$) -- ++(1.6,-1) -- ++(-1.6,-1);}
+  \newcommand{\ck}[1]{\draw[rule] ($(#1.west)+(0,-1.6)$) -- ++(1.6,-1) -- ++(-1.6,-1);
+    \node[font=\tiny,anchor=west,inner sep=0pt] at ($(#1.west)+(2.1,-2.6)$) {\texttt{clk}};}
   \cell{r1}{0,14}{\ck{r1}}{}
   \cell{r2}{0,0}{\ck{r2}}{}
   \cell{p}{17,-15}{\ck{p}\draw[rule,fill=white] ($(p.west)+(-0.8,-2.6)$) circle (0.8);}{}
@@ -581,24 +582,26 @@ construction.
   \draw[data] (-13,2) node[left]{\texttt{waddr}} -- ($(r2.west)+(0,2)$);
   \draw[data] (-13,-13) node[left]{\texttt{we}} -- ($(p.west)+(0,2)$);
   \draw[data] ($(r1.east)+(0,2)$) -- (43,16) |- ($(l.west)+(0,2)$);
+  \node[above right=-1pt and 0pt] at (28,16) {\texttt{data}};
   \draw[data] ($(r2.east)+(0,2)$) -- (dec.west);
   \draw[data] (dec.east) -- (28,2) node[above right=-1pt and 0pt]{\texttt{sel[i]}} |- (g.input 1);
   \draw[data] ($(p.east)+(0,2)$) -- (28,-13) node[below right=-1pt and 0pt]{\texttt{pulse}} |- (g.input 2);
   \draw[data] (g.output) -- (43,-4) node[below right=-1pt and 0pt]{\texttt{gate[i]}} |- ($(l.west)+(0,-2)$);
   \draw[data] ($(l.east)+(0,2)$) -- ++(5,0) node[right]{\texttt{q[i]}};
   % waveforms
-  \begin{scope}[shift={(88,-15)}]
-    \foreach \y/\n in {28/clk,21/data{,} sel,14/pulse,7/gate[i],0/q[i]} \node[left] at (0,\y+1.5) {\texttt{\n}};
-    \draw[wv] (0,28)--(4,28)--(4,31)--(10,31)--(10,28)--(16,28)--(16,31)--(22,31)--(22,28)--(28,28)--(28,31)--(34,31)--(34,28)--(40,28)--(40,31)--(46,31)--(46,28)--(50,28);
-    \draw[wv] (0,21)--(4,21)--(5,24)--(50,24); \draw[wv] (0,24)--(4,24)--(5,21)--(50,21);
+  \begin{scope}[shift={(88,-18)}]
+    \foreach \y/\n in {35/clk,28/data,21/sel[i],14/pulse,7/gate[i],0/q[i]} \node[left] at (0,\y+1.5) {\texttt{\n}};
+    \draw[wv] (0,35)--(4,35)--(4,38)--(10,38)--(10,35)--(16,35)--(16,38)--(22,38)--(22,35)--(28,35)--(28,38)--(34,38)--(34,35)--(40,35)--(40,38)--(46,38)--(46,35)--(50,35);
+    \draw[wv] (0,28)--(4,28)--(5,31)--(50,31); \draw[wv] (0,31)--(4,31)--(5,28)--(50,28);
+    \draw[wv] (0,21)--(4,21)--(5,24)--(50,24);
     \draw[wv] (0,14)--(10,14)--(10,17)--(22,17)--(22,14)--(50,14);
     \draw[wv] (0,7)--(11,7)--(11,10)--(23,10)--(23,7)--(50,7);
     \draw[wv] (0,0)--(12,0)--(13,3)--(50,3); \draw[wv] (0,3)--(12,3)--(13,0)--(50,0);
-    \draw[accent,densely dotted] (4,-1.5)--(4,33); \draw[accent,densely dotted] (10,-1.5)--(10,33); \draw[accent,densely dotted] (22,-1.5)--(22,33);
+    \draw[accent,densely dotted] (4,-1.5)--(4,40); \draw[accent,densely dotted] (10,-1.5)--(10,40); \draw[accent,densely dotted] (22,-1.5)--(22,40);
     \draw[accent,<->] (4,-3)--(10,-3); \node[text=accent,anchor=west] at (11,-3) {half a clock of setup};
   \end{scope}
 \end{tikzpicture}
-\caption{Writing a latch word without a gated clock, and its timing.}
+\caption{Writing a latch word without a gated clock, and its timing. Signal names are the same in both parts.}
 \label{fig:latch}
 \end{figure}
 \begin{multicols}{2}
