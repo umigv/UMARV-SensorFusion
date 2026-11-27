@@ -50,11 +50,25 @@
 }
 
 \begin{document}
+\raggedcolumns
 
 \begin{center}
 {\LARGE\bfseries A 400\,Hz Sensor Fusion and Lidar Motion-Correction\\[3pt] ASIC in SkyWater 130\,nm}\\[7pt]
 {\large University of Michigan Autonomous Robotic Vehicle Team}\\[5pt]
 Bangyan Huang, Dev Veeramani, Thuong Vo, Nabhah Veeramani, Jimmy Xu, Adam Marrakchi, Will Kletzka
+\end{center}
+\begin{center}
+\begin{minipage}{0.86\linewidth}\small
+\textbf{Summary.} This report describes a chip designed by the team for its competition robot.
+The chip samples the robot's navigation sensors on one clock, fuses them 400 times a second with
+a five-state square-root unscented Kalman filter, and corrects every lidar return for the robot's
+motion before it reaches the computer. It occupies 0.69\,mm$^2$ of SkyWater 130\,nm on a Tiny
+Tapeout shuttle. In simulation the chip's filter program stays within 28\,mm of a
+double-precision reference and the lidar correction leaves under 2\,mm of motion error at 30\,m.
+The routed design meets timing with margin, and every filter update finishes in 74\,\% of its
+period. Each design decision below is given with the constraint that forced it and the simulation
+or measurement that supports it.
+\end{minipage}
 \end{center}
 \vspace{2pt}
 \begin{center}
@@ -650,7 +664,8 @@ State used for a firing & Gentle & Moderate & Aggressive\\
 
 \section{Future-proofing}
 
-The filter's program is fixed in the layout, so flexibility was put where it costs little.
+The filter's program is fixed in the layout, and storage (63 of 64 words) and time (74\,\% of
+the period) are nearly full, so flexibility was put where it costs little.
 \begin{itemize}
 \item Noise settings, encoder scale, starting wheel radius, sample period and deadline are
 host-writable, so the filter can be retuned without new silicon.
@@ -659,8 +674,16 @@ host-writable, so the filter can be retuned without new silicon.
 alone, so a fault in one block does not disable the others.
 \end{itemize}
 
-Storage (63 of 64 words used) and time (74\,\% of the sample period) leave no room for a sixth
-state or a host-writable step table.
+\section{Conclusion}
+
+The design followed from its constraints. A small area with no memory macro and a generous time
+budget led to a filter built as one serial arithmetic unit running a fixed program, and the
+filter's mathematics was chosen and arranged to suit that machine. The lidar path, with little
+time per return, received its own fast arithmetic. Each choice was tested before layout: number
+format, noise settings and compensation method were all set from simulation, and the program on
+the chip matches a double-precision reference to within 28\,mm. The routed design meets timing
+and is ready for the Tiny Tapeout TTSKY26d shuttle. When silicon returns, the chip will be
+brought up on Maverick and the figures reported here will be measured again on the robot.
 
 \begin{thebibliography}{1}\footnotesize
 \bibitem{puck} Velodyne Lidar, \emph{Puck (VLP-16) Datasheet}, 63-9229 Rev.~H: range accuracy up to $\pm3$\,cm (typical).
