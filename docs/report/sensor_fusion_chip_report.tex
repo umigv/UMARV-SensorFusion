@@ -64,7 +64,8 @@ The chip samples the robot's navigation sensors on one clock, fuses them 400 tim
 a five-state square-root unscented Kalman filter, and corrects every lidar return for the robot's
 motion before it reaches the computer. It occupies 0.69\,mm$^2$ of SkyWater 130\,nm on a Tiny
 Tapeout shuttle. In simulation the chip's filter program stays within 28\,mm of a
-double-precision reference and the lidar correction leaves under 2\,mm of motion error at 30\,m.
+double-precision reference, and the lidar correction reduces motion distortion at 30\,m from
+0.82\,m to 2.9\,mm RMS.
 The routed design meets timing with margin, and every filter update finishes in 74\,\% of its
 period. The design is an exercise in algorithm--hardware co-design: the filter's mathematics and
 the machine that runs it were shaped together. Each decision below is given with the constraint
@@ -447,7 +448,9 @@ gives the sine and cosine of the azimuth less the angle turned, the return is co
 $x,y,z$, and the movement is added (Fig.~\ref{fig:lidar}). Each sweep is thus expressed in the
 robot's frame at the moment the sweep started. The correction is folded into the coordinate
 conversion: turning polar returns into $x,y$ needs one rotation in any case, and rotating by the
-corrected angle costs nothing more. The CORDIC (17 iterations, 18 bits, 46 clocks) runs once
+corrected angle costs nothing more. Integrating at every firing matters: in a timing model of a hard turn (2\,rad/s,
+20\,rad/s$^2$), a state held between 400\,Hz updates leaves 16\,cm at 30\,m and per-firing
+integration leaves 2\,mm. The CORDIC (17 iterations, 18 bits, 46 clocks) runs once
 per firing of the 16 lasers, which share an azimuth, so one rotation serves 16 returns. This path is 16-bit fixed point with its own
 multiplier, because 172 clocks per return is too few for the filter's serial unit.
 
@@ -622,44 +625,77 @@ constraints declare a two-clock multicycle path.
 \section{Evaluation}
 \label{sec:eval}
 
-The evaluation answers three questions: whether the chip computes the filter correctly, what
-the chip adds for the robot, and what it cost in area and time. Accuracy results are from
-simulation with sensor errors modeled from the datasheets; area and time are from the routed
-design and its RTL simulation. Table~\ref{tab:sum} collects the results.
+Every accuracy result in this section comes from one simulated experiment, so the numbers can be
+compared with one another. The robot drives for 150\,s inside the competition's 5\,mph limit
+(0.2 to 2.2\,m/s, turning at up to 0.9\,rad/s). The drive is repeated six times with different
+sensor errors drawn from the datasheets: the VN-300's position and heading errors drift slowly
+(1\,m RMS with a 14\,s correlation time; $1^\circ$ with 72\,s), the encoder is quantized to 14
+bits, and the true wheel radius is 1.5\,\% larger than the nominal value the filter starts
+from. The step table that is in the chip is executed in single precision at 400\,Hz on these
+samples. Its turn rate and speed then drive a model of the lidar block, which integrates the
+motion at each of the lidar's firings (every 55\,\textmu s) exactly as the hardware does, with
+each state arriving 1.86\,ms after its sample, the longest update measured in RTL simulation. A
+double-precision square-root unscented filter with the same $Q$ and $R$ runs on the same samples
+as the reference. Figure~\ref{fig:eval} shows the results.
+
+\end{multicols}
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{filter_eval.pdf}
+\caption{One simulated experiment, six runs. Left: share of lidar returns at 30\,m displaced by
+less than a given distance, after the first 20\,s. Center: position error, RMS of the six runs;
+the chip and the double-precision filter coincide. Right: the chip's wheel radius estimate in
+each run.}
+\label{fig:eval}
+\end{figure}
+\begin{multicols}{2}
+
+\subsection{Lidar motion error}
+\label{sec:lid}
+
+Table~\ref{tab:lidar} gives how far a return at 30\,m is displaced from where it truly was when
+its sweep started. Without correction the RMS displacement is 0.82\,m and only 4\,\% of returns
+fall within the lidar's own $\pm3$\,cm accuracy. With the chip the RMS is 2.9\,mm, a reduction
+of 280 times, and every return is within 3\,cm; the largest displacement in 14 million firings
+is 14\,mm. At 10\,m the figures are 283\,mm and 1.4\,mm. In the left panel of
+Fig.~\ref{fig:eval} the chip's curve reaches 100\,\% well left of the lidar-accuracy line, while
+the uncorrected curve crosses that line at 4\,\%.
 
 \begin{table}[H]
 \centering\footnotesize
-\caption{Summary of results. Each row compares the chip with the alternative named in that row. Fixed point is 16 fractional bits; lidar error is for the aggressive turn.}
-\label{tab:sum}
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{@{}llrr@{}}
+\caption{Displacement of a return at 30\,m, same six runs. ``Within 3\,cm'' is the share of
+returns inside the lidar's range accuracy.}
+\label{tab:lidar}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrrrr@{}}
 \toprule
-Measure & Alternative & Its result & Chip\\
+ & RMS & 95th pct. & Largest & Within\\
+ & (mm) & (mm) & (mm) & 3\,cm\\
 \midrule
-Failed covariance updates & fixed point & about half & none\\
-Position gap & double precision & reference & 28\,mm\\
-Wheel radius error & nominal radius & 1.5\,\% & 0.36\,\%\\
-Error / reported error & datasheet noise & 74 & 1.0\\
-Lidar error at 30\,m & no correction & 6\,m & 1.9\,mm\\
-Filter cell area & parallel design & 0.66\,mm$^2$ & 0.14\,mm$^2$\\
-Update time & sample period & 2.5\,ms & 1.86\,ms\\
+No correction & 821 & 1,854 & 2,906 & 4\,\%\\
+Chip, state at 100\,Hz & 6.0 & 14.0 & 24.3 & 100\,\%\\
+Chip, state at 400\,Hz & 2.9 & 7.1 & 14.3 & 100\,\%\\
+Double-precision filter & 2.9 & 7.1 & 14.3 & 100\,\%\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{Numerical accuracy}
+The same model splits the 2.9\,mm into its sources. With perfect turn rate and speed, holding
+them between 400\,Hz updates leaves 1.0\,mm. The 1.86\,ms computing delay raises that to
+2.6\,mm. Sensor and filter error account for the rest. The residual is therefore set by timing,
+which is why the update rate matters: delivering the same states at 100\,Hz doubles the error
+(second row), and this is the measured case for the 400\,Hz design. The lidar block's
+fixed-point rounding is outside this model; in RTL simulation it is at most 1.35 output counts
+(2.7\,mm).
+
+\subsection{State estimate}
 \label{sec:num}
 
-The step table that is in the chip was executed in single precision on a simulated 150\,s drive,
-six runs with different sensor errors, at 400\,Hz. The VN-300's position and heading errors
-drift slowly (1\,m RMS with a 14\,s correlation time; $1^\circ$ with 72\,s), the encoder is
-quantized to 14 bits, and the true wheel radius is 1.5\,\% larger than the nominal value the
-filter starts from. A double-precision square-root unscented filter was given the same samples and the same $Q$ and $R$
-(Table~\ref{tab:acc}, Fig.~\ref{fig:eval}).
+Table~\ref{tab:acc} gives the accuracy of the state on the same runs.
 
 \begin{table}[H]
 \centering\footnotesize
-\caption{Simulated accuracy, RMS over six 150\,s runs after a 20\,s start-up.}
+\caption{State accuracy, same six runs, RMS after a 20\,s start-up.}
 \label{tab:acc}
 \begin{tabular}{@{}lrrr@{}}
 \toprule
@@ -667,77 +703,30 @@ filter starts from. A double-precision square-root unscented filter was given th
  & (m) & (deg) & at end (\%)\\
 \midrule
 VN-300 alone & 0.937 & 0.629 & 1.48 (fixed)\\
-Unscented, 64-bit float & 0.873 & 0.546 & $\le0.67$\\
-Chip program, 32-bit float & 0.876 & 0.552 & $\le0.67$\\
+Double-precision filter & 0.873 & 0.546 & 0.37\\
+Chip, single precision & 0.876 & 0.552 & 0.35\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=\linewidth]{filter_eval.pdf}
-\caption{Simulated filter accuracy. Left: position error, RMS of the six runs; the chip program
-(orange) and the double-precision filter (dashed) coincide. Right: the chip program's wheel
-radius estimate in each run.}
-\label{fig:eval}
-\end{figure}
+The chip's program reproduces the double-precision filter. The two differ by at most 28\,mm and
+$0.041^\circ$ over all 360,000 updates, no covariance update fails, and the lidar results of
+Table~\ref{tab:lidar} are identical to three figures. Single precision, the six-term series and
+the one-reading-at-a-time correction therefore cost no accuracy, which is what allowed the
+filter to be built for minimum area. In the center panel of Fig.~\ref{fig:eval} the two curves
+cannot be told apart.
 
-The left panel of Fig.~\ref{fig:eval} plots position error against time. The chip program's
-curve and the double-precision curve are drawn one over the other and cannot be told apart at
-this scale: the two differ by at most 28\,mm and $0.041^\circ$ over all 360,000 updates, and no
-covariance update fails. Single precision, the six-term series and the one-reading-at-a-time
-correction therefore cost no accuracy, which is what allowed the filter to be built for minimum
-area. The fixed-point alternative was simulated first, on the team's earlier four-state filter:
-with 16 fractional bits about half of the covariance downdates failed and two runs diverged.
+Against the VN-300 alone, position improves by 7\,\% and heading by 12\,\%. The VN-300's position
+error drifts over tens of seconds and a wheel measures distance traveled, so the remaining error
+is the VN-300's own. The filter also supplies what the VN-300 does not. In every run the radius
+estimate leaves the nominal 50\,mm and approaches the true 50.75\,mm (right panel), ending at a
+mean error of 0.35\,\% from a 1.5\,\% start. The estimates are still converging at 150\,s, which
+is why the starting radius is host-writable.
 
-\subsection{What the filter adds}
-\label{sec:adds}
-
-The filter supplies two things the VN-300 does not. The first is the wheel radius (right panel
-of Fig.~\ref{fig:eval}). In every run the estimate leaves the nominal 50\,mm and approaches the
-true 50.75\,mm, ending at a mean error of 0.36\,\% from a 1.5\,\% start. A radius error is a
-speed error of the same proportion, so the speed the lidar path uses is four times more
-accurate, and over 100\,m of travel the distance error falls from 1.5\,m to 0.36\,m. The
-estimates are still converging at 150\,s, which is why the starting radius is host-writable.
-
-The second is an uncertainty that can be trusted. With the datasheet noise values used directly,
+The filter's reported uncertainty can be trusted. With the datasheet noise values used directly,
 the double-precision filter's position error is 74 times the standard deviation it reports,
 because the VN-300's errors are correlated over many samples. With the inflated $R$ of
-Section~\ref{sec:filter}, set from this simulation, the ratio is 1.0 and accuracy is unchanged.
-
-Position and heading also improve on the VN-300 alone, by 7\,\% and 12\,\%
-(Table~\ref{tab:acc}). The VN-300's position error drifts over tens of seconds and a wheel
-measures distance traveled, so the remaining error is the VN-300's own.
-
-\subsection{Lidar compensation}
-\label{sec:lid}
-
-A timing model of the VLP-16's firing sequence gives the largest displacement of a return at
-30\,m, for three assumed maneuvers (Table~\ref{tab:lidar}). Uncorrected, a sweep is smeared by
-meters. Holding the state between filter updates is not enough even at 400\,Hz. Integrating
-turn rate and speed at every firing, as the chip does, leaves under 2\,mm, 16 times below the
-lidar's own $\pm3$\,cm. The same method at 100\,Hz reaches 3\,cm in the aggressive case, which
-is the reason for the 400\,Hz update rate. The model excludes the filter's own error and its
-1.9\,ms computing delay.
-
-\begin{table}[H]
-\centering\footnotesize
-\caption{Largest displacement of a return at 30\,m. Turns are peak rate and peak
-angular acceleration: 0.5\,rad/s and 1\,rad/s$^2$; 1 and 5; 2 and 20. The first row is
-$R\,\omega\,t$ over one 100\,ms sweep; ``integrated'' is per firing.}
-\label{tab:lidar}
-\begin{tabular}{@{}lrrr@{}}
-\toprule
-State used for a firing & Gentle & Moderate & Aggressive\\
-\midrule
-No correction & 150\,cm & 300\,cm & 600\,cm\\
-100\,Hz, held & 17\,cm & 32\,cm & 62\,cm\\
-400\,Hz, held & 4.3\,cm & 8.1\,cm & 16\,cm\\
-100\,Hz, integrated & 0.15\,cm & 0.75\,cm & 3.0\,cm\\
-400\,Hz, integrated (chip) & 0.01\,cm & 0.05\,cm & 0.19\,cm\\
-\bottomrule
-\end{tabular}
-\end{table}
+Section~\ref{sec:filter}, set from this experiment, the ratio is 1.0 and accuracy is unchanged.
 
 \subsection{Area and time}
 \label{sec:cost}
