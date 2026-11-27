@@ -332,7 +332,23 @@ a destination. The shaded strip on each memory is its address decoder. Numbers a
 \begin{multicols}{2}
 
 
-Each stage of Section~\ref{sec:filter} is shaped to fit this machine.
+Three features of this machine account for its size.
+\begin{itemize}
+\item Microcoded control. The algorithm is a microprogram of 545 steps of 26 bits. The motion
+model, the rank-one update and the sine and cosine series are subroutines, so those 545 steps
+perform the 3,218 operations of an update; the motion model alone is called 21 times. All
+control is a 10-bit program counter, two return addresses and one flag, and a change to the
+algorithm changes the table and no other hardware.
+\item Step table as a mask ROM. The table never changes, so it is synthesized into logic gates
+as a read-only memory. Its 14,170 bits occupy 0.020\,mm$^2$, or 1.4\,\textmu m$^2$ per bit. The
+smallest storage cell in the library, a latch, is 15\,\textmu m$^2$ per bit, which would be
+0.21\,mm$^2$ and 31\,\% of the core for the same table.
+\item Bit-serial arithmetic. One 29-bit adder performs add, subtract, multiply, divide and
+square root. The arithmetic unit and the sequencer together are 0.039\,mm$^2$.
+\end{itemize}
+The whole filter, storage included, is 0.14\,mm$^2$ of cells, a fifth of the core.
+
+Each stage of Section~\ref{sec:filter} is in turn shaped to fit this machine.
 \begin{itemize}
 \item Sigma points are never stored. All 11 would take 55 of the 63 words. Prediction instead
 makes two passes, one for the mean and one for the covariance, and generates each point when it
@@ -682,8 +698,9 @@ filter's mathematics was chosen and arranged to suit that machine. The lidar pat
 time per return, received its own fast arithmetic. Each choice was tested before layout: number
 format, noise settings and compensation method were all set from simulation, and the program on
 the chip matches a double-precision reference to within 28\,mm. The routed design meets timing
-and is ready for the Tiny Tapeout TTSKY26d shuttle. When silicon returns, the chip will be
-brought up on Maverick and the figures reported here will be measured again on the robot.
+and is ready for the Tiny Tapeout TTSKY26e shuttle. When silicon returns, the chip will be
+mounted on a custom sensor carrier board and integrated with the rest of Maverick's embedded
+stack.
 
 \begin{thebibliography}{1}\footnotesize
 \bibitem{puck} Velodyne Lidar, \emph{Puck (VLP-16) Datasheet}, 63-9229 Rev.~H: range accuracy up to $\pm3$\,cm (typical).
