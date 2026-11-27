@@ -66,8 +66,9 @@ motion before it reaches the computer. It occupies 0.69\,mm$^2$ of SkyWater 130\
 Tapeout shuttle. In simulation the chip's filter program stays within 28\,mm of a
 double-precision reference and the lidar correction leaves under 2\,mm of motion error at 30\,m.
 The routed design meets timing with margin, and every filter update finishes in 74\,\% of its
-period. Each design decision below is given with the constraint that forced it and the simulation
-or measurement that supports it.
+period. The design is an exercise in algorithm--hardware co-design: the filter's mathematics and
+the machine that runs it were shaped together. Each decision below is given with the constraint
+that forced it and the simulation or measurement that supports it.
 \end{minipage}
 \end{center}
 \vspace{2pt}
@@ -141,14 +142,17 @@ Three constraints set the architecture. Area is $8\times4$ Tiny Tapeout tiles
 There is no foundry SRAM macro, so storage is built from standard cells and every stored bit is
 expensive. Time, at the 50\,MHz
 clock, is plentiful for the filter (125,000 clocks per 400\,Hz update) and scarce for the lidar
-(172 clocks per return). The filter is therefore built to spend time in order to save area and
-storage, the lidar path has its own fast arithmetic, and one block owns time for both.
+(172 clocks per return). The filter is therefore a time-multiplexed, microcoded datapath that spends its spare time to
+save area and storage, the lidar path is a streaming pipeline with its own fixed-point
+arithmetic, and one block owns time for both. Algorithm and hardware were designed together:
+the sections below note where a change to the mathematics removed hardware and where a hardware
+limit reshaped the mathematics.
 
 \subsection{Timestamper}
 
 Fusing two sensors requires that they describe the same moment. Free-running, the VN-300 and the
 encoder would be sampled up to 2.5\,ms apart, and the lidar would share no clock with either. The
-timestamper owns time for the whole chip (Fig.~\ref{fig:ts}). Every 2.5\,ms it pulses the
+timestamper is a hardware time base for the whole chip (Fig.~\ref{fig:ts}). Every 2.5\,ms it pulses the
 VN-300's sync input and starts the encoder read in the same clock. It checks the VN-300
 message's cyclic redundancy check and the encoder's parity, then starts the filter. A 2\,ms
 deadline bounds the wait, so a late or corrupt sensor costs one update of that sensor and never
@@ -273,8 +277,9 @@ is negative, is a downdate.
 \label{sec:fhw}
 
 
-The filter is one arithmetic unit, one memory and a program (Fig.~\ref{fig:machine}), where a
-conventional design would be a datapath of multipliers. That is enough because an update is
+The filter is a stored-program machine: one arithmetic unit, one memory and a microprogram
+(Fig.~\ref{fig:machine}), where a conventional design would be a parallel datapath of
+multipliers. That is enough because an update is
 3,218 arithmetic operations and has 125,000 clocks, so 39 clocks per
 operation is fast enough. The team's earlier parallel design (multiply-accumulate array, sigma-point generator
 and Cholesky block) synthesized to 0.66\,mm$^2$ of cells, 95\,\% of the core before placement, and
@@ -283,8 +288,9 @@ would have finished each update with most of the period unused.
 A step of the program is $d=a\;\text{op}\;b$, or a jump, call or return. The sequencer fetches a
 step, reads $a$ and then $b$ through one selector that spans the storage, the constants and the
 held sensor words, starts the arithmetic unit, and writes the result back. The unit is IEEE
-single precision on one 29-bit adder, shifting one bit per clock; an operation takes at most 32
-clocks. Fixed point was rejected on simulation: with 16 fractional bits the covariance downdate
+single precision with round-to-nearest-even, built around one 29-bit adder: multiplication is
+shift-and-add, and division and square root are digit recurrences, all at one bit per clock. An
+operation takes at most 32 clocks. Fixed point was rejected on simulation: with 16 fractional bits the covariance downdate
 failed on about half of all updates.
 
 \end{multicols}
@@ -348,30 +354,41 @@ square root. The arithmetic unit and the sequencer together are 0.039\,mm$^2$.
 \end{itemize}
 The whole filter, storage included, is 0.14\,mm$^2$ of cells, a fifth of the core.
 
-Each stage of Section~\ref{sec:filter} is in turn shaped to fit this machine.
+The algorithm was in turn reshaped around the machine. Each item below is a co-design decision:
+a change to the mathematics of Section~\ref{sec:filter} that removed hardware.
 \begin{itemize}
-\item Sigma points are never stored. All 11 would take 55 of the 63 words. Prediction instead
+\item On-the-fly sigma points. Sigma points are never stored. All 11 would take 55 words and nearly double the storage. Prediction instead
 makes two passes, one for the mean and one for the covariance, and generates each point when it
 is needed: 21 evaluations of $f$ where 11 would do, paid for in spare time.
-\item $S$ is built one deviation at a time. A rank-one update consumes each $\mathbf{d}_i$ as it
+\item Rank-one factor updates. $S$ is built one deviation at a time. A rank-one update consumes each $\mathbf{d}_i$ as it
 is produced, in five words. The QR factorization of the textbook square-root filter needs all of
 them at once.
-\item Sine and cosine run on the same unit. The angle is folded into $\pm\pi/2$ and a six-term
+\item Trigonometry on the shared datapath. Sine and cosine run on the same unit. The angle is folded into $\pm\pi/2$ and a six-term
 series is evaluated. A CORDIC
 would be a second arithmetic unit, and the lidar block's is 16-bit fixed point, too coarse to share.
-\item Corrections are scalar. Each reading costs one square root and a few divisions on the same
+\item Sequential scalar correction. Corrections are scalar. Each reading costs one square root and a few divisions on the same
 unit, and no matrix-inverse routine exists.
-\item Nothing branches on data. A comparison sets the flag and a later write is conditional on
-it, so every update with both sensors valid runs the same steps and takes 91,000 to 93,000 clocks (1.86\,ms, 74\,\% of
-the period).
+\item Predicated execution. Nothing branches on data. A comparison sets the flag and a later
+write is conditional on it, so every update with both sensors valid runs the same steps and takes
+91,000 to 93,000 clocks (1.86\,ms, 74\,\% of the period). The worst-case execution time is
+therefore known and the output has a fixed latency.
+\item Position without double precision. The VN-300 reports latitude and longitude as 64-bit
+floats. The program subtracts a fixed slice of each mantissa from the same slice at the origin,
+as integers (one count is 0.8\,mm of latitude), and converts the difference to single
+precision. No double-precision arithmetic exists on the chip. The slice is valid over a band of
+latitude and longitude that includes the competition site.
+\item Shared read path. The host interface keeps no copy of the state or the sensor words. An SPI
+read borrows the filter's read selector for one clock, which saves about 200 flip-flops and two
+wide buses across the chip.
 \end{itemize}
 
 
 \subsection{Lidar processing}
 \label{sec:lidar}
 
-The lidar path receives every packet the lidar sends, corrects each return for the robot's
-motion and forwards the result to the computer. A Velodyne VLP-16 spins 16 lasers ten times a second and sends about 754 packets per second
+The lidar path is an in-line packet processor between the lidar and the computer: it receives
+every packet the lidar sends, corrects each return for the robot's motion (de-skewing) and
+forwards the result. A Velodyne VLP-16 spins 16 lasers ten times a second and sends about 754 packets per second
 (Fig.~\ref{fig:vlp}). A packet holds 12 blocks; a block is one azimuth reading and 32 returns,
 each a distance in 2\,mm units and a reflectivity. That is 290,000 returns per second, and one
 sweep of about 29,000 returns takes 100\,ms.
@@ -428,8 +445,16 @@ For every firing the block keeps running totals of how far the robot has turned 
 the sweep started, using $\omega$ and $v$ from the filter. A CORDIC (shift-and-add rotation) unit
 gives the sine and cosine of the azimuth less the angle turned, the return is converted to
 $x,y,z$, and the movement is added (Fig.~\ref{fig:lidar}). Each sweep is thus expressed in the
-robot's frame at the moment the sweep started. This path is 16-bit fixed point with its own
+robot's frame at the moment the sweep started. The correction is folded into the coordinate
+conversion: turning polar returns into $x,y$ needs one rotation in any case, and rotating by the
+corrected angle costs nothing more. The CORDIC (17 iterations, 18 bits, 46 clocks) runs once
+per firing of the 16 lasers, which share an azimuth, so one rotation serves 16 returns. This path is 16-bit fixed point with its own
 multiplier, because 172 clocks per return is too few for the filter's serial unit.
+
+Around this core, returns arrive in bursts at twice the rate they can be sent, so the point
+buffer is elastic and commits a block only when all 32 of its returns are present. The two
+Ethernet clocks are crossed with dual-clock FIFOs that use Gray-coded pointers and two-flop
+synchronizers.
 
 Compensation shares the chip with the filter so that the computer receives corrected points
 with the state attached. The two remain separable: the corrections can be disabled, the host can
@@ -579,7 +604,7 @@ construction.
 \begin{multicols}{2}
 
 
-\subsection{Read paths and two-clock paths}
+\subsection{Read paths and multicycle paths}
 
 Reading a latch memory is a wide selector. Left alone, the tools build it flat, and where its
 words land far apart a small gate is left driving millimeters of wire. The selector is therefore
@@ -588,7 +613,7 @@ timing constraints fixed pins to refer to.
 
 Four paths are too long for one 20\,ns clock at the slow corner: program counter through the step
 table, the filter storage read, the lidar buffer read and the SPI read address. On each the logic waits one extra clock and the
-constraints declare a two-clock path.
+constraints declare a two-clock multicycle path.
 
 
 \section{Evaluation}
@@ -717,7 +742,7 @@ No correction & 150\,cm & 300\,cm & 600\,cm\\
 The three largest blocks of the parallel design synthesized to 0.66\,mm$^2$, which would have
 filled the core before storage, the lidar path or any wiring. The filter as built is
 0.14\,mm$^2$ placed, storage included: 4.8 times smaller, leaving four fifths of the core for
-everything else. The price is time, and there is enough of it. In RTL simulation every update
+everything else. This is the area--time trade the architecture set out to make. In RTL simulation every update
 takes between 91,000 and 93,116 clocks, 1.86\,ms of the 2.5\,ms period, and varies by about
 2\,\% because the program does not branch on data.
 
@@ -735,7 +760,7 @@ alone, so a fault in one block does not disable the others.
 
 \section{Conclusion}
 
-The design followed from its constraints. A small area with no memory macro and a generous time
+The design followed from its constraints through algorithm--hardware co-design. A small area with no memory macro and a generous time
 budget led to a filter built as one serial arithmetic unit running a fixed program, and the
 filter's mathematics was chosen and arranged to suit that machine. The lidar path, with little
 time per return, received its own fast arithmetic. Each choice was tested before layout: number
