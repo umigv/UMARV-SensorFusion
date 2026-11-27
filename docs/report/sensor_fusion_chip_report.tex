@@ -277,7 +277,7 @@ The filter is one arithmetic unit, one memory and a program (Fig.~\ref{fig:machi
 conventional design would be a datapath of multipliers. That is enough because an update is
 3,218 arithmetic operations and has 125,000 clocks, so 39 clocks per
 operation is fast enough. The team's earlier parallel design (multiply-accumulate array, sigma-point generator
-and Cholesky block) synthesized to 37 tiles of cells before placement, against 32 available, and
+and Cholesky block) synthesized to 0.66\,mm$^2$ of cells, 95\,\% of the core before placement, and
 would have finished each update with most of the period unused.
 
 A step of the program is $d=a\;\text{op}\;b$, or a jump, call or return. The sequencer fetches a
@@ -594,10 +594,33 @@ constraints declare a two-clock path.
 \section{Evaluation}
 \label{sec:eval}
 
-The results below are from simulation, with sensor errors modeled from the datasheets.
+The evaluation answers three questions: whether the chip computes the filter correctly, what
+the chip adds for the robot, and what it cost in area and time. Accuracy results are from
+simulation with sensor errors modeled from the datasheets; area and time are from the routed
+design and its RTL simulation. Table~\ref{tab:sum} collects the results.
 
+\begin{table}[H]
+\centering\footnotesize
+\caption{Summary of results. The alternatives are, in order: 16-bit fixed point, the nominal
+radius, datasheet noise values, no correction, the parallel design, and the sample period.}
+\label{tab:sum}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+ & Alternative & Chip\\
+\midrule
+Failed covariance updates & about half & none\\
+Gap from double precision & & 28\,mm\\
+Wheel radius error & 1.5\,\% & 0.36\,\%\\
+Error / reported uncertainty & 74 & 1.0\\
+Lidar motion error at 30\,m & 6\,m & 1.9\,mm\\
+Filter cell area & 0.66\,mm$^2$ & 0.14\,mm$^2$\\
+Update time & 2.5\,ms & 1.86\,ms\\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\subsection{Filter accuracy}
+\subsection{Numerical accuracy}
+\label{sec:num}
 
 The step table that is in the chip was executed in single precision on a simulated 150\,s drive,
 six runs with different sensor errors, at 400\,Hz. The VN-300's position and heading errors
@@ -633,50 +656,70 @@ radius estimate in each run.}
 
 The left panel of Fig.~\ref{fig:eval} plots position error against time. The chip program's
 curve and the double-precision curve are drawn one over the other and cannot be told apart at
-this scale: the two differ by at most 28\,mm
-and $0.041^\circ$ over all 360,000 updates, and the program never produces an invalid value.
-Single precision, the six-term series and the one-reading-at-a-time correction therefore cost
-no accuracy, which is what allowed the filter to be built for minimum area.
+this scale: the two differ by at most 28\,mm and $0.041^\circ$ over all 360,000 updates, and no
+covariance update fails. Single precision, the six-term series and the one-reading-at-a-time
+correction therefore cost no accuracy, which is what allowed the filter to be built for minimum
+area. The fixed-point alternative was simulated first, on the team's earlier four-state filter:
+with 16 fractional bits about half of the covariance downdates failed and two runs diverged.
 
-Both filter curves follow the slow swings of the VN-300 curve and sit below it on average:
-position improves by 7\,\% and heading by 12\,\%. The gain is small because the VN-300's
-position error drifts over tens of seconds and the wheel measures distance traveled, which
-cannot reveal an absolute offset. More filter would not help here; a second absolute reference would.
+\subsection{What the filter adds}
+\label{sec:adds}
 
-The right panel shows what the filter adds that the VN-300 does not supply. In every run the
-radius estimate leaves the nominal 50\,mm and approaches the true 50.75\,mm, ending within
-0.7\,\% (mean 0.36\,\%) from a 1.5\,\% starting error. A radius error is a speed error of the
-same proportion, and speed is what the lidar path uses to shift each return, so this state
-directly improves the compensation. The estimates are still converging at 150\,s: calibration
-takes minutes of driving, which is why the starting radius is host-writable.
+The filter supplies two things the VN-300 does not. The first is the wheel radius (right panel
+of Fig.~\ref{fig:eval}). In every run the estimate leaves the nominal 50\,mm and approaches the
+true 50.75\,mm, ending at a mean error of 0.36\,\% from a 1.5\,\% start. A radius error is a
+speed error of the same proportion, so the speed the lidar path uses is four times more
+accurate, and over 100\,m of travel the distance error falls from 1.5\,m to 0.36\,m. The
+estimates are still converging at 150\,s, which is why the starting radius is host-writable.
 
-The inflation of $R$ for time-correlated errors (Section~\ref{sec:filter}) was set from this
-simulation. With the datasheet values used directly the double-precision filter's position error is 74 times the standard deviation
-it reports. With the inflated values the ratio is 1.0 and accuracy is unchanged.
+The second is an uncertainty that can be trusted. With the datasheet noise values used directly,
+the double-precision filter's position error is 74 times the standard deviation it reports,
+because the VN-300's errors are correlated over many samples. With the inflated $R$ of
+Section~\ref{sec:filter}, set from this simulation, the ratio is 1.0 and accuracy is unchanged.
+
+Position and heading also improve on the VN-300 alone, by 7\,\% and 12\,\%
+(Table~\ref{tab:acc}). The VN-300's position error drifts over tens of seconds and a wheel
+measures distance traveled, so the remaining error is the VN-300's own.
 
 \subsection{Lidar compensation}
+\label{sec:lid}
 
 A timing model of the VLP-16's firing sequence gives the largest displacement of a return at
-30\,m that remains after compensation, for three assumed maneuvers (Table~\ref{tab:lidar}).
-Holding the state between filter updates is not enough even at 400\,Hz. Integrating turn rate
-and speed at every firing, as the chip does, leaves under 2\,mm. The model excludes the filter's
-own error and its 1.9\,ms computing delay.
+30\,m, for three assumed maneuvers (Table~\ref{tab:lidar}). Uncorrected, a sweep is smeared by
+meters. Holding the state between filter updates is not enough even at 400\,Hz. Integrating
+turn rate and speed at every firing, as the chip does, leaves under 2\,mm, 16 times below the
+lidar's own $\pm3$\,cm. The same method at 100\,Hz reaches 3\,cm in the aggressive case, which
+is the reason for the 400\,Hz update rate. The model excludes the filter's own error and its
+1.9\,ms computing delay.
 
 \begin{table}[H]
 \centering\footnotesize
-\caption{Largest remaining displacement of a return at 30\,m. Turns are peak rate and peak
-angular acceleration: 0.5\,rad/s and 1\,rad/s$^2$; 1 and 5; 2 and 20.}
+\caption{Largest displacement of a return at 30\,m. Turns are peak rate and peak
+angular acceleration: 0.5\,rad/s and 1\,rad/s$^2$; 1 and 5; 2 and 20. The first row is
+$R\,\omega\,t$ over one 100\,ms sweep; ``integrated'' is per firing.}
 \label{tab:lidar}
 \begin{tabular}{@{}lrrr@{}}
 \toprule
 State used for a firing & Gentle & Moderate & Aggressive\\
 \midrule
+No correction & 150\,cm & 300\,cm & 600\,cm\\
 100\,Hz, held & 17\,cm & 32\,cm & 62\,cm\\
 400\,Hz, held & 4.3\,cm & 8.1\,cm & 16\,cm\\
-400\,Hz, integrated per firing & 0.01\,cm & 0.05\,cm & 0.19\,cm\\
+100\,Hz, integrated & 0.15\,cm & 0.75\,cm & 3.0\,cm\\
+400\,Hz, integrated (chip) & 0.01\,cm & 0.05\,cm & 0.19\,cm\\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\subsection{Area and time}
+\label{sec:cost}
+
+The three largest blocks of the parallel design synthesized to 0.66\,mm$^2$, which would have
+filled the core before storage, the lidar path or any wiring. The filter as built is
+0.14\,mm$^2$ placed, storage included: 4.8 times smaller, leaving four fifths of the core for
+everything else. The price is time, and there is enough of it. In RTL simulation every update
+takes between 91,000 and 93,116 clocks, 1.86\,ms of the 2.5\,ms period, and varies by about
+2\,\% because the program does not branch on data.
 
 \section{Future-proofing}
 
