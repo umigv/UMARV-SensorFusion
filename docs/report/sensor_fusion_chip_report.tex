@@ -629,20 +629,20 @@ design and its RTL simulation. Table~\ref{tab:sum} collects the results.
 
 \begin{table}[H]
 \centering\footnotesize
-\caption{Summary of results. The alternatives are, in order: 16-bit fixed point, the nominal
-radius, datasheet noise values, no correction, the parallel design, and the sample period.}
+\caption{Summary of results. Each row compares the chip with the alternative named in that row. Fixed point is 16 fractional bits; lidar error is for the aggressive turn.}
 \label{tab:sum}
-\begin{tabular}{@{}lrr@{}}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llrr@{}}
 \toprule
- & Alternative & Chip\\
+Measure & Alternative & Its result & Chip\\
 \midrule
-Failed covariance updates & about half & none\\
-Gap from double precision & & 28\,mm\\
-Wheel radius error & 1.5\,\% & 0.36\,\%\\
-Error / reported uncertainty & 74 & 1.0\\
-Lidar motion error at 30\,m & 6\,m & 1.9\,mm\\
-Filter cell area & 0.66\,mm$^2$ & 0.14\,mm$^2$\\
-Update time & 2.5\,ms & 1.86\,ms\\
+Failed covariance updates & fixed point & about half & none\\
+Position gap & double precision & reference & 28\,mm\\
+Wheel radius error & nominal radius & 1.5\,\% & 0.36\,\%\\
+Error / reported error & datasheet noise & 74 & 1.0\\
+Lidar error at 30\,m & no correction & 6\,m & 1.9\,mm\\
+Filter cell area & parallel design & 0.66\,mm$^2$ & 0.14\,mm$^2$\\
+Update time & sample period & 2.5\,ms & 1.86\,ms\\
 \bottomrule
 \end{tabular}
 \end{table}
