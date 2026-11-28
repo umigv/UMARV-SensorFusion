@@ -130,7 +130,7 @@
   Storage is expensive because there is no foundry SRAM macro, so storage is built from standard cells.
   For the filter, time is plentiful. At the 50\,MHz clock, we get 125,000 clocks per filter update. However, there are only 172 clocks per lidar return.
 
-  The filter is therefore a time-multiplexed, microcoded datapath to save area and storage at the cost of time, while the lidar path is a streaming pipeline with its own fixed-point arithmetic. A single timestamper block generates the clock that both paths use to time their samples.
+  The filter is therefore a time-multiplexed, microcoded datapath to save area and storage at the cost of time, while the lidar path is a streaming pipeline with its own fixed-point arithmetic. A single timestamper block keeps the microsecond time base that triggers the filter's sensors and stamps the lidar data.
 
   \subsection{Timestamper}
 
